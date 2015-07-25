@@ -98,6 +98,13 @@ internal static partial class Interop
             return GetDynamicBuffer((handle, buf, i) => GetX509PublicKeyParameterBytes(handle, buf, i), x509);
         }
 
+        #region Move to a PKCS12 file
+
+        [DllImport(Libraries.CryptoInterop, CharSet = CharSet.Ansi)]
+        internal static extern int GetPkcs7StackFieldCount(SafePkcs12Handle p12);
+        
+        #endregion
+
         internal static void SetX509ChainVerifyTime(SafeX509StoreCtxHandle ctx, DateTime verifyTime)
         {
             // Let Unspecified mean Local, so only convert if the source was UTC.

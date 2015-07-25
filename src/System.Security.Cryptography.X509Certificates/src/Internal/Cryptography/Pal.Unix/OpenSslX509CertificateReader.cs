@@ -35,7 +35,7 @@ namespace Internal.Cryptography.Pal
             _cert = handle;
         }
 
-        internal unsafe OpenSslX509CertificateReader(byte[] data)
+        internal unsafe OpenSslX509CertificateReader(byte[] data, string password)
         {
             SafeX509Handle cert;
 
@@ -53,7 +53,18 @@ namespace Internal.Cryptography.Pal
             }
             else
             {
-                cert = Interop.libcrypto.OpenSslD2I(Interop.libcrypto.d2i_X509, data);
+                cert = Interop.libcrypto.OpenSslD2I((ptr, b, i) => Interop.libcrypto.d2i_X509(ptr, b, i), data, checkHandle: false);
+
+                if (cert == null || cert.IsInvalid)
+                {
+                    using (OpenSslPkcs12Reader pfxReader = OpenSslPkcs12Reader.TryRead(data))
+                    {
+                        if (pfxReader != null)
+                        {
+                            pfxReader.Decrypt(password);
+                        }
+                    }
+                }
             }
 
             Interop.libcrypto.CheckValidOpenSslHandle(cert);

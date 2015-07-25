@@ -18,7 +18,17 @@ namespace Internal.Cryptography.Pal
 
         public static ICertificatePal FromBlob(byte[] rawData, string password, X509KeyStorageFlags keyStorageFlags)
         {
-            return new OpenSslX509CertificateReader(rawData);
+            using (OpenSslPkcs12Reader pfx = OpenSslPkcs12Reader.TryRead(rawData))
+            {
+                if (pfx != null)
+                {
+                    pfx.Decrypt(password);
+
+
+                }
+            }
+
+            return new OpenSslX509CertificateReader(rawData, password);
         }
 
         public static ICertificatePal FromFile(string fileName, string password, X509KeyStorageFlags keyStorageFlags)
