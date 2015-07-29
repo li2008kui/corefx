@@ -24,62 +24,69 @@ namespace Internal.Cryptography.Pal
 
         internal OpenSslX509CertificateReader(SafeX509Handle handle)
         {
-            // X509_check_purpose has the effect of populating the sha1_hash value,
-            // and other "initialize" type things.
-            bool init = Interop.libcrypto.X509_check_purpose(handle, -1, 0);
-
-            if (!init)
-            {
-                throw Interop.libcrypto.CreateOpenSslCryptographicException();
-            }
+            ValidateCertificateHandle(handle);
 
             _cert = handle;
         }
-
-        internal unsafe OpenSslX509CertificateReader(byte[] data, string password)
+      
+        internal static ICertificatePal FromBio(SafeBioHandle bio, string password)
         {
-            SafeX509Handle cert;
+            // Try reading the value as: PEM-X509, DER-X509, DER-PKCS12.
+            int bioPosition = Interop.NativeCrypto.BioTell(bio);
 
-            // If the first byte is a hyphen then this is likely PEM-encoded,
-            // otherwise it's DER-encoded (or not a certificate).
-            if (data[0] == '-')
+            Debug.Assert(bioPosition >= 0);
+
+            SafeX509Handle cert = Interop.libcrypto.PEM_read_bio_X509_AUX(bio, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+
+            if (cert != null && !cert.IsInvalid)
             {
-                using (SafeBioHandle bio = Interop.libcrypto.BIO_new(Interop.libcrypto.BIO_s_mem()))
-                {
-                    Interop.libcrypto.CheckValidOpenSslHandle(bio);
-
-                    Interop.libcrypto.BIO_write(bio, data, data.Length);
-                    cert = Interop.libcrypto.PEM_read_bio_X509_AUX(bio, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
-                }
+                return new OpenSslX509CertificateReader(cert);
             }
-            else
-            {
-                cert = Interop.libcrypto.OpenSslD2I((ptr, b, i) => Interop.libcrypto.d2i_X509(ptr, b, i), data, checkHandle: false);
 
-                if (cert == null || cert.IsInvalid)
+            // Rewind, try again.
+            Interop.NativeCrypto.BioSeek(bio, bioPosition);
+            cert = Interop.NativeCrypto.D2iX509Bio(bio);
+
+            if (cert != null && !cert.IsInvalid)
+            {
+                return new OpenSslX509CertificateReader(cert);
+            }
+
+            // Rewind, try again.
+            Interop.NativeCrypto.BioSeek(bio, bioPosition);
+
+            using (OpenSslPkcs12Reader pfx = OpenSslPkcs12Reader.TryRead(bio))
+            {
+                if (pfx != null)
                 {
-                    using (OpenSslPkcs12Reader pfxReader = OpenSslPkcs12Reader.TryRead(data))
+                    pfx.Decrypt(password);
+
+                    ICertificatePal first = null;
+
+                    foreach (OpenSslX509CertificateReader certPal in pfx.ReadCertificates())
                     {
-                        if (pfxReader != null)
+                        // When requesting an X509Certificate2 from a PFX only the first entry is
+                        // returned.  Other entries should be disposed.
+                        if (first == null)
                         {
-                            pfxReader.Decrypt(password);
+                            first = certPal;
+                        }
+                        else
+                        {
+                            certPal.Dispose();
                         }
                     }
+
+                    return first;
                 }
             }
 
-            Interop.libcrypto.CheckValidOpenSslHandle(cert);
+            // Since we aren't going to finish reading, leaving the buffer where it was when we got
+            // it seems better than leaving it in some arbitrary other position.
+            Interop.NativeCrypto.BioSeek(bio, bioPosition);
 
-            // X509_check_purpose has the effect of populating the sha1_hash value,
-            // and other "initialize" type things.
-            bool init = Interop.libcrypto.X509_check_purpose(cert, -1, 0);
-
-            if (!init)
-            {
-                throw Interop.libcrypto.CreateOpenSslCryptographicException();
-            }
-
-            _cert = cert;
+            // None of the formats read.  Whatever OpenSSL had to say last will be the exception.
+            throw Interop.libcrypto.CreateOpenSslCryptographicException();
         }
 
         public bool HasPrivateKey
@@ -337,6 +344,18 @@ namespace Internal.Cryptography.Pal
             {
                 _cert.Dispose();
                 _cert = null;
+            }
+        }
+
+        private static void ValidateCertificateHandle(SafeX509Handle handle)
+        {
+            // X509_check_purpose has the effect of populating the sha1_hash value,
+            // and other "initialize" type things.
+            bool init = Interop.libcrypto.X509_check_purpose(handle, -1, 0);
+
+            if (!init)
+            {
+                throw Interop.libcrypto.CreateOpenSslCryptographicException();
             }
         }
 

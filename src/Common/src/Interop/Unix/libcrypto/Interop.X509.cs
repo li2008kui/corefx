@@ -114,6 +114,9 @@ internal static partial class Interop
         internal static unsafe extern SafePkcs12Handle d2i_PKCS12(IntPtr zero, byte** ppin, int len);
 
         [DllImport(Libraries.LibCrypto)]
+        internal static extern SafePkcs12Handle d2i_PKCS12_bio(SafeBioHandle bio, IntPtr zero);
+
+        [DllImport(Libraries.LibCrypto)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool PKCS12_verify_mac(SafePkcs12Handle p12, string pass, int passlen);
 

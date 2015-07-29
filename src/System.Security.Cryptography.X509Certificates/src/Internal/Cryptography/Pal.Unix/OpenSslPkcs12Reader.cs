@@ -35,6 +35,18 @@ namespace Internal.Cryptography.Pal
             return null;
         }
 
+        public static OpenSslPkcs12Reader TryRead(SafeBioHandle fileBio)
+        {
+            SafePkcs12Handle p12 = Interop.libcrypto.d2i_PKCS12_bio(fileBio, IntPtr.Zero);
+
+            if (p12 != null && !p12.IsInvalid)
+            {
+                return new OpenSslPkcs12Reader(p12);
+            }
+
+            return null;
+        }
+
         public void Dispose()
         {
             if (_caStackHandle != null)

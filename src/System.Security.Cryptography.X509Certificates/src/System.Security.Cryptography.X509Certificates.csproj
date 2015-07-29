@@ -59,7 +59,6 @@
     <Compile Include="Internal\Cryptography\IChainPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\CertificatePolicy.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\DerSequenceReader.cs" />
-    <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslPkcs12Reader.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeX509ChainHandle.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenFlags.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\PublicKey.cs" />
@@ -130,6 +129,7 @@
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="Internal\Cryptography\Pal.Unix\CertificatePal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\ChainPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslPkcs12Reader.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslX509CertificateReader.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslX509ChainProcessor.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslX509Encoder.cs" />
