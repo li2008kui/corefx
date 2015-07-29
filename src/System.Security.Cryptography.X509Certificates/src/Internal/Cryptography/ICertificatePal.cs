@@ -12,7 +12,6 @@ namespace Internal.Cryptography
     internal interface ICertificatePal : IDisposable
     {
         bool HasPrivateKey { get; }
-        AsymmetricAlgorithm PrivateKey { get; }
         IntPtr Handle { get; }
         string Issuer { get; }
         string Subject { get; }
@@ -37,6 +36,7 @@ namespace Internal.Cryptography
         /// </summary>
         void SetPrivateKey(AsymmetricAlgorithm privateKey, AsymmetricAlgorithm publicKey);
 
+        RSA GetRSAPrivateKey();
         string GetNameInfo(X509NameType nameType, bool forIssuer);
         void AppendPrivateKeyInfo(StringBuilder sb);
     }

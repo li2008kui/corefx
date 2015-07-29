@@ -45,6 +45,27 @@ namespace System.Security.Cryptography
             ImportParameters(parameters);
         }
 
+        /// <summary>
+        /// Create an RSAOpenSsl from an existing <see cref="IntPtr"/> whose value is an
+        /// existing OpenSSL <c>RSA*</c>.
+        /// </summary>
+        /// <remarks>
+        /// This method will increase the reference count of the <c>RSA*</c>, the caller should
+        /// continue to manage the lifetime of their reference.
+        /// </remarks>
+        /// <param name="handle">A pointer to an OpenSSL <c>RSA*</c></param>
+        /// <exception cref="ArgumentException"><paramref name="handle" /> is invalid</exception>
+        public RSAOpenSsl(IntPtr handle)
+        {
+            if (handle == IntPtr.Zero)
+                throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, "handle");
+
+            _legalKeySizesValue = new[] { s_legalKeySizes };
+
+            SafeRsaHandle rsaHandle = SafeRsaHandle.DuplicateHandle(handle);
+            _key = new Lazy<SafeRsaHandle>(() => rsaHandle);
+        }
+
         public override int KeySize
         {
             set

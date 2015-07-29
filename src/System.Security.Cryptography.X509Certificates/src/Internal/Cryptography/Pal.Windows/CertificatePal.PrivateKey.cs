@@ -16,7 +16,6 @@ using FILETIME = Internal.Cryptography.Pal.Native.FILETIME;
 using CryptographicUnexpectedOperationException = System.Security.Cryptography.CryptographicException;
 
 using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
 
 namespace Internal.Cryptography.Pal
 {
@@ -30,31 +29,15 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        public AsymmetricAlgorithm PrivateKey
+        public RSA GetRSAPrivateKey()
         {
-            get
-            {
-                CspParameters cspParameters = GetPrivateKey();
-                if (cspParameters == null)
-                    return null;
+            CspParameters cspParameters = GetPrivateKey();
+            if (cspParameters == null)
+                return null;
 
-                // We never want to stomp over certificate private keys.
-                cspParameters.Flags |= CspProviderFlags.UseExistingKey;
-
-                int algId = OidInfo.FindOidInfo(CryptOidInfoKeyType.CRYPT_OID_INFO_OID_KEY, KeyAlgorithm, OidGroup.PublicKeyAlgorithm, fallBackToAllGroups: true).AlgId;
-                switch (algId)
-                {
-                    case AlgId.CALG_RSA_KEYX:
-                    case AlgId.CALG_RSA_SIGN:
-                        return new RSACryptoServiceProvider(cspParameters);
-
-                    case AlgId.CALG_DSS_SIGN:
-                        return new DSACryptoServiceProvider(cspParameters);
-
-                    default:
-                        throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
-                }
-            }
+            // We never want to stomp over certificate private keys.
+            cspParameters.Flags |= CspProviderFlags.UseExistingKey;
+            return new RSACryptoServiceProvider(cspParameters);
         }
 
         /// <summary>

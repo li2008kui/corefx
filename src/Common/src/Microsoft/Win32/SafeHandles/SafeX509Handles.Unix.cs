@@ -32,6 +32,30 @@ namespace Microsoft.Win32.SafeHandles
     }
 
     [SecurityCritical]
+    internal sealed class SafePkcs12SafebagStackHandle : SafeHandle
+    {
+        private SafePkcs12SafebagStackHandle() :
+            base(IntPtr.Zero, ownsHandle: true)
+        {
+        }
+
+        [SecurityCritical]
+        protected override bool ReleaseHandle()
+        {
+            Interop.NativeCrypto.RecursiveFreePkcs12SafebagStack(handle);
+            SetHandle(IntPtr.Zero);
+            return true;
+        }
+
+        public override bool IsInvalid
+        {
+            [SecurityCritical]
+            get
+            { return handle == IntPtr.Zero; }
+        }
+    }
+
+    [SecurityCritical]
     internal sealed class SafeEvpPkeyHandle : SafeHandle
     {
         private SafeEvpPkeyHandle() :

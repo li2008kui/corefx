@@ -24,7 +24,23 @@ namespace Internal.Cryptography.Pal
                 {
                     pfx.Decrypt(password);
 
+                    ICertificatePal first = null;
 
+                    foreach (OpenSslX509CertificateReader certPal in pfx.ReadCertificates())
+                    {
+                        // When requesting an X509Certificate2 from a PFX only the first entry is
+                        // returned.  Other entries should be disposed.
+                        if (first == null)
+                        {
+                            first = certPal;
+                        }
+                        else
+                        {
+                            certPal.Dispose();
+                        }
+                    }
+
+                    return first;
                 }
             }
 
@@ -33,6 +49,8 @@ namespace Internal.Cryptography.Pal
 
         public static ICertificatePal FromFile(string fileName, string password, X509KeyStorageFlags keyStorageFlags)
         {
+            // Rather than File.ReadAllBytes(fileName) to dispatch into FromBlob, the BIO methods should be used
+            // to prevent massive overhead from 'accidentally' passing in a very large non-certificate file.
             throw new NotImplementedException();
         }
     }
