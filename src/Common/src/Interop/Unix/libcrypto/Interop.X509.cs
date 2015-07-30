@@ -117,10 +117,6 @@ internal static partial class Interop
         internal static extern SafePkcs12Handle d2i_PKCS12_bio(SafeBioHandle bio, IntPtr zero);
 
         [DllImport(Libraries.LibCrypto)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool PKCS12_verify_mac(SafePkcs12Handle p12, string pass, int passlen);
-
-        [DllImport(Libraries.LibCrypto)]
         internal static extern void PKCS12_free(IntPtr p12);
 
         [DllImport(Libraries.LibCrypto)]
@@ -132,15 +128,6 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoInterop)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool PKCS12_parse(SafePkcs12Handle p12, string pass, out SafeEvpPkeyHandle pkey, out SafeX509Handle cert, out SafeX509StackHandle ca);
-
-        [DllImport(Libraries.CryptoInterop)]
-        internal static extern IntPtr PKCS12_unpack_authsafes(SafePkcs12Handle p12);
-
-        [DllImport(Libraries.CryptoInterop)]
-        internal static extern SafePkcs12SafebagStackHandle PKCS12_unpack_p7data(IntPtr p7);
-
-        [DllImport(Libraries.CryptoInterop)]
-        internal static extern SafePkcs12SafebagStackHandle PKCS12_unpack_p7encdata(IntPtr p7, string password, int passlen);
 
         #endregion
 

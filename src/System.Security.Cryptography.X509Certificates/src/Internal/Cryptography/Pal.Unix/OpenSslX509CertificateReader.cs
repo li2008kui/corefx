@@ -24,7 +24,14 @@ namespace Internal.Cryptography.Pal
 
         internal OpenSslX509CertificateReader(SafeX509Handle handle)
         {
-            ValidateCertificateHandle(handle);
+            // X509_check_purpose has the effect of populating the sha1_hash value,
+            // and other "initialize" type things.
+            bool init = Interop.libcrypto.X509_check_purpose(handle, -1, 0);
+
+            if (!init)
+            {
+                throw Interop.libcrypto.CreateOpenSslCryptographicException();
+            }
 
             _cert = handle;
         }
@@ -344,18 +351,6 @@ namespace Internal.Cryptography.Pal
             {
                 _cert.Dispose();
                 _cert = null;
-            }
-        }
-
-        private static void ValidateCertificateHandle(SafeX509Handle handle)
-        {
-            // X509_check_purpose has the effect of populating the sha1_hash value,
-            // and other "initialize" type things.
-            bool init = Interop.libcrypto.X509_check_purpose(handle, -1, 0);
-
-            if (!init)
-            {
-                throw Interop.libcrypto.CreateOpenSslCryptographicException();
             }
         }
 
