@@ -29,7 +29,7 @@ namespace Internal.Cryptography.Pal
             cspParameters.Flags |= CspProviderFlags.UseExistingKey;
             return new RSACryptoServiceProvider(cspParameters);
         }
-        
+
         private CspParameters GetPrivateKey()
         {
             int cbData = 0;
