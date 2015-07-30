@@ -107,37 +107,6 @@ internal static partial class Interop
             return GetDynamicBuffer((handle, buf, i) => GetX509PublicKeyParameterBytes(handle, buf, i), x509);
         }
 
-        #region Move to a PKCS12 file
-
-        [DllImport(Libraries.CryptoInterop)]
-        internal static extern int GetPkcs7StackFieldCount(IntPtr pkcs7Stack);
-
-        [DllImport(Libraries.CryptoInterop)]
-        internal static extern IntPtr GetPkcs7StackField(IntPtr pkcs7Stack, int loc);
-
-        [DllImport(Libraries.CryptoInterop)]
-        internal static extern int GetPkcs7TypeNid(IntPtr p7);
-
-        [DllImport(Libraries.CryptoInterop)]
-        internal static extern void RecursiveFreePkcs12SafebagStack(IntPtr stack);
-
-        [DllImport(Libraries.CryptoInterop)]
-        internal static extern int GetPkcs12SafebagStackFieldCount(SafePkcs12SafebagStackHandle stack);
-
-        [DllImport(Libraries.CryptoInterop)]
-        internal static extern IntPtr GetPkcs12SafebagStackField(SafePkcs12SafebagStackHandle stack, int loc);
-
-        [DllImport(Libraries.CryptoInterop)]
-        internal static extern int GetPkcs12SafebagTypeNid(IntPtr safebag);
-
-        [DllImport(Libraries.CryptoInterop)]
-        internal static extern SafeEvpPkeyHandle GetPkeyFromKeybag(IntPtr safebag, out SafeAsn1OctetStringHandle localKeyId);
-
-        [DllImport(Libraries.CryptoInterop)]
-        internal static extern SafeEvpPkeyHandle GetPkeyFromShroudedKeybag(IntPtr safebag, string password, int passlen, out SafeAsn1OctetStringHandle localKeyId);
-        
-        #endregion
-
         internal static void SetX509ChainVerifyTime(SafeX509StoreCtxHandle ctx, DateTime verifyTime)
         {
             // Let Unspecified mean Local, so only convert if the source was UTC.

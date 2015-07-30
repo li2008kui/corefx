@@ -30,12 +30,6 @@ namespace Internal.Cryptography
         X500DistinguishedName SubjectName { get; }
         X500DistinguishedName IssuerName { get; }
         IEnumerable<X509Extension> Extensions { get; }
-
-        /// <summary>
-        /// Set the private key object. The additional "publicKey" argument is used to validate that the private key corresponds to the existing publicKey.
-        /// </summary>
-        void SetPrivateKey(AsymmetricAlgorithm privateKey, AsymmetricAlgorithm publicKey);
-
         RSA GetRSAPrivateKey();
         string GetNameInfo(X509NameType nameType, bool forIssuer);
         void AppendPrivateKeyInfo(StringBuilder sb);

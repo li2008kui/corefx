@@ -108,29 +108,6 @@ internal static partial class Interop
         [DllImport(Libraries.LibCrypto)]
         internal static extern string X509_verify_cert_error_string(X509VerifyStatusCode n);
 
-        #region Move to a PKCS12 file
-
-        [DllImport(Libraries.LibCrypto)]
-        internal static unsafe extern SafePkcs12Handle d2i_PKCS12(IntPtr zero, byte** ppin, int len);
-
-        [DllImport(Libraries.LibCrypto)]
-        internal static extern SafePkcs12Handle d2i_PKCS12_bio(SafeBioHandle bio, IntPtr zero);
-
-        [DllImport(Libraries.LibCrypto)]
-        internal static extern void PKCS12_free(IntPtr p12);
-
-        [DllImport(Libraries.LibCrypto)]
-        internal static extern void EVP_PKEY_free(IntPtr pkey);
-
-        [DllImport(Libraries.LibCrypto)]
-        internal static extern SafeRsaHandle EVP_PKEY_get1_RSA(SafeEvpPkeyHandle pkey);
-
-        [DllImport(Libraries.CryptoInterop)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool PKCS12_parse(SafePkcs12Handle p12, string pass, out SafeEvpPkeyHandle pkey, out SafeX509Handle cert, out SafeX509StackHandle ca);
-
-        #endregion
-
         internal enum X509VerifyStatusCode
         {
             X509_V_OK = 0,

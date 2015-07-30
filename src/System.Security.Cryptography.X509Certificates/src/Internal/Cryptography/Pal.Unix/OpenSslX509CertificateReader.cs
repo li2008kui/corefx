@@ -307,11 +307,6 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        public void SetPrivateKey(AsymmetricAlgorithm privateKey, AsymmetricAlgorithm publicKey)
-        {
-            throw new NotImplementedException();
-        }
-
         public string GetNameInfo(X509NameType nameType, bool forIssuer)
         {
             using (SafeBioHandle bioHandle = Interop.NativeCrypto.GetX509NameInfo(_cert, (int)nameType, forIssuer))
@@ -337,6 +332,15 @@ namespace Internal.Cryptography.Pal
 
         public void AppendPrivateKeyInfo(StringBuilder sb)
         {
+            if (!HasPrivateKey)
+            {
+                return;
+            }
+
+            // There's nothing really to say about the key, just acknowledge there is one.
+            sb.AppendLine();
+            sb.AppendLine();
+            sb.AppendLine("[Private Key]");
         }
 
         public void Dispose()
