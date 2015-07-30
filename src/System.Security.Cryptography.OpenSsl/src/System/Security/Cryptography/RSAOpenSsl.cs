@@ -63,6 +63,10 @@ namespace System.Security.Cryptography
             _legalKeySizesValue = new[] { s_legalKeySizes };
 
             SafeRsaHandle rsaHandle = SafeRsaHandle.DuplicateHandle(handle);
+
+            // Set base.KeySize to avoid throwing an extra Lazy at the GC when
+            // using something other than the default keysize.
+            base.KeySize = 8 * Interop.libcrypto.RSA_size(rsaHandle);
             _key = new Lazy<SafeRsaHandle>(() => rsaHandle);
         }
 
