@@ -7,7 +7,7 @@
 #include "nativeio.h"
 #include <sys/stat.h>
 
-#if HAVE_STAT64 && !(defined(__APPLE__) && defined(_AMD64_))
+#if HAVE_STAT64
 #    define stat_ stat64
 #    define fstat_ fstat64
 #else
@@ -27,7 +27,7 @@ static void ConvertFileStats(const struct stat_& src, FileStats* dst)
     dst->StatusChangeTime = src.st_ctime;
 
 #if HAVE_STAT_BIRTHTIME
-    dst->CreationTime = src->st_birthtime;
+    dst->CreationTime = src.st_birthtime;
     dst->Flags |= FILESTATS_FLAGS_HAS_CREATION_TIME;
 #endif
 }
