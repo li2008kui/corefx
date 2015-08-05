@@ -54,7 +54,7 @@ namespace Internal.Cryptography.Pal
 
         public static IStorePal FromCertificate(ICertificatePal cert)
         {
-            throw new NotImplementedException();
+            return new CollectionBackedStoreProvider(new X509Certificate2(cert.Handle));
         }
 
         public static IStorePal LinkFromCertificateCollection(X509Certificate2Collection certificates)
@@ -66,8 +66,7 @@ namespace Internal.Cryptography.Pal
         {
             if (storeLocation != StoreLocation.LocalMachine)
             {
-                // TODO (#2206): Support CurrentUser persisted stores.
-                throw new NotImplementedException();
+                return new DirectoryBasedStoreProvider(storeName);
             }
 
             if (openFlags.HasFlag(OpenFlags.ReadWrite))

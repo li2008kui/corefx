@@ -3,10 +3,89 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using Microsoft.Win32.SafeHandles;
 
 namespace Internal.Cryptography.Pal
 {
+    internal class CollectionBackedStoreProvider : IStorePal
+    {
+        private readonly X509Certificate2Collection _certs;
+
+        internal CollectionBackedStoreProvider(X509Certificate2 cert)
+        {
+            _certs = new X509Certificate2Collection(cert);
+        }
+
+        public void Dispose()
+        {
+        }
+
+        public IEnumerable<X509Certificate2> Find(X509FindType findType, object findValue, bool validOnly)
+        {
+            return Array.Empty<X509Certificate2>();
+        }
+
+        public byte[] Export(X509ContentType contentType, string password)
+        {
+            switch (contentType)
+            {
+                case X509ContentType.Cert:
+                    return ExportX509Der();
+                case X509ContentType.Pfx:
+                    return ExportPfx(password);
+                default:
+                    // TODO: Exception type?
+                    throw new CryptographicException();
+            }
+        }
+
+        private byte[] ExportX509Der()
+        {
+            if (_certs.Count == 0)
+            {
+                // Windows compat: exporting nothing isn't an exception.
+                return null;
+            }
+
+            return _certs[0].RawData;
+        }
+
+        private byte[] ExportPfx(string password)
+        {
+            // TODO: What does Windows do for an empty collection? (Add a test!)
+            // TODO: What does Windows do when there's no private key? (Add a test!)
+            // TODO: What does Windows do when there's an unrelated certificate in the collection? (Add a test!)
+            // TODO: What does OpenSSL do when there's an unrelated certificate in the collection? (Add a test!)
+            throw new NotImplementedException();
+        }
+
+        public IEnumerable<X509Certificate2> Certificates
+        {
+            get
+            {
+                foreach (X509Certificate2 cert in _certs)
+                {
+                    yield return cert;
+                }
+            }
+        }
+
+        public void Add(ICertificatePal cert)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Remove(ICertificatePal cert)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
     internal class OpenSslX509StoreProvider : IStorePal
     {
         private readonly X509Certificate2Collection _certs;
@@ -44,6 +123,259 @@ namespace Internal.Cryptography.Pal
         public void Add(ICertificatePal cert)
         {
             throw new NotImplementedException();
+        }
+
+        public void Remove(ICertificatePal cert)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    internal class DirectoryBasedStoreProvider : IStorePal
+    {
+        private const int MaxSaveAttempts = 9; // {thumbprint}.1.pem to {thumbprint}.9.pem
+
+        private readonly string _storePath;
+        private List<X509Certificate2> _certificates;
+
+        internal DirectoryBasedStoreProvider(string storeName)
+        {
+            string directoryName;
+
+            storeName = storeName == null ? null : storeName.ToUpperInvariant();
+
+            switch (storeName)
+            {
+                case "MY":
+                    directoryName = "my";
+                    break;
+                default:
+                    // TODO: What exception for "store not supported"?
+                    throw new CryptographicException();
+            }
+
+            _storePath = Path.Combine("~", ".microsoft", "netfx", "cryptography", "x509stores", directoryName);
+        }
+
+        public void Dispose()
+        {
+        }
+
+        public IEnumerable<X509Certificate2> Find(X509FindType findType, object findValue, bool validOnly)
+        {
+            throw new NotImplementedException();
+        }
+
+        public byte[] Export(X509ContentType contentType, string password)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IEnumerable<X509Certificate2> Certificates
+        {
+            get
+            {
+                // Copy the reference locally, any directory change operations
+                // will cause the field to be reset to null.
+                List<X509Certificate2> certificates = _certificates;
+
+                if (certificates == null)
+                {
+                    // ReadDirectory will both load _certificates and return the answer, so this call
+                    // will have stable results across multiple adds/deletes happening in parallel.
+                    certificates = ReadDirectory();
+                    Debug.Assert(certificates != null);
+                }
+
+                foreach (X509Certificate2 cert in certificates)
+                {
+                    // TODO: Should this return new X509Certificate2(cert.Handle) so that we can dispose our copies?
+                    yield return cert;
+                }
+            }
+        }
+
+        private List<X509Certificate2> ReadDirectory()
+        {
+            if (!Directory.Exists(_storePath))
+            {
+                return new List<X509Certificate2>(0);
+            }
+
+            List<X509Certificate2> certs = new List<X509Certificate2>();
+
+            foreach (string filePath in Directory.EnumerateFiles(_storePath))
+            {
+                X509Certificate2 cert;
+
+                try
+                {
+                    cert = new X509Certificate2(filePath);
+                }
+                catch (CryptographicException)
+                {
+                    // The file wasn't a certificate, move on to the next one.
+                    continue;
+                }
+
+                certs.Add(cert);
+            }
+
+            _certificates = certs;
+            return certs;
+        }
+
+        public void Add(ICertificatePal cert)
+        {
+            // Save the collection to a local so it's consistent for the whole method
+            List<X509Certificate2> certificates = _certificates;
+
+            if (cert.HasPrivateKey)
+            {
+                throw new NotSupportedException("Eep, a private key!");
+            }
+
+            using (X509Certificate2 copy = new X509Certificate2(cert.Handle))
+            {
+                // certificates will be null if anything has changed since the last call to
+                // get_Certificates; including Add being called without get_Certificates being
+                // called at all.
+                if (certificates != null)
+                {
+                    foreach (X509Certificate2 inCollection in certificates)
+                    {
+                        if (inCollection.Equals(copy))
+                        {
+                            return;
+                        }
+                    }
+                }
+
+                // This may well be the first time that we've added something to this store.
+                Directory.CreateDirectory(_storePath);
+
+                string thumbprint = copy.Thumbprint;
+                bool findOpenSlot = false;
+
+                // The odds are low that we'd have a thumbprint colission, but check anyways.
+                string existingFilename = FindExistingFilename(copy, _storePath, out findOpenSlot);
+
+                if (existingFilename != null)
+                {
+                    // The file was added but our collection hasn't resynced yet.
+                    // Set _certificates to null to force a resync.
+                    _certificates = null;
+                    return;
+                }
+
+                string destinationFilename;
+
+                if (findOpenSlot)
+                {
+                    destinationFilename = FindOpenSlot(thumbprint);
+                }
+                else
+                {
+                    destinationFilename = Path.Combine(_storePath, thumbprint + ".pem");
+                }
+
+                WritePem(copy.RawData, destinationFilename);
+            }
+
+            // Null out _certificates so the next call to get_Certificates causes a re-scan.
+            _certificates = null;
+        }
+
+        private static string FindExistingFilename(X509Certificate2 cert, string storePath, out bool hadCandidates)
+        {
+            hadCandidates = false;
+
+            foreach (string maybeMatch in Directory.EnumerateFiles(storePath, cert.Thumbprint + "*.pem"))
+            {
+                hadCandidates = true;
+
+                System.Console.WriteLine("Checking '{0}' for match...", maybeMatch);
+
+                try
+                {
+                    using (X509Certificate2 candidate = new X509Certificate2(maybeMatch))
+                    {
+                        if (candidate.Equals(cert))
+                        {
+                            return maybeMatch;
+                        }
+                    }
+                }
+                catch (CryptographicException)
+                {
+                    // Contents weren't interpretable as a certificate, so it's not a match.
+                }
+            }
+
+            return null;
+        }
+
+        private static void WritePem(byte[] rawData, string destinationFilename)
+        {
+            // Convert's Base64 with newline formatting wraps at 72 characters, PEM wraps at 64.
+            const int PemBase64CharsPerLine = 64;
+            int base64CharCount = Convert.ToBase64CharArray(rawData, 0, rawData.Length, null, 0);
+            char[] base64 = new char[base64CharCount];
+
+            base64CharCount = Convert.ToBase64CharArray(rawData, 0, rawData.Length, base64, 0);
+
+            Debug.Assert(base64CharCount == base64.Length);
+
+            using (FileStream fileStream = File.Create(destinationFilename))
+            using (StreamWriter writer = new StreamWriter(fileStream, Encoding.ASCII))
+            {
+                writer.WriteLine("-----BEGIN CERTIFICATE-----");
+
+                int idx = 0;
+
+                while (idx < base64CharCount)
+                {
+                    int charsRemaining = base64CharCount - idx;
+                    int charsThisLine = Math.Min(charsRemaining, PemBase64CharsPerLine);
+
+                    writer.WriteLine(base64, idx, charsThisLine);
+
+                    idx += charsThisLine;
+                }
+
+                writer.WriteLine("-----END CERTIFICATE-----");
+            }
+        }
+
+        private string FindOpenSlot(string thumbprint)
+        {
+            // We already know that {thumbprint}.pem is taken, so start with {thumbprint}.1.pem
+
+            // We need space for {thumbprint} (thumbprint.Length)
+            // And ".0.pem" (6)
+            // If MaxSaveAttempts is big enough to use more than one digit, we need that space, too (MaxSaveAttempts / 10)
+            StringBuilder pathBuilder = new StringBuilder(thumbprint.Length + 6 + (MaxSaveAttempts / 10));
+            HashSet<string> existingFiles = new HashSet<string>(Directory.EnumerateFiles(_storePath, thumbprint + ".*.pem"));
+
+            for (int i = 1; i <= MaxSaveAttempts; i++)
+            {
+                pathBuilder.Clear();
+
+                pathBuilder.Append(thumbprint);
+                pathBuilder.Append('.');
+                pathBuilder.Append(i);
+                pathBuilder.Append(".pem");
+
+                string builtPath = pathBuilder.ToString();
+
+                if (!existingFiles.Contains(builtPath))
+                {
+                    return Path.Combine(_storePath, builtPath);
+                }
+            }
+
+            // TODO: What exception?
+            throw new CryptographicException();
         }
 
         public void Remove(ICertificatePal cert)
