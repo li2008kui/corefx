@@ -154,7 +154,13 @@ namespace Internal.Cryptography.Pal
                     throw new CryptographicException();
             }
 
-            _storePath = Path.Combine("~", ".microsoft", "netfx", "cryptography", "x509stores", directoryName);
+            _storePath = Path.Combine(
+                Environment.GetEnvironmentVariable("HOME"),
+                ".microsoft",
+                "netfx",
+                "cryptography",
+                "x509stores",
+                directoryName);
         }
 
         public void Dispose()
@@ -319,10 +325,18 @@ namespace Internal.Cryptography.Pal
         {
             // Convert's Base64 with newline formatting wraps at 72 characters, PEM wraps at 64.
             const int PemBase64CharsPerLine = 64;
-            int base64CharCount = Convert.ToBase64CharArray(rawData, 0, rawData.Length, null, 0);
-            char[] base64 = new char[base64CharCount];
 
-            base64CharCount = Convert.ToBase64CharArray(rawData, 0, rawData.Length, base64, 0);
+            // Base64 encoding does a 3=>4 expansion, but anything left over that was less
+            // than 3 bytes still needs 4 characters to encode it.
+            int expectedCharCount = rawData.Length / 3 * 4;
+
+            if (rawData.Length % 3 != 0)
+            {
+                expectedCharCount += 4;
+            }
+
+            char[] base64 = new char[expectedCharCount];
+            int base64CharCount = Convert.ToBase64CharArray(rawData, 0, rawData.Length, base64, 0);
 
             Debug.Assert(base64CharCount == base64.Length);
 
