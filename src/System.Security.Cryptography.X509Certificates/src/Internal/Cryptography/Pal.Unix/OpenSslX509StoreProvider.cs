@@ -21,6 +21,11 @@ namespace Internal.Cryptography.Pal
             _certs = new X509Certificate2Collection(cert);
         }
 
+        internal CollectionBackedStoreProvider(X509Certificate2Collection certs)
+        {
+            _certs = new X509Certificate2Collection(certs);
+        }
+
         public void Dispose()
         {
         }
@@ -57,11 +62,84 @@ namespace Internal.Cryptography.Pal
 
         private byte[] ExportPfx(string password)
         {
-            // TODO: What does Windows do for an empty collection? (Add a test!)
-            // TODO: What does Windows do when there's no private key? (Add a test!)
-            // TODO: What does Windows do when there's an unrelated certificate in the collection? (Add a test!)
-            // TODO: What does OpenSSL do when there's an unrelated certificate in the collection? (Add a test!)
-            throw new NotImplementedException();
+            using (SafeX509StackHandle publicCerts = Interop.NativeCrypto.NewX509Stack())
+            {
+                X509Certificate2 privateCert = null;
+
+                // Walk the collection backwards, because we're pushing onto a stack.
+                // This will cause the read order later to be the same as it was now.
+                for (int i = _certs.Count - 1; i >= 0; --i)
+                {
+                    X509Certificate2 cert = _certs[i];
+
+                    if (cert.HasPrivateKey)
+                    {
+                        if (privateCert != null)
+                        {
+                            // OpenSSL's PKCS12 accelerator (PKCS12_create) only supports one
+                            // private key.  The data structure supports more than one, but
+                            // being able to use that functionality requires a lot more code for
+                            // a low-usage scenario.
+                            throw new PlatformNotSupportedException(SR.NotSupported_Export_MultiplePrivateCerts);
+                        }
+
+                        privateCert = cert;
+                    }
+                    else
+                    {
+                        using (SafeX509Handle certHandle = Interop.libcrypto.X509_dup(cert.Handle))
+                        {
+                            if (!Interop.NativeCrypto.PushX509StackField(publicCerts, certHandle))
+                            {
+                                throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                            }
+
+                            // The handle ownership has been transferred into the STACK_OF(X509).
+                            certHandle.SetHandleAsInvalid();
+                        }
+                    }
+                }
+
+                SafeX509Handle privateCertHandle;
+                SafeEvpPkeyHandle privateCertKeyHandle;
+
+                if (privateCert != null)
+                {
+                    OpenSslX509CertificateReader pal = (OpenSslX509CertificateReader)privateCert.Pal;
+                    privateCertHandle = pal.SafeHandle;
+                    privateCertKeyHandle = pal.PrivateKeyHandle ?? SafeEvpPkeyHandle.InvalidHandle;
+                }
+                else
+                {
+                    privateCertHandle = SafeX509Handle.InvalidHandle;
+                    privateCertKeyHandle = SafeEvpPkeyHandle.InvalidHandle;
+                }
+
+                using (SafePkcs12Handle pkcs12 = Interop.libcrypto.PKCS12_create(
+                    password,
+                    null,
+                    privateCertKeyHandle,
+                    privateCertHandle,
+                    publicCerts,
+                    Interop.libcrypto.NID_undef,
+                    Interop.libcrypto.NID_undef,
+                    Interop.libcrypto.PKCS12_DEFAULT_ITER,
+                    Interop.libcrypto.PKCS12_DEFAULT_ITER,
+                    0))
+                {
+                    if (pkcs12.IsInvalid)
+                    {
+                        throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                    }
+
+                    unsafe
+                    {
+                        return Interop.libcrypto.OpenSslI2D(
+                            (handle, b) => Interop.libcrypto.i2d_PKCS12(handle, b),
+                            pkcs12);
+                    }
+                }
+            }
         }
 
         public IEnumerable<X509Certificate2> Certificates
