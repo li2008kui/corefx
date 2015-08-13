@@ -181,7 +181,7 @@ namespace System
             // See if we've already cached a format string for this foreground/background
             // and specific color choice.  If we have, just output that format string again.
             int fgbgIndex = foreground ? 0 : 1;
-            string evaluatedString = s_fgbgAndColorStrings[fgbgIndex][ccValue]; // benign race
+            string evaluatedString = s_fgbgAndColorStrings[fgbgIndex, ccValue]; // benign race
             if (evaluatedString != null)
             {
                 Console.Write(evaluatedString);
@@ -200,7 +200,7 @@ namespace System
 
                     Console.Write(evaluatedString);
 
-                    s_fgbgAndColorStrings[fgbgIndex][ccValue] = evaluatedString; // benign race
+                    s_fgbgAndColorStrings[fgbgIndex, ccValue] = evaluatedString; // benign race
                 }
             }
         }
@@ -234,18 +234,7 @@ namespace System
         };
 
         /// <summary>Cache of the format strings for foreground/background and ConsoleColor.</summary>
-        private static readonly string[][] s_fgbgAndColorStrings = CreateTwoDimArray(2, 16); // 2 == fg vs bg, 16 == ConsoleColor values
-
-        /// <summary>Constructs a two-dimensional jagged array.</summary>
-        private static string[][] CreateTwoDimArray(int dim1, int dim2)
-        {
-            string[][] arr = new string[dim1][];
-            for (int i = 0; i < dim1; i++)
-            {
-                arr[i] = new string[dim2];
-            }
-            return arr;
-        }
+        private static readonly string[,] s_fgbgAndColorStrings = new string[2, 16]; // 2 == fg vs bg, 16 == ConsoleColor values
 
         /// <summary>Provides a cache of color information sourced from terminfo.</summary>
         private struct TerminalColorInfo
@@ -319,32 +308,6 @@ namespace System
                     offset += bytesWritten;
                 }
             }
-        }
-
-        /// <summary>Creates a string from an array of ASCII bytes.</summary>
-        /// <param name="buffer">The byte buffer.</param>
-        /// <param name="offset">The starting location in the buffer from which to begin the string.</param>
-        /// <param name="length">The length of the resulting string.</param>
-        /// <returns>
-        /// A string containing characters copied from the buffer, one character per byte starting
-        /// from <paramref name="offset"/> and going for <paramref name="length"/> bytes.
-        /// </returns>
-        private static string StringFromAsciiBytes(byte[] buffer, int offset, int length)
-        {
-            // Special-case for empty strings
-            if (length == 0)
-            {
-                return string.Empty;
-            }
-
-            // new string(sbyte*, ...) doesn't exist in the targeted reference assembly,
-            // so we first copy to an array of chars, and then create a string from that.
-            char[] chars = new char[length];
-            for (int i = 0, j = offset; i < length; i++, j++)
-            {
-                chars[i] = (char)buffer[j];
-            }
-            return new string(chars);
         }
 
         /// <summary>Provides a stream to use for Unix console input or output.</summary>
@@ -710,7 +673,7 @@ namespace System
                     {
                         findNullEnding++;
                     }
-                    return StringFromAsciiBytes(buffer, pos, findNullEnding - pos);
+                    return Encoding.ASCII.GetString(buffer, pos, findNullEnding - pos);
                 }
             }
 
@@ -1054,7 +1017,7 @@ namespace System
                             throw new InvalidOperationException(SR.InvalidOperation_PrintF);
                         }
                     }
-                    return StringFromAsciiBytes(bytes, 0, neededLength);
+                    return Encoding.ASCII.GetString(bytes, 0, neededLength);
                 }
 
                 /// <summary>Gets the lazily-initialized dynamic or static variables collection, based on the supplied variable name.</summary>

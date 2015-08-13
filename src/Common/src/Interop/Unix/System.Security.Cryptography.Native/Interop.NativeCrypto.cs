@@ -84,8 +84,7 @@ internal static partial class Interop
         internal static extern string GetX509RootStorePath();
 
         [DllImport(Libraries.CryptoInterop)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool UpRefEvpPkey(SafeEvpPkeyHandle handle);
+        internal static extern int UpRefEvpPkey(SafeEvpPkeyHandle handle);
 
         [DllImport(Libraries.CryptoInterop)]
         private static extern int SetX509ChainVerifyTime(

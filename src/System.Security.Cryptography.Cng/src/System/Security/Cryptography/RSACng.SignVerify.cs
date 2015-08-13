@@ -31,16 +31,24 @@ namespace System.Security.Cryptography
                 SignOrVerify(padding, hashAlgorithm, hash,
                     delegate (AsymmetricPaddingMode paddingMode, void* pPaddingInfo)
                     {
+                        int estimatedSize = KeySize / 8;
+#if DEBUG
+                        estimatedSize = 2;  // Make sure the NTE_BUFFER_TOO_SMALL scenario gets exercised.
+#endif
                         SafeNCryptKeyHandle keyHandle = Key.Handle;
+
+                        signature = new byte[estimatedSize];
                         int numBytesNeeded;
-                        ErrorCode errorCode = Interop.NCrypt.NCryptSignHash(keyHandle, pPaddingInfo, hash, hash.Length, null, 0, out numBytesNeeded, paddingMode);
+                        ErrorCode errorCode = Interop.NCrypt.NCryptSignHash(keyHandle, pPaddingInfo, hash, hash.Length, signature, signature.Length, out numBytesNeeded, paddingMode);
+                        if (errorCode == ErrorCode.NTE_BUFFER_TOO_SMALL)
+                        {
+                            signature = new byte[numBytesNeeded];
+                            errorCode = Interop.NCrypt.NCryptSignHash(keyHandle, pPaddingInfo, hash, hash.Length, signature, signature.Length, out numBytesNeeded, paddingMode);
+                        }
                         if (errorCode != ErrorCode.ERROR_SUCCESS)
                             throw errorCode.ToCryptographicException();
 
-                        signature = new byte[numBytesNeeded];
-                        errorCode = Interop.NCrypt.NCryptSignHash(keyHandle, pPaddingInfo, hash, hash.Length, signature, signature.Length, out numBytesNeeded, paddingMode);
-                        if (errorCode != ErrorCode.ERROR_SUCCESS)
-                            throw errorCode.ToCryptographicException();
+                        Array.Resize(ref signature, numBytesNeeded);
                     }
                 );
                 return signature;
@@ -65,12 +73,7 @@ namespace System.Security.Cryptography
                     {
                         SafeNCryptKeyHandle keyHandle = Key.Handle;
                         ErrorCode errorCode = Interop.NCrypt.NCryptVerifySignature(keyHandle, pPaddingInfo, hash, hash.Length, signature, signature.Length, paddingMode);
-                        if (errorCode == ErrorCode.ERROR_SUCCESS)
-                            verified = true;
-                        else if (errorCode == ErrorCode.NTE_BAD_SIGNATURE)
-                            verified = false;
-                        else
-                            throw errorCode.ToCryptographicException();
+                        verified = (errorCode == ErrorCode.ERROR_SUCCESS);  // For consistency with other RSA classes, return "false" for any error code rather than making the caller catch an exception.
                     }
                 );
                 return verified;

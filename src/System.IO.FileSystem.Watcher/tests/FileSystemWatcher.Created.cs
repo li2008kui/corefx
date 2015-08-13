@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using Xunit;
 
-public partial class FileSystemWatcher_4000_Tests
+public class CreatedTests
 {
     [Fact]
     public static void FileSystemWatcher_Created_File()
@@ -125,7 +125,7 @@ public partial class FileSystemWatcher_4000_Tests
         {
             using (var nestedFile = new TemporaryTestFile(Path.Combine(ttd.Path, "nestedFile")))
             {
-                Utility.ExpectEvent(are, "nested file created", 1000 * 30);
+                Utility.ExpectEvent(are, "nested file created");
             }
         });
     }

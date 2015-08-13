@@ -897,9 +897,8 @@ Used by System.Security.Cryptography.X509Certificates' OpenSslX509CertificateRea
 duplicating a private key context as part of duplicating the Pal object
 
 Return values:
-1 on success
-0 if pkey is NULL, or if an invalid number of references remain, indicating that the key
-was already freed, or pkey is not pointing to a valid EVP_PKEY.
+The number (as of this call) of references to the EVP_PKEY. Anything less than
+2 is an error, because the key is already in the process of being freed.
 */
 int
 UpRefEvpPkey(
@@ -910,7 +909,8 @@ UpRefEvpPkey(
         return 0;
     }
 
-    int i = CRYPTO_add(&pkey->references, 1, CRYPTO_LOCK_EVP_PKEY);
+    return CRYPTO_add(&pkey->references, 1, CRYPTO_LOCK_EVP_PKEY);
+}
 
     return (i > 1);
 }

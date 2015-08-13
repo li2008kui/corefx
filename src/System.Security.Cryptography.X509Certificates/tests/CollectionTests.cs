@@ -497,6 +497,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 return;
             }
 
+            // As the other half of issue 2743, if we make it this far we better be Windows (or remove the catch
+            // above)
+            Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "RuntimeInformation.IsOSPlatform(OSPlatform.Windows)");
+
             var importedCollection = new X509Certificate2Collection();
             importedCollection.Import(exported);
 
