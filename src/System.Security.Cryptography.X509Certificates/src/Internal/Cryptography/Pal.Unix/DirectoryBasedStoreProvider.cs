@@ -76,9 +76,8 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        public IEnumerable<X509Certificate2> Find(X509FindType findType, object findValue, bool validOnly)
+        public void FindAndCopyTo(X509FindType findType, object findValue, bool validOnly, X509Certificate2Collection collection)
         {
-            return Array.Empty<X509Certificate2>();
         }
 
         public byte[] Export(X509ContentType contentType, string password)
@@ -89,6 +88,16 @@ namespace Internal.Cryptography.Pal
             // CollectionBackedStoreProvider.
             Debug.Fail("Export was unexpected on a DirectoryBasedStore");
             throw new InvalidOperationException();
+        }
+
+        public void CopyTo(X509Certificate2Collection collection)
+        {
+            Debug.Assert(collection != null);
+
+            foreach (X509Certificate2 cert in Certificates)
+            {
+                collection.Add(cert);
+            }
         }
 
         public IEnumerable<X509Certificate2> Certificates
