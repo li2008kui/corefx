@@ -45,6 +45,7 @@
     <Compile Include="$(CommonTestPath)\Cryptography\ByteUtils.cs">
       <Link>CommonTest\Cryptography\ByteUtils.cs</Link>
     </Compile>
+    <Compile Include="X509StoreTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

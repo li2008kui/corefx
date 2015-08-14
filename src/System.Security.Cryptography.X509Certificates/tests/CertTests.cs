@@ -78,37 +78,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        /// <summary>
-        /// This test is for excerising X509Store and X509Chain code without actually installing any certificate 
-        /// </summary>
-        [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
-        public static void X509CertStoreChain()
-        {
-            X509Store store = new X509Store("My", StoreLocation.LocalMachine);
-            store.Open(OpenFlags.ReadOnly);
-            // can't guarantee there is a certificate in store
-            if (store.Certificates.Count > 0)
-            {
-                X509Chain chain = new X509Chain();
-                Assert.NotNull(chain.SafeHandle);
-                Assert.Same(chain.SafeHandle, chain.SafeHandle);
-                Assert.True(chain.SafeHandle.IsInvalid);
-
-                foreach (X509Certificate2 c in store.Certificates)
-                {
-                    // can't guarantee success, so no Assert 
-                    if (chain.Build(c))
-                    {
-                        foreach (X509ChainElement k in chain.ChainElements)
-                        {
-                            Assert.NotNull(k.Certificate.IssuerName.Name);
-                        }
-                    }
-                }
-            }
-        }
-
         [Fact]
         public static void X509CertEmptyToString()
         {
@@ -130,19 +99,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal(expectedResult, c2.ToString());
                 Assert.Equal(expectedResult, c2.ToString(false));
                 Assert.Equal(expectedResult, c2.ToString(true));
-            }
-        }
-
-        [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
-        public static void X509Cert2ToStringVerbose()
-        {
-            X509Store store = new X509Store("My", StoreLocation.CurrentUser);
-            store.Open(OpenFlags.ReadOnly);
-
-            foreach (X509Certificate2 c in store.Certificates)
-            {
-                Assert.False(string.IsNullOrWhiteSpace(c.ToString(true)));
             }
         }
 

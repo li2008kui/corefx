@@ -68,7 +68,7 @@ namespace Internal.Cryptography.Pal
         {
             if (storeLocation != StoreLocation.LocalMachine)
             {
-                return new DirectoryBasedStoreProvider(storeName);
+                return new DirectoryBasedStoreProvider(storeName, openFlags);
             }
 
             if (openFlags.HasFlag(OpenFlags.ReadWrite))
