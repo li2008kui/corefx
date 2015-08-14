@@ -21,7 +21,7 @@ namespace Internal.Cryptography.Pal
         private const string PfxOrdinalWildcard = "." + PfxWildcard;
 
         private readonly string _storePath;
-        private ReadOnlyCollection<X509Certificate2> _certificates;
+        private List<X509Certificate2> _certificates;
         private FileSystemWatcher _watcher;
 
         private static int s_objectCount;
@@ -94,37 +94,31 @@ namespace Internal.Cryptography.Pal
         {
             Debug.Assert(collection != null);
 
-            foreach (X509Certificate2 cert in Certificates)
+            // Copy the reference locally, any directory change operations
+            // will cause the field to be reset to null.
+            List<X509Certificate2> certificates = _certificates;
+
+            if (certificates == null)
+            {
+                // ReadDirectory will both load _certificates and return the answer, so this call
+                // will have stable results across multiple adds/deletes happening in parallel.
+                certificates = ReadDirectory();
+                Debug.Assert(certificates != null);
+            }
+
+            foreach (X509Certificate2 cert in certificates)
             {
                 collection.Add(cert);
             }
         }
 
-        public IEnumerable<X509Certificate2> Certificates
-        {
-            get
-            {
-                // Copy the reference locally, any directory change operations
-                // will cause the field to be reset to null.
-                ReadOnlyCollection<X509Certificate2> certificates = _certificates;
-
-                if (certificates == null)
-                {
-                    // ReadDirectory will both load _certificates and return the answer, so this call
-                    // will have stable results across multiple adds/deletes happening in parallel.
-                    certificates = ReadDirectory();
-                    Debug.Assert(certificates != null);
-                }
-
-                return certificates;
-            }
-        }
-
-        private ReadOnlyCollection<X509Certificate2> ReadDirectory()
+        private List<X509Certificate2> ReadDirectory()
         {
             if (!Directory.Exists(_storePath))
             {
-                return new ReadOnlyCollection<X509Certificate2>(Array.Empty<X509Certificate2>());
+                // Don't assign the field here, because we don't have a FileSystemWatcher
+                // yet to tell us that something has been added.
+                return new List<X509Certificate2>(0);
             }
 
             List<X509Certificate2> certs = new List<X509Certificate2>();
@@ -163,9 +157,8 @@ namespace Internal.Cryptography.Pal
             Console.WriteLine("{0:D3} Enabling events", _objectCount);
             _watcher.EnableRaisingEvents = true;
 
-            ReadOnlyCollection<X509Certificate2> readOnly = certs.AsReadOnly();
-            _certificates = readOnly;
-            return readOnly;
+            _certificates = certs;
+            return certs;
         }
 
         public void Add(ICertificatePal certPal)
@@ -176,7 +169,7 @@ namespace Internal.Cryptography.Pal
             }
 
             // Save the collection to a local so it's consistent for the whole method
-            ReadOnlyCollection<X509Certificate2> certificates = _certificates;
+            List<X509Certificate2> certificates = _certificates;
             OpenSslX509CertificateReader cert = (OpenSslX509CertificateReader)certPal;
 
             using (X509Certificate2 copy = new X509Certificate2(cert.DuplicateHandles()))
