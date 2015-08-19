@@ -14,6 +14,9 @@ internal static partial class Interop
         internal static extern SafePkcs7Handle PEM_read_bio_PKCS7(SafeBioHandle bp, IntPtr xZero, IntPtr cbZero, IntPtr uZero);
 
         [DllImport(Libraries.LibCrypto)]
+        internal static extern SafePkcs7Handle d2i_PKCS7_bio(SafeBioHandle bp, IntPtr pp7Zero);
+
+        [DllImport(Libraries.LibCrypto)]
         internal static extern void PKCS7_free(IntPtr p12);
     }
 }

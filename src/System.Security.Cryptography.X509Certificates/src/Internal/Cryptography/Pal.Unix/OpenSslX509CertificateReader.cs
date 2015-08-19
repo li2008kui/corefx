@@ -149,8 +149,28 @@ namespace Internal.Cryptography.Pal
 
         private static bool TryReadPkcs7Der(SafeBioHandle bio, out ICertificatePal certPal)
         {
-            certPal = null;
-            return false;
+            SafePkcs7Handle pkcs7 = Interop.libcrypto.d2i_PKCS7_bio(bio, IntPtr.Zero);
+
+            if (pkcs7.IsInvalid)
+            {
+                certPal = null;
+                return false;
+            }
+
+            using (pkcs7)
+            using (SafeSharedX509StackHandle certs = Interop.Crypto.GetPkcs7Certificates(pkcs7))
+            {
+                int count = Interop.Crypto.GetX509StackFieldCount(certs);
+
+                if (count > 0)
+                {
+                    certPal = CertificatePal.FromHandle(Interop.Crypto.GetX509StackField(certs, 0));
+                    return true;
+                }
+
+                certPal = null;
+                return true;
+            }
         }
 
         private static bool TryReadPkcs12Der(SafeBioHandle bio, string password, out ICertificatePal fromBio)
