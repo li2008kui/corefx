@@ -173,6 +173,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void X509Certificate2FromPkcs7PemFile()
+        {
+            // TODO: REPLACE THIS WITH SOMETHING REAL  
+            using (X509Certificate2 cert = new X509Certificate2(Path.Combine("TestData", "randomsingle.p7c")))
+            {
+                // OID=RSA Encryption
+                Assert.Equal("1.2.840.113549.1.1.1", cert.GetKeyAlgorithm());
+            }
+        }
+
+        [Fact]
         public static void UseAfterDispose()
         {
             using (X509Certificate2 c = new X509Certificate2(TestData.MsCertificate))

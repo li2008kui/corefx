@@ -38,56 +38,47 @@ namespace Internal.Cryptography.Pal
       
         internal static ICertificatePal FromBio(SafeBioHandle bio, string password)
         {
-            // Try reading the value as: PEM-X509, DER-X509, DER-PKCS12.
+            // Try reading the value as: PEM-X509, DER-X509, PEM-PKCS7, DER-PKCS7, DER-PKCS12.
             int bioPosition = Interop.Crypto.BioTell(bio);
 
             Debug.Assert(bioPosition >= 0);
 
-            SafeX509Handle cert = Interop.libcrypto.PEM_read_bio_X509_AUX(bio, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
-
-            if (cert != null && !cert.IsInvalid)
+            ICertificatePal certPal;
+            if (TryReadX509Pem(bio, out certPal))
             {
-                return new OpenSslX509CertificateReader(cert);
-            }
-
-            // Rewind, try again.
-            Interop.Crypto.BioSeek(bio, bioPosition);
-            cert = Interop.Crypto.ReadX509AsDerFromBio(bio);
-
-            if (cert != null && !cert.IsInvalid)
-            {
-                return new OpenSslX509CertificateReader(cert);
+                return certPal;
             }
 
             // Rewind, try again.
             Interop.Crypto.BioSeek(bio, bioPosition);
 
-            OpenSslPkcs12Reader pfx;
-
-            if (OpenSslPkcs12Reader.TryRead(bio, out pfx))
+            if (TryReadX509Der(bio, out certPal))
             {
-                using (pfx)
-                {
-                    pfx.Decrypt(password);
+                return certPal;
+            }
 
-                    ICertificatePal first = null;
+            // Rewind, try again.
+            Interop.Crypto.BioSeek(bio, bioPosition);
 
-                    foreach (OpenSslX509CertificateReader certPal in pfx.ReadCertificates())
-                    {
-                        // When requesting an X509Certificate2 from a PFX only the first entry is
-                        // returned.  Other entries should be disposed.
-                        if (first == null)
-                        {
-                            first = certPal;
-                        }
-                        else
-                        {
-                            certPal.Dispose();
-                        }
-                    }
+            if (TryReadPkcs7Pem(bio, out certPal))
+            {
+                return certPal;
+            }
 
-                    return first;
-                }
+            // Rewind, try again.
+            Interop.Crypto.BioSeek(bio, bioPosition);
+
+            if (TryReadPkcs7Der(bio, out certPal))
+            {
+                return certPal;
+            }
+
+            // Rewind, try again.
+            Interop.Crypto.BioSeek(bio, bioPosition);
+
+            if (TryReadPkcs12Der(bio, password, out certPal))
+            {
+                return certPal;
             }
 
             // Since we aren't going to finish reading, leaving the buffer where it was when we got
@@ -100,6 +91,101 @@ namespace Internal.Cryptography.Pal
             Interop.Crypto.BioSeek(bio, bioPosition);
 
             throw openSslException;
+        }
+
+        private static bool TryReadX509Pem(SafeBioHandle bio, out ICertificatePal certPal)
+        {
+            SafeX509Handle cert = Interop.libcrypto.PEM_read_bio_X509_AUX(bio, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+
+            if (cert.IsInvalid)
+            {
+                certPal = null;
+                return false;
+            }
+
+            certPal = new OpenSslX509CertificateReader(cert);
+            return true;
+        }
+
+        private static bool TryReadX509Der(SafeBioHandle bio, out ICertificatePal fromBio)
+        {
+            SafeX509Handle cert = Interop.Crypto.ReadX509AsDerFromBio(bio);
+
+            if (cert.IsInvalid)
+            {
+                fromBio = null;
+                return false;
+            }
+
+            fromBio = new OpenSslX509CertificateReader(cert);
+            return true;
+        }
+
+        private static bool TryReadPkcs7Pem(SafeBioHandle bio, out ICertificatePal certPal)
+        {
+            SafePkcs7Handle pkcs7 = Interop.libcrypto.PEM_read_bio_PKCS7(bio, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+
+            if (pkcs7.IsInvalid)
+            {
+                certPal = null;
+                return false;
+            }
+
+            using (pkcs7)
+            using (SafeSharedX509StackHandle certs = Interop.Crypto.GetPkcs7Certificates(pkcs7))
+            {
+                int count = Interop.Crypto.GetX509StackFieldCount(certs);
+
+                if (count > 0)
+                {
+                    certPal = CertificatePal.FromHandle(Interop.Crypto.GetX509StackField(certs, 0));
+                    return true;
+                }
+
+                certPal = null;
+                return true;
+            }
+        }
+
+        private static bool TryReadPkcs7Der(SafeBioHandle bio, out ICertificatePal certPal)
+        {
+            certPal = null;
+            return false;
+        }
+
+        private static bool TryReadPkcs12Der(SafeBioHandle bio, string password, out ICertificatePal fromBio)
+        {
+            OpenSslPkcs12Reader pfx;
+
+            if (!OpenSslPkcs12Reader.TryRead(bio, out pfx))
+            {
+                fromBio = null;
+                return false;
+            }
+
+            using (pfx)
+            {
+                pfx.Decrypt(password);
+
+                ICertificatePal first = null;
+
+                foreach (OpenSslX509CertificateReader certPal in pfx.ReadCertificates())
+                {
+                    // When requesting an X509Certificate2 from a PFX only the first entry is
+                    // returned.  Other entries should be disposed.
+                    if (first == null)
+                    {
+                        first = certPal;
+                    }
+                    else
+                    {
+                        certPal.Dispose();
+                    }
+                }
+
+                fromBio = first;
+                return true;
+            }
         }
 
         public bool HasPrivateKey

@@ -19,7 +19,7 @@ namespace Internal.Cryptography.Pal
             return new OpenSslX509CertificateReader(Interop.libcrypto.X509_dup(handle));
         }
 
-        public static unsafe ICertificatePal FromBlob(byte[] rawData, string password, X509KeyStorageFlags keyStorageFlags)
+        public static ICertificatePal FromBlob(byte[] rawData, string password, X509KeyStorageFlags keyStorageFlags)
         {
             // If we can see a hyphen, assume it's PEM.  Otherwise try DER-X509, then fall back to DER-PKCS12.
             SafeX509Handle cert;
@@ -27,12 +27,13 @@ namespace Internal.Cryptography.Pal
             // PEM
             if (rawData[0] == '-')
             {
-                using (SafeBioHandle bio = Interop.libcrypto.BIO_new(Interop.libcrypto.BIO_s_mem()))
-                {
-                    Interop.libcrypto.CheckValidOpenSslHandle(bio);
+                // PEM-X509
+                cert = ReadPemX509(rawData);
 
-                    Interop.libcrypto.BIO_write(bio, rawData, rawData.Length);
-                    cert = Interop.libcrypto.PEM_read_bio_X509_AUX(bio, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+                // PEM-PKCS7
+                if (cert.IsInvalid)
+                {
+                    cert = ReadPemPkcs7(rawData);
                 }
 
                 Interop.libcrypto.CheckValidOpenSslHandle(cert);
@@ -41,7 +42,7 @@ namespace Internal.Cryptography.Pal
             }
 
             // DER-X509
-            cert = Interop.libcrypto.OpenSslD2I((ptr, b, i) => Interop.libcrypto.d2i_X509(ptr, b, i), rawData, checkHandle: false);
+            cert = ReadDerX509(rawData);
 
             if (!cert.IsInvalid)
             {
@@ -84,6 +85,58 @@ namespace Internal.Cryptography.Pal
 
             // Unsupported
             throw Interop.libcrypto.CreateOpenSslCryptographicException();
+        }
+
+        private static unsafe SafeX509Handle ReadDerX509(byte[] rawData)
+        {
+            return Interop.libcrypto.OpenSslD2I(
+                (ptr, b, i) => Interop.libcrypto.d2i_X509(ptr, b, i),
+                rawData,
+                checkHandle: false);
+        }
+
+        private static SafeX509Handle ReadPemX509(byte[] rawData)
+        {
+            SafeX509Handle cert;
+            using (SafeBioHandle bio = Interop.libcrypto.BIO_new(Interop.libcrypto.BIO_s_mem()))
+            {
+                Interop.libcrypto.CheckValidOpenSslHandle(bio);
+
+                Interop.libcrypto.BIO_write(bio, rawData, rawData.Length);
+                cert = Interop.libcrypto.PEM_read_bio_X509_AUX(bio, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+            }
+            return cert;
+        }
+
+        private static SafeX509Handle ReadPemPkcs7(byte[] rawData)
+        {
+            using (SafeBioHandle bio = Interop.libcrypto.BIO_new(Interop.libcrypto.BIO_s_mem()))
+            {
+                Interop.libcrypto.CheckValidOpenSslHandle(bio);
+
+                Interop.libcrypto.BIO_write(bio, rawData, rawData.Length);
+
+                SafePkcs7Handle pkcs7 =
+                    Interop.libcrypto.PEM_read_bio_PKCS7(bio, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+
+                if (pkcs7.IsInvalid)
+                {
+                    return SafeX509Handle.InvalidHandle;
+                }
+
+                using (pkcs7)
+                using (SafeSharedX509StackHandle certs = Interop.Crypto.GetPkcs7Certificates(pkcs7))
+                {
+                    int count = Interop.Crypto.GetX509StackFieldCount(certs);
+
+                    if (count > 0)
+                    {
+                        return Interop.libcrypto.X509_dup(Interop.Crypto.GetX509StackField(certs, 0));
+                    }
+                }
+            }
+
+            return SafeX509Handle.InvalidHandle;
         }
 
         public static ICertificatePal FromFile(string fileName, string password, X509KeyStorageFlags keyStorageFlags)

@@ -92,4 +92,26 @@ namespace Microsoft.Win32.SafeHandles
             get { return handle == IntPtr.Zero; }
         }
     }
+
+    [SecurityCritical]
+    internal sealed class SafeSharedX509StackHandle : SafeHandle
+    {
+        internal static readonly SafeSharedX509StackHandle InvalidHandle = new SafeSharedX509StackHandle();
+
+        private SafeSharedX509StackHandle() :
+            base(IntPtr.Zero, ownsHandle: false)
+        {
+        }
+
+        protected override bool ReleaseHandle()
+        {
+            SetHandle(IntPtr.Zero);
+            return true;
+        }
+
+        public override bool IsInvalid
+        {
+            get { return handle == IntPtr.Zero; }
+        }
+    }
 }
