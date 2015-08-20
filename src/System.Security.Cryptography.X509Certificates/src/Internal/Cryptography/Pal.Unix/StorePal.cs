@@ -19,16 +19,31 @@ namespace Internal.Cryptography.Pal
 
         public static IStorePal FromBlob(byte[] rawData, string password, X509KeyStorageFlags keyStorageFlags)
         {
-            OpenSslPkcs12Reader pfx;
+            ICertificatePal singleCert;
 
-            if (OpenSslPkcs12Reader.TryRead(rawData, out pfx))
+            if (CertificatePal.TryReadX509Der(rawData, out singleCert) ||
+                CertificatePal.TryReadX509Pem(rawData, out singleCert))
             {
-                using (pfx)
-                {
-                    return PfxToCollection(pfx, password);
-                }
+                // The single X509 structure methods shouldn't return true and out null, only empty
+                // collections have that behavior.
+                Debug.Assert(singleCert != null);
+
+                return new OpenSslX509StoreProvider(
+                    new X509Certificate2Collection(
+                        new X509Certificate2(singleCert)));
             }
 
+            List<ICertificatePal> certPals;
+
+            if (PkcsFormatReader.TryReadPkcs7Der(rawData, out certPals) ||
+                PkcsFormatReader.TryReadPkcs7Pem(rawData, out certPals) ||
+                PkcsFormatReader.TryReadPkcs12(rawData, password, out certPals))
+            {
+                Debug.Assert(certPals != null);
+
+                return ListToStorePal(certPals);
+            }
+            
             return null;
         }
 
@@ -104,6 +119,18 @@ namespace Internal.Cryptography.Pal
 
             // TODO (#2207): Support the rest of the stores, or throw PlatformNotSupportedException.
             throw new NotImplementedException();
+        }
+
+        private static IStorePal ListToStorePal(List<ICertificatePal> certPals)
+        {
+            X509Certificate2Collection coll = new X509Certificate2Collection();
+
+            for (int i = 0; i < certPals.Count; i++)
+            {
+                coll.Add(new X509Certificate2(certPals[i]));
+            }
+
+            return new OpenSslX509StoreProvider(coll);
         }
 
         private static IStorePal PfxToCollection(OpenSslPkcs12Reader pfx, string password)

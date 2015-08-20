@@ -3,6 +3,7 @@
 
 using System.Linq;
 using System.Collections;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using Xunit;
@@ -404,6 +405,135 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             collection.Import(TestData.EmptyPfx);
 
             Assert.Equal(0, collection.Count);
+        }
+
+        [Fact]
+        public static void ImportX509DerBytes()
+        {
+            var collection = new X509Certificate2Collection();
+            collection.Import(TestData.MsCertificate);
+
+            Assert.Equal(1, collection.Count);
+        }
+
+        [Fact]
+        public static void ImportX509PemBytes()
+        {
+            var collection = new X509Certificate2Collection();
+            collection.Import(TestData.MsCertificatePemBytes);
+
+            Assert.Equal(1, collection.Count);
+        }
+
+        [Fact]
+        public static void ImportX509DerFile()
+        {
+            var collection = new X509Certificate2Collection();
+            collection.Import(Path.Combine("TestData", "MS.cer"));
+
+            Assert.Equal(1, collection.Count);
+        }
+
+        [Fact]
+        //[ActiveIssue(2635)]
+        public static void ImportX509PemFile()
+        {
+            var collection = new X509Certificate2Collection();
+            collection.Import(Path.Combine("TestData", "MS.pem"));
+
+            Assert.Equal(1, collection.Count);
+        }
+
+        [Fact]
+        public static void ImportPkcs7DerBytes_Single()
+        {
+            // TODO: Inline this to TestData
+            byte[] bytes = File.ReadAllBytes(Path.Combine("TestData", "randomsingle.p7b"));
+
+            var collection = new X509Certificate2Collection();
+            collection.Import(bytes);
+
+            Assert.Equal(1, collection.Count);
+        }
+
+        [Fact]
+        public static void ImportPkcs7PemBytes_Single()
+        {
+            // TODO: Inline this to TestData
+            byte[] bytes = File.ReadAllBytes(Path.Combine("TestData", "randomsingle.p7c"));
+
+            var collection = new X509Certificate2Collection();
+            collection.Import(bytes);
+
+            Assert.Equal(1, collection.Count);
+        }
+
+        [Fact]
+        //[ActiveIssue(2635)]
+        public static void ImportPkcs7DerFile_Single()
+        {
+            // TODO: Real filename
+            var collection = new X509Certificate2Collection();
+            collection.Import(Path.Combine("TestData", "randomsingle.p7b"));
+
+            Assert.Equal(1, collection.Count);
+        }
+
+        [Fact]
+        //[ActiveIssue(2635)]
+        public static void ImportPkcs7PemFile_Single()
+        {
+            // TODO: Real filename
+            var collection = new X509Certificate2Collection();
+            collection.Import(Path.Combine("TestData", "randomsingle.p7c"));
+
+            Assert.Equal(1, collection.Count);
+        }
+
+        [Fact]
+        public static void ImportPkcs7DerBytes_Chain()
+        {
+            // TODO: Inline this to TestData
+            byte[] bytes = File.ReadAllBytes(Path.Combine("TestData", "randomchain.p7b"));
+
+            var collection = new X509Certificate2Collection();
+            collection.Import(bytes);
+
+            Assert.Equal(3, collection.Count);
+        }
+
+        [Fact]
+        public static void ImportPkcs7PemBytes_Chain()
+        {
+            // TODO: Inline this to TestData
+            byte[] bytes = File.ReadAllBytes(Path.Combine("TestData", "randomchain.p7c"));
+
+            var collection = new X509Certificate2Collection();
+            collection.Import(bytes);
+
+            Assert.Equal(3, collection.Count);
+        }
+
+        [Fact]
+        //[ActiveIssue(2635)]
+        public static void ImportPkcs7DerFile_Chain()
+        {
+            // TODO: Real filename.
+            var collection = new X509Certificate2Collection();
+            collection.Import(Path.Combine("TestData", "randomchain.p7b"));
+
+            Assert.Equal(3, collection.Count);
+        }
+
+        [Fact]
+        //[ActiveIssue(2635)]
+        public static void ImportPkcs7PemFile_Chain()
+        {
+            // TODO: Real filename.
+            var collection = new X509Certificate2Collection();
+            collection.Import(Path.Combine("TestData", "randomchain.p7c"));
+
+            Assert.Equal(3, collection.Count);
         }
 
         [Fact]
