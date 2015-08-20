@@ -180,7 +180,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 // OID=RSA Encryption
                 Assert.Equal("1.2.840.113549.1.1.1", cert.GetKeyAlgorithm());
-                Console.WriteLine(cert.GetNameInfo(X509NameType.SimpleName, false));
             }
         }
 
@@ -192,6 +191,34 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 // OID=RSA Encryption
                 Assert.Equal("1.2.840.113549.1.1.1", cert.GetKeyAlgorithm());
+            }
+        }
+
+        [Fact]
+        public static void X509Certificate2FromPkcs7DerBlob()
+        {
+            // TODO: REPLACE THIS WITH SOMETHING REAL
+            byte[] pkcs7Bytes = File.ReadAllBytes(Path.Combine("TestData", "randomsingle.p7b"));
+
+            using (X509Certificate2 cert = new X509Certificate2(pkcs7Bytes))
+            {
+                // OID=RSA Encryption
+                Assert.Equal("1.2.840.113549.1.1.1", cert.GetKeyAlgorithm());
+                Console.WriteLine("DerBlob");
+            }
+        }
+
+        [Fact]
+        public static void X509Certificate2FromPkcs7PemBlob()
+        {
+            // TODO: REPLACE THIS WITH SOMETHING REAL
+            byte[] pkcs7Bytes = File.ReadAllBytes(Path.Combine("TestData", "randomsingle.p7c"));
+
+            using (X509Certificate2 cert = new X509Certificate2(pkcs7Bytes))
+            {
+                // OID=RSA Encryption
+                Assert.Equal("1.2.840.113549.1.1.1", cert.GetKeyAlgorithm());
+                Console.WriteLine("PemBlob");
             }
         }
 
