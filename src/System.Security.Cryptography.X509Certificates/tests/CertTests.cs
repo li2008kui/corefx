@@ -173,52 +173,29 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(2635)]
         public static void X509Certificate2FromPkcs7DerFile()
         {
-            // TODO: REPLACE THIS WITH SOMETHING REAL
-            using (X509Certificate2 cert = new X509Certificate2(Path.Combine("TestData", "randomsingle.p7b")))
-            {
-                // OID=RSA Encryption
-                Assert.Equal("1.2.840.113549.1.1.1", cert.GetKeyAlgorithm());
-            }
+            Assert.Throws<CryptographicException>(() => new X509Certificate2(Path.Combine("TestData", "singlecert.p7b")));
         }
 
         [Fact]
+        [ActiveIssue(2635)]
         public static void X509Certificate2FromPkcs7PemFile()
         {
-            // TODO: REPLACE THIS WITH SOMETHING REAL
-            using (X509Certificate2 cert = new X509Certificate2(Path.Combine("TestData", "randomsingle.p7c")))
-            {
-                // OID=RSA Encryption
-                Assert.Equal("1.2.840.113549.1.1.1", cert.GetKeyAlgorithm());
-            }
+            Assert.Throws<CryptographicException>(() => new X509Certificate2(Path.Combine("TestData", "singlecert.p7c")));
         }
 
         [Fact]
         public static void X509Certificate2FromPkcs7DerBlob()
         {
-            // TODO: REPLACE THIS WITH SOMETHING REAL
-            byte[] pkcs7Bytes = File.ReadAllBytes(Path.Combine("TestData", "randomsingle.p7b"));
-
-            using (X509Certificate2 cert = new X509Certificate2(pkcs7Bytes))
-            {
-                // OID=RSA Encryption
-                Assert.Equal("1.2.840.113549.1.1.1", cert.GetKeyAlgorithm());
-            }
+            Assert.Throws<CryptographicException>(() => new X509Certificate2(TestData.Pkcs7SingleDerBytes));
         }
 
         [Fact]
-        //[ActiveIssue(2635)]
         public static void X509Certificate2FromPkcs7PemBlob()
         {
-            // TODO: REPLACE THIS WITH SOMETHING REAL
-            byte[] pkcs7Bytes = File.ReadAllBytes(Path.Combine("TestData", "randomsingle.p7c"));
-
-            using (X509Certificate2 cert = new X509Certificate2(pkcs7Bytes))
-            {
-                // OID=RSA Encryption
-                Assert.Equal("1.2.840.113549.1.1.1", cert.GetKeyAlgorithm());
-            }
+            Assert.Throws<CryptographicException>(() => new X509Certificate2(TestData.Pkcs7SinglePemBytes));
         }
 
         [Fact]

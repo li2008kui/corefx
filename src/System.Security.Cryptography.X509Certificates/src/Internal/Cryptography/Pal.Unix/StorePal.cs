@@ -28,9 +28,7 @@ namespace Internal.Cryptography.Pal
                 // collections have that behavior.
                 Debug.Assert(singleCert != null);
 
-                return new OpenSslX509StoreProvider(
-                    new X509Certificate2Collection(
-                        new X509Certificate2(singleCert)));
+                return SingleCertToStorePal(singleCert);
             }
 
             List<ICertificatePal> certPals;
@@ -49,22 +47,70 @@ namespace Internal.Cryptography.Pal
 
         public static IStorePal FromFile(string fileName, string password, X509KeyStorageFlags keyStorageFlags)
         {
-            using (SafeBioHandle fileBio = Interop.libcrypto.BIO_new_file(fileName, "rb"))
+            using (SafeBioHandle bio = Interop.libcrypto.BIO_new_file(fileName, "rb"))
             {
-                Interop.libcrypto.CheckValidOpenSslHandle(fileBio);
+                Interop.libcrypto.CheckValidOpenSslHandle(bio);
 
-                OpenSslPkcs12Reader pfx;
+                return FromBio(bio, password);
+            }
+        }
 
-                if (OpenSslPkcs12Reader.TryRead(fileBio, out pfx))
-                {
-                    using (pfx)
-                    {
-                        return PfxToCollection(pfx, password);
-                    }
-                }
+        private static IStorePal FromBio(SafeBioHandle bio, string password)
+        {
+            int bioPosition = Interop.Crypto.BioTell(bio);
+            Debug.Assert(bioPosition >= 0);
+
+            ICertificatePal singleCert;
+
+            if (CertificatePal.TryReadX509Pem(bio, out singleCert))
+            {
+                return SingleCertToStorePal(singleCert);
             }
 
-            return null;
+            // Rewind, try again.
+            Interop.Crypto.BioSeek(bio, bioPosition);
+
+            if (CertificatePal.TryReadX509Der(bio, out singleCert))
+            {
+                return SingleCertToStorePal(singleCert);
+            }
+
+            // Rewind, try again.
+            Interop.Crypto.BioSeek(bio, bioPosition);
+
+            List<ICertificatePal> certPals;
+
+            if (PkcsFormatReader.TryReadPkcs7Pem(bio, out certPals))
+            {
+                return ListToStorePal(certPals);
+            }
+
+            // Rewind, try again.
+            Interop.Crypto.BioSeek(bio, bioPosition);
+
+            if (PkcsFormatReader.TryReadPkcs7Der(bio, out certPals))
+            {
+                return ListToStorePal(certPals);
+            }
+
+            // Rewind, try again.
+            Interop.Crypto.BioSeek(bio, bioPosition);
+
+            if (PkcsFormatReader.TryReadPkcs12(bio, password, out certPals))
+            {
+                return ListToStorePal(certPals);
+            }
+
+            // Since we aren't going to finish reading, leaving the buffer where it was when we got
+            // it seems better than leaving it in some arbitrary other position.
+            // 
+            // But, before seeking back to start, save the Exception representing the last reported
+            // OpenSSL error in case the last BioSeek would change it.
+            Exception openSslException = Interop.libcrypto.CreateOpenSslCryptographicException();
+
+            Interop.Crypto.BioSeek(bio, bioPosition);
+
+            throw openSslException;
         }
 
         public static IStorePal FromCertificate(ICertificatePal cert)
@@ -119,6 +165,13 @@ namespace Internal.Cryptography.Pal
 
             // TODO (#2207): Support the rest of the stores, or throw PlatformNotSupportedException.
             throw new NotImplementedException();
+        }
+
+        private static IStorePal SingleCertToStorePal(ICertificatePal singleCert)
+        {
+            return new OpenSslX509StoreProvider(
+                new X509Certificate2Collection(
+                    new X509Certificate2(singleCert)));
         }
 
         private static IStorePal ListToStorePal(List<ICertificatePal> certPals)

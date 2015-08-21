@@ -42,6 +42,74 @@ namespace Internal.Cryptography.Pal
             throw Interop.libcrypto.CreateOpenSslCryptographicException();
         }
 
+        public static ICertificatePal FromFile(string fileName, string password, X509KeyStorageFlags keyStorageFlags)
+        {
+            // If we can't open the file, fail right away.
+            using (SafeBioHandle fileBio = Interop.libcrypto.BIO_new_file(fileName, "rb"))
+            {
+                Interop.libcrypto.CheckValidOpenSslHandle(fileBio);
+
+                return FromBio(fileBio, password);
+            }
+        }
+
+        internal static ICertificatePal FromBio(SafeBioHandle bio, string password)
+        {
+            // Try reading the value as: PEM-X509, DER-X509, PEM-PKCS7, DER-PKCS7, DER-PKCS12.
+            int bioPosition = Interop.Crypto.BioTell(bio);
+
+            Debug.Assert(bioPosition >= 0);
+
+            ICertificatePal certPal;
+            if (TryReadX509Pem(bio, out certPal))
+            {
+                return certPal;
+            }
+
+            // Rewind, try again.
+            Interop.Crypto.BioSeek(bio, bioPosition);
+
+            if (TryReadX509Der(bio, out certPal))
+            {
+                return certPal;
+            }
+
+            // Rewind, try again.
+            Interop.Crypto.BioSeek(bio, bioPosition);
+
+            if (PkcsFormatReader.TryReadPkcs7Pem(bio, out certPal))
+            {
+                return certPal;
+            }
+
+            // Rewind, try again.
+            Interop.Crypto.BioSeek(bio, bioPosition);
+
+            if (PkcsFormatReader.TryReadPkcs7Der(bio, out certPal))
+            {
+                return certPal;
+            }
+
+            // Rewind, try again.
+            Interop.Crypto.BioSeek(bio, bioPosition);
+
+            if (PkcsFormatReader.TryReadPkcs12(bio, password, out certPal))
+            {
+                return certPal;
+            }
+
+            // Since we aren't going to finish reading, leaving the buffer where it was when we got
+            // it seems better than leaving it in some arbitrary other position.
+            // 
+            // But, before seeking back to start, save the Exception representing the last reported
+            // OpenSSL error in case the last BioSeek would change it.
+            Exception openSslException = Interop.libcrypto.CreateOpenSslCryptographicException();
+
+            Interop.Crypto.BioSeek(bio, bioPosition);
+
+            throw openSslException;
+        }
+
         internal static unsafe bool TryReadX509Der(byte[] rawData, out ICertificatePal certPal)
         {
             SafeX509Handle certHandle = Interop.libcrypto.OpenSslD2I(
@@ -58,7 +126,21 @@ namespace Internal.Cryptography.Pal
             certPal = new OpenSslX509CertificateReader(certHandle);
             return true;
         }
-        
+
+        internal static bool TryReadX509Pem(SafeBioHandle bio, out ICertificatePal certPal)
+        {
+            SafeX509Handle cert = Interop.libcrypto.PEM_read_bio_X509_AUX(bio, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+
+            if (cert.IsInvalid)
+            {
+                certPal = null;
+                return false;
+            }
+
+            certPal = new OpenSslX509CertificateReader(cert);
+            return true;
+        }
+
         internal static bool TryReadX509Pem(byte[] rawData, out ICertificatePal certPal)
         {
             SafeX509Handle certHandle;
@@ -80,15 +162,18 @@ namespace Internal.Cryptography.Pal
             return true;
         }
 
-        public static ICertificatePal FromFile(string fileName, string password, X509KeyStorageFlags keyStorageFlags)
+        internal static bool TryReadX509Der(SafeBioHandle bio, out ICertificatePal fromBio)
         {
-            // If we can't open the file, fail right away.
-            using (SafeBioHandle fileBio = Interop.libcrypto.BIO_new_file(fileName, "rb"))
-            {
-                Interop.libcrypto.CheckValidOpenSslHandle(fileBio);
+            SafeX509Handle cert = Interop.Crypto.ReadX509AsDerFromBio(bio);
 
-                return OpenSslX509CertificateReader.FromBio(fileBio, password);
+            if (cert.IsInvalid)
+            {
+                fromBio = null;
+                return false;
             }
+
+            fromBio = new OpenSslX509CertificateReader(cert);
+            return true;
         }
     }
 }
