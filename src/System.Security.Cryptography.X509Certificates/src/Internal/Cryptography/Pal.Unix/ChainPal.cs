@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
@@ -28,8 +29,10 @@ namespace Internal.Cryptography.Pal
             CheckRevocationMode(revocationMode);
 
             X509Certificate2 leaf = new X509Certificate2(cert.Handle);
+            List<X509Certificate2> downloaded = new List<X509Certificate2>();
 
-            X509Certificate2Collection candidates = OpenSslX509ChainProcessor.FindCandidates(leaf, extraStore);
+            List<X509Certificate2> candidates =
+                OpenSslX509ChainProcessor.FindCandidates(leaf, extraStore, downloaded);
 
             return OpenSslX509ChainProcessor.BuildChain(
                 leaf,

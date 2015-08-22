@@ -38,7 +38,7 @@ namespace Internal.Cryptography.Pal
 
         public static IChainPal BuildChain(
             X509Certificate2 leaf,
-            X509Certificate2Collection candidates,
+            List<X509Certificate2> candidates,
             OidCollection applicationPolicy,
             OidCollection certificatePolicy,
             DateTime verificationTime)
@@ -135,7 +135,7 @@ namespace Internal.Cryptography.Pal
             if ((certificatePolicy != null && certificatePolicy.Count > 0) ||
                 (applicationPolicy != null && applicationPolicy.Count > 0))
             {
-                X509Certificate2Collection certsToRead = new X509Certificate2Collection();
+                List<X509Certificate2> certsToRead = new List<X509Certificate2>();
 
                 foreach (X509ChainElement element in elements)
                 {
@@ -285,11 +285,12 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        internal static X509Certificate2Collection FindCandidates(
+        internal static List<X509Certificate2> FindCandidates(
             X509Certificate2 leaf,
-            X509Certificate2Collection extraStore)
+            X509Certificate2Collection extraStore,
+            List<X509Certificate2> downloaded)
         {
-            X509Certificate2Collection candidates = new X509Certificate2Collection();
+            List<X509Certificate2> candidates = new List<X509Certificate2>();
             Queue<X509Certificate2> toProcess = new Queue<X509Certificate2>();
             toProcess.Enqueue(leaf);
 
@@ -318,9 +319,10 @@ namespace Internal.Cryptography.Pal
                         candidates.Add(current);
                     }
 
-                    X509Certificate2Collection results = FindIssuer(
+                    List<X509Certificate2> results = FindIssuer(
                         current,
-                        storesToCheck);
+                        storesToCheck,
+                        downloaded);
 
                     if (results != null)
                     {
@@ -338,11 +340,12 @@ namespace Internal.Cryptography.Pal
             return candidates;
         }
 
-        private static X509Certificate2Collection FindIssuer(
+        private static List<X509Certificate2> FindIssuer(
             X509Certificate2 cert,
-            X509Certificate2Collection[] stores)
+            X509Certificate2Collection[] stores,
+            List<X509Certificate2> downloadedCerts)
         {
-            if (StringComparer.Ordinal.Equals(cert.Subject, cert.Issuer))
+            if (IsSelfSigned(cert))
             {
                 // It's a root cert, we won't make any progress.
                 return null;
@@ -352,7 +355,7 @@ namespace Internal.Cryptography.Pal
 
             foreach (X509Certificate2Collection store in stores)
             {
-                X509Certificate2Collection fromStore = null;
+                List<X509Certificate2> fromStore = null;
 
                 foreach (X509Certificate2 candidate in store)
                 {
@@ -364,7 +367,7 @@ namespace Internal.Cryptography.Pal
                     {
                         if (fromStore == null)
                         {
-                            fromStore = new X509Certificate2Collection();
+                            fromStore = new List<X509Certificate2>();
                         }
 
                         if (!fromStore.Contains(candidate))
@@ -377,6 +380,84 @@ namespace Internal.Cryptography.Pal
                 if (fromStore != null)
                 {
                     return fromStore;
+                }
+            }
+
+            byte[] authorityInformationAccess = null;
+
+            foreach (X509Extension extension in cert.Extensions)
+            {
+                if (StringComparer.Ordinal.Equals(extension.Oid.Value, Oids.AuthorityInformationAccess))
+                {
+                    // If there's an Authority Information Access extension, it might be used for
+                    // looking up additional certificates for the chain.
+                    authorityInformationAccess = extension.RawData;
+                    break;
+                }
+            }
+
+            if (authorityInformationAccess != null)
+            {
+                X509Certificate2 downloaded = DownloadCertificate(authorityInformationAccess);
+
+                if (downloaded != null)
+                {
+                    downloadedCerts.Add(downloaded);
+
+                    return new List<X509Certificate2>(1) { downloaded };
+                }
+
+            }
+
+            return null;
+        }
+
+        private static bool IsSelfSigned(X509Certificate2 cert)
+        {
+            return StringComparer.Ordinal.Equals(cert.Subject, cert.Issuer);
+        }
+
+        private static X509Certificate2 DownloadCertificate(byte[] authorityInformationAccess)
+        {
+            DerSequenceReader reader = new DerSequenceReader(authorityInformationAccess);
+
+            while (reader.HasData)
+            {
+                DerSequenceReader innerReader = reader.ReadSequence();
+
+                // If the sequence's first element is a sequence, unwrap it.
+                if (innerReader.PeekTag() == 0x30)
+                {
+                    innerReader = innerReader.ReadSequence();
+                }
+
+                Oid oid = innerReader.ReadOid();
+
+                if (StringComparer.Ordinal.Equals(oid.Value, Oids.CertificateAuthorityIssuers))
+                {
+                    string uri = innerReader.ReadIA5String();
+
+                    Uri parsedUri;
+                    if (!Uri.TryCreate(uri, UriKind.Absolute, out parsedUri))
+                    {
+                        Console.WriteLine("  Could not parse URL");
+                        continue;
+                    }
+
+                    if (!StringComparer.Ordinal.Equals(parsedUri.Scheme, "http"))
+                    {
+                        Console.WriteLine("  Only HTTP requests will be tried");
+                        continue;
+                    }
+
+                    string host = parsedUri.Host;
+                    string port = parsedUri.Port.ToString();
+                    string path = parsedUri.AbsolutePath;
+
+                    Console.Write("  Downloading certificate from: ");
+                    Console.WriteLine(uri);
+
+                    Console.WriteLine("   (download is not yet written)");
                 }
             }
 
