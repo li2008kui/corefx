@@ -17,8 +17,5 @@ internal static partial class Interop
 
         [DllImport(Interop.Libraries.LibCurl)]
         public static extern void curl_global_cleanup();
-
-        [DllImport(Interop.Libraries.LibCurl)]
-        public static extern IntPtr curl_version_info(int curlVersionStamp);
     }
 }
