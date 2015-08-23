@@ -40,6 +40,7 @@ namespace Internal.Cryptography.Pal
         public static IChainPal BuildChain(
             X509Certificate2 leaf,
             List<X509Certificate2> candidates,
+            List<X509Certificate2> downloaded,
             OidCollection applicationPolicy,
             OidCollection certificatePolicy,
             DateTime verificationTime)
@@ -91,31 +92,24 @@ namespace Internal.Cryptography.Pal
                     int chainSize = Interop.Crypto.GetX509StackFieldCount(chainStack);
                     int errorDepth = -1;
                     Interop.libcrypto.X509VerifyStatusCode errorCode = 0;
-                    string errorMsg = null;
 
                     if (verify == 0)
                     {
                         errorCode = Interop.libcrypto.X509_STORE_CTX_get_error(storeCtx);
                         errorDepth = Interop.libcrypto.X509_STORE_CTX_get_error_depth(storeCtx);
-                        errorMsg = Interop.libcrypto.X509_verify_cert_error_string(errorCode);
                     }
 
                     elements = new X509ChainElement[chainSize];
+                    int maybeRootDepth = chainSize - 1;
 
+                    // The leaf cert is 0, up to (maybe) the root at chainSize - 1
                     for (int i = 0; i < chainSize; i++)
                     {
                         List<X509ChainStatus> status = new List<X509ChainStatus>();
 
                         if (i == errorDepth)
                         {
-                            X509ChainStatus chainStatus = new X509ChainStatus
-                            {
-                                Status = MapVerifyErrorToChainStatus(errorCode),
-                                StatusInformation = errorMsg,
-                            };
-
-                            status.Add(chainStatus);
-                            AddUniqueStatus(overallStatus, ref chainStatus);
+                            AddElementStatus(errorCode, status, overallStatus);
                         }
 
                         IntPtr elementCertPtr = Interop.Crypto.GetX509StackField(chainStack, i);
@@ -127,6 +121,19 @@ namespace Internal.Cryptography.Pal
 
                         // Duplicate the certificate handle
                         X509Certificate2 elementCert = new X509Certificate2(elementCertPtr);
+
+                        // If the last cert is self signed then it's the root cert, do any extra checks.
+                        if (i == maybeRootDepth && IsSelfSigned(elementCert))
+                        {
+                            // If the root certificate was downloaded, it's untrusted.
+                            if (downloaded.Contains(elementCert))
+                            {
+                                AddElementStatus(
+                                    Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_CERT_UNTRUSTED,
+                                    status,
+                                    overallStatus);
+                            }
+                        }
 
                         elements[i] = new X509ChainElement(elementCert, status.ToArray(), "");
                     }
@@ -193,6 +200,38 @@ namespace Internal.Cryptography.Pal
             };
         }
 
+        private static void AddElementStatus(
+            Interop.libcrypto.X509VerifyStatusCode errorCode,
+            List<X509ChainStatus> elementStatus,
+            List<X509ChainStatus> overallStatus)
+        {
+            X509ChainStatusFlags statusFlag = MapVerifyErrorToChainStatus(errorCode);
+
+            Debug.Assert(
+                (statusFlag & (statusFlag - 1)) == 0,
+                "Status flag has more than one bit set",
+                "More than one bit is set in status '{0}' for error code '{1}'",
+                statusFlag,
+                errorCode);
+
+            foreach (X509ChainStatus currentStatus in elementStatus)
+            {
+                if ((currentStatus.Status & statusFlag) != 0)
+                {
+                    return;
+                }
+            }
+
+            X509ChainStatus chainStatus = new X509ChainStatus
+            {
+                Status = MapVerifyErrorToChainStatus(errorCode),
+                StatusInformation = Interop.libcrypto.X509_verify_cert_error_string(errorCode),
+            };
+
+            elementStatus.Add(chainStatus);
+            AddUniqueStatus(overallStatus, ref chainStatus);
+        }
+        
         private static void AddUniqueStatus(IList<X509ChainStatus> list, ref X509ChainStatus status)
         {
             X509ChainStatusFlags statusCode = status.Status;
@@ -295,20 +334,28 @@ namespace Internal.Cryptography.Pal
             Queue<X509Certificate2> toProcess = new Queue<X509Certificate2>();
             toProcess.Enqueue(leaf);
 
-            using (var rootStore = new X509Store(StoreName.Root, StoreLocation.LocalMachine))
-            using (var intermediateStore = new X509Store(StoreName.CertificateAuthority, StoreLocation.LocalMachine))
+            using (var systemRootStore = new X509Store(StoreName.Root, StoreLocation.LocalMachine))
+            using (var systemIntermediateStore = new X509Store(StoreName.CertificateAuthority, StoreLocation.LocalMachine))
+            using (var userRootStore = new X509Store(StoreName.Root, StoreLocation.CurrentUser))
+            using (var userIntermediateStore = new X509Store(StoreName.CertificateAuthority, StoreLocation.CurrentUser))
             {
-                rootStore.Open(OpenFlags.ReadOnly);
-                intermediateStore.Open(OpenFlags.ReadOnly);
+                systemRootStore.Open(OpenFlags.ReadOnly);
+                systemIntermediateStore.Open(OpenFlags.ReadOnly);
+                userRootStore.Open(OpenFlags.ReadOnly);
+                userIntermediateStore.Open(OpenFlags.ReadOnly);
 
-                X509Certificate2Collection rootCerts = rootStore.Certificates;
-                X509Certificate2Collection intermediateCerts = intermediateStore.Certificates;
+                X509Certificate2Collection systemRootCerts = systemRootStore.Certificates;
+                X509Certificate2Collection systemIntermediateCerts = systemIntermediateStore.Certificates;
+                X509Certificate2Collection userRootCerts = userRootStore.Certificates;
+                X509Certificate2Collection userIntermediateCerts = userIntermediateStore.Certificates;
 
                 X509Certificate2Collection[] storesToCheck =
                 {
                     extraStore,
-                    intermediateCerts,
-                    rootCerts,
+                    userIntermediateCerts,
+                    systemIntermediateCerts,
+                    userRootCerts,
+                    systemRootCerts,
                 };
 
                 while (toProcess.Count > 0)
@@ -468,7 +515,6 @@ namespace Internal.Cryptography.Pal
 
         static CertificateAssetDownloader()
         {
-            Console.WriteLine("global_init");
             Interop.libcurl.curl_global_init(Interop.libcurl.CurlGlobalFlags.CURL_GLOBAL_ALL);
         }
 
@@ -494,8 +540,6 @@ namespace Internal.Cryptography.Pal
 
         internal static unsafe byte[] DownloadAsset(string uri)
         {
-            Console.WriteLine("DownloadAsset");
-
             List<byte[]> dataPieces = new List<byte[]>();
 
             using (Interop.libcurl.SafeCurlHandle curlHandle = Interop.libcurl.curl_easy_init())

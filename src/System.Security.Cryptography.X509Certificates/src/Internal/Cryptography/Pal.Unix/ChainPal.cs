@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
@@ -34,12 +35,25 @@ namespace Internal.Cryptography.Pal
             List<X509Certificate2> candidates =
                 OpenSslX509ChainProcessor.FindCandidates(leaf, extraStore, downloaded);
 
-            return OpenSslX509ChainProcessor.BuildChain(
+            IChainPal chain = OpenSslX509ChainProcessor.BuildChain(
                 leaf,
                 candidates,
+                downloaded,
                 applicationPolicy,
                 certificatePolicy,
                 verificationTime);
+
+            Console.WriteLine(
+                "chain.ChainStatus.Length == {0} && downloaded.Count == {1}",
+                chain.ChainStatus.Length,
+                downloaded.Count);
+
+            if (chain.ChainStatus.Length == 0 && downloaded.Count > 0)
+            {
+                SaveIntermediateCertificates(downloaded);
+            }
+
+            return chain;
         }
 
         private static void CheckRevocationMode(X509RevocationMode revocationMode)
@@ -48,6 +62,39 @@ namespace Internal.Cryptography.Pal
             {
                 // TODO (#2203): Add support for revocation once networking is ready.
                 throw new NotImplementedException(SR.WorkInProgress);
+            }
+        }
+
+        private static void SaveIntermediateCertificates(List<X509Certificate2> downloaded)
+        {
+            using (var userIntermediate = new X509Store(StoreName.CertificateAuthority, StoreLocation.CurrentUser))
+            {
+                try
+                {
+                    userIntermediate.Open(OpenFlags.ReadWrite);
+                }
+                catch (CryptographicException)
+                {
+                    // Saving is opportunistic, just ignore failures
+                    return;
+                }
+
+                for (int i = 0; i < downloaded.Count; i++)
+                {
+                    try
+                    {
+                        Console.WriteLine("Saving intermediate certificate " + downloaded[i].GetNameInfo(X509NameType.SimpleName, false));
+                        userIntermediate.Add(downloaded[i]);
+                    }
+                    catch (CryptographicException)
+                    {
+                        // Saving is opportunistic, just ignore failures
+                    }
+                    catch (IOException)
+                    {
+                        // Saving is opportunistic, just ignore failures
+                    }
+                }
             }
         }
     }
