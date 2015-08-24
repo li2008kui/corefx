@@ -29,11 +29,26 @@ namespace Internal.Cryptography.Pal
         {
             CheckRevocationMode(revocationMode);
 
+            // An input value of 0 on the timeout is "take all the time you need".
+            if (timeout == TimeSpan.Zero)
+            {
+                timeout = TimeSpan.MaxValue;
+            }
+
+            TimeSpan remainingDownloadTime = timeout;
             X509Certificate2 leaf = new X509Certificate2(cert.Handle);
             List<X509Certificate2> downloaded = new List<X509Certificate2>();
 
-            List<X509Certificate2> candidates =
-                OpenSslX509ChainProcessor.FindCandidates(leaf, extraStore, downloaded);
+            List<X509Certificate2> candidates = OpenSslX509ChainProcessor.FindCandidates(
+                leaf,
+                extraStore,
+                downloaded,
+                ref remainingDownloadTime);
+
+            if (remainingDownloadTime != timeout)
+            {
+                Console.WriteLine("Cumulative download time was {0}", (timeout - remainingDownloadTime));
+            }
 
             IChainPal chain = OpenSslX509ChainProcessor.BuildChain(
                 leaf,

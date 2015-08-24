@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
@@ -328,7 +327,8 @@ namespace Internal.Cryptography.Pal
         internal static List<X509Certificate2> FindCandidates(
             X509Certificate2 leaf,
             X509Certificate2Collection extraStore,
-            List<X509Certificate2> downloaded)
+            List<X509Certificate2> downloaded,
+            ref TimeSpan remainingDownloadTime)
         {
             List<X509Certificate2> candidates = new List<X509Certificate2>();
             Queue<X509Certificate2> toProcess = new Queue<X509Certificate2>();
@@ -370,7 +370,8 @@ namespace Internal.Cryptography.Pal
                     List<X509Certificate2> results = FindIssuer(
                         current,
                         storesToCheck,
-                        downloaded);
+                        downloaded,
+                        ref remainingDownloadTime);
 
                     if (results != null)
                     {
@@ -391,7 +392,8 @@ namespace Internal.Cryptography.Pal
         private static List<X509Certificate2> FindIssuer(
             X509Certificate2 cert,
             X509Certificate2Collection[] stores,
-            List<X509Certificate2> downloadedCerts)
+            List<X509Certificate2> downloadedCerts,
+            ref TimeSpan remainingDownloadTime)
         {
             if (IsSelfSigned(cert))
             {
@@ -446,7 +448,9 @@ namespace Internal.Cryptography.Pal
 
             if (authorityInformationAccess != null)
             {
-                X509Certificate2 downloaded = DownloadCertificate(authorityInformationAccess);
+                X509Certificate2 downloaded = DownloadCertificate(
+                    authorityInformationAccess,
+                    ref remainingDownloadTime);
 
                 if (downloaded != null)
                 {
@@ -465,8 +469,16 @@ namespace Internal.Cryptography.Pal
             return StringComparer.Ordinal.Equals(cert.Subject, cert.Issuer);
         }
 
-        private static X509Certificate2 DownloadCertificate(byte[] authorityInformationAccess)
+        private static X509Certificate2 DownloadCertificate(
+            byte[] authorityInformationAccess,
+            ref TimeSpan remainingDownloadTime)
         {
+            // Don't do any work if we're over limit.
+            if (remainingDownloadTime <= TimeSpan.Zero)
+            {
+                return null;
+            }
+
             DerSequenceReader reader = new DerSequenceReader(authorityInformationAccess);
 
             while (reader.HasData)
@@ -501,123 +513,11 @@ namespace Internal.Cryptography.Pal
                     Console.Write("  Downloading certificate from: ");
                     Console.WriteLine(uri);
 
-                    return CertificateAssetDownloader.DownloadCertificate(uri);
+                    return CertificateAssetDownloader.DownloadCertificate(uri, ref remainingDownloadTime);
                 }
             }
 
             return null;
-        }
-    }
-
-    internal static class CertificateAssetDownloader
-    {
-        private static unsafe Interop.libcurl.curl_unsafe_write_callback s_writeCallback = CurlWriteCallback;
-
-        static CertificateAssetDownloader()
-        {
-            Interop.libcurl.curl_global_init(Interop.libcurl.CurlGlobalFlags.CURL_GLOBAL_ALL);
-        }
-
-        internal static X509Certificate2 DownloadCertificate(string uri)
-        {
-            byte[] data = DownloadAsset(uri);
-
-            if (data == null)
-            {
-                return null;
-            }
-
-            try
-            {
-                return new X509Certificate2(data);
-            }
-            catch (CryptographicException)
-            {
-                Console.WriteLine("Couldn't understand data");
-                return null;
-            }
-        }
-
-        internal static unsafe byte[] DownloadAsset(string uri)
-        {
-            List<byte[]> dataPieces = new List<byte[]>();
-
-            using (Interop.libcurl.SafeCurlHandle curlHandle = Interop.libcurl.curl_easy_init())
-            {
-                GCHandle gcHandle = GCHandle.Alloc(dataPieces);
-                IntPtr dataHandlePtr = GCHandle.ToIntPtr(gcHandle);
-
-                try
-                {
-                    Interop.libcurl.curl_easy_setopt(curlHandle, Interop.libcurl.CURLoption.CURLOPT_URL, uri);
-                    Interop.libcurl.curl_easy_setopt(curlHandle, Interop.libcurl.CURLoption.CURLOPT_WRITEDATA, dataHandlePtr);
-                    Interop.libcurl.curl_easy_setopt(curlHandle, Interop.libcurl.CURLoption.CURLOPT_WRITEFUNCTION, s_writeCallback);
-
-                    int res = Interop.libcurl.curl_easy_perform(curlHandle);
-
-                    if (res != Interop.libcurl.CURLcode.CURLE_OK)
-                    {
-                        Console.WriteLine("Download failed.");
-                        return null;
-                    }
-                }
-                finally
-                {
-                    gcHandle.Free();
-                }
-            }
-
-            if (dataPieces.Count == 0)
-            {
-                Console.WriteLine("No data...");
-                return null;
-            }
-
-            if (dataPieces.Count == 1)
-            {
-                return dataPieces[0];
-            }
-
-            int dataLen = 0;
-
-            for (int i = 0; i < dataPieces.Count; i++)
-            {
-                dataLen += dataPieces[i].Length;
-            }
-
-            byte[] data = new byte[dataLen];
-            int offset = 0;
-
-            for (int i = 0; i < dataPieces.Count; i++)
-            {
-                byte[] piece = dataPieces[i];
-
-                Buffer.BlockCopy(piece, 0, data, offset, piece.Length);
-                offset += piece.Length;
-            }
-
-            return data;
-        }
-
-        private static unsafe ulong CurlWriteCallback(byte* buffer, ulong size, ulong nitems, IntPtr context)
-        {
-            ulong totalSize = size * nitems;
-
-            if (totalSize == 0)
-            {
-                return 0;
-            }
-
-            GCHandle gcHandle = GCHandle.FromIntPtr(context);
-            List<byte[]> dataPieces = (List<byte[]>)gcHandle.Target;
-            byte[] piece = new byte[totalSize];
-
-            Marshal.Copy((IntPtr)buffer, piece, 0, (int)totalSize);
-            dataPieces.Add(piece);
-
-            Console.WriteLine("Added piece {0}", dataPieces.Count);
-
-            return totalSize;
         }
     }
 }
