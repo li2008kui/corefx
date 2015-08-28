@@ -27,8 +27,6 @@ namespace Internal.Cryptography.Pal
             DateTime verificationTime,
             TimeSpan timeout)
         {
-            CheckRevocationMode(revocationMode);
-
             // An input value of 0 on the timeout is "take all the time you need".
             if (timeout == TimeSpan.Zero)
             {
@@ -51,6 +49,8 @@ namespace Internal.Cryptography.Pal
                 downloaded,
                 applicationPolicy,
                 certificatePolicy,
+                revocationMode,
+                revocationFlag,
                 verificationTime);
 
             if (chain.ChainStatus.Length == 0 && downloaded.Count > 0)
@@ -59,15 +59,6 @@ namespace Internal.Cryptography.Pal
             }
 
             return chain;
-        }
-
-        private static void CheckRevocationMode(X509RevocationMode revocationMode)
-        {
-            if (revocationMode != X509RevocationMode.NoCheck)
-            {
-                // TODO (#2203): Add support for revocation once networking is ready.
-                throw new NotImplementedException(SR.WorkInProgress);
-            }
         }
 
         private static void SaveIntermediateCertificates(

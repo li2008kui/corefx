@@ -3,10 +3,10 @@
   "version": -9996,
   "targets": {
     "DNXCore,Version=v5.0": {
-      "Microsoft.Win32.Primitives/4.0.0-beta-23127": {
+      "Microsoft.Win32.Primitives/4.0.0": {
         "dependencies": {
-          "System.Runtime": "4.0.20-beta-23127",
-          "System.Runtime.InteropServices": "4.0.20-beta-23127"
+          "System.Runtime": "4.0.20",
+          "System.Runtime.InteropServices": "4.0.20"
         },
         "compile": {
           "ref/dotnet/Microsoft.Win32.Primitives.dll": {}
@@ -24,6 +24,25 @@
         },
         "runtime": {
           "lib/DNXCore50/System.Collections.dll": {}
+        }
+      },
+      "System.Console/4.0.0-beta-23213": {
+        "dependencies": {
+          "System.Runtime": "4.0.20",
+          "System.Runtime.InteropServices": "4.0.20",
+          "System.Resources.ResourceManager": "4.0.0",
+          "System.IO.FileSystem.Primitives": "4.0.0",
+          "System.IO": "4.0.10",
+          "System.Threading.Tasks": "4.0.10",
+          "System.Text.Encoding": "4.0.10",
+          "System.Threading": "4.0.10",
+          "System.Text.Encoding.Extensions": "4.0.10"
+        },
+        "compile": {
+          "ref/dotnet/System.Console.dll": {}
+        },
+        "runtime": {
+          "lib/DNXCore50/System.Console.dll": {}
         }
       },
       "System.Diagnostics.Contracts/4.0.0": {
@@ -118,16 +137,17 @@
           "lib/dotnet/System.IO.FileSystem.Primitives.dll": {}
         }
       },
-      "System.IO.FileSystem.Watcher/4.0.0-beta-23127": {
+      "System.IO.FileSystem.Watcher/4.0.0-beta-23213": {
         "dependencies": {
-          "System.Runtime": "4.0.20-beta-23127",
-          "System.Resources.ResourceManager": "4.0.0-beta-23127",
-          "System.IO.FileSystem": "4.0.0-beta-23127",
-          "System.Threading.Overlapped": "4.0.0-beta-23127",
-          "System.Runtime.Handles": "4.0.0-beta-23127",
-          "Microsoft.Win32.Primitives": "4.0.0-beta-23127",
-          "System.Runtime.Extensions": "4.0.10-beta-23127",
-          "System.Threading": "4.0.10-beta-23127"
+          "System.Runtime": "4.0.20",
+          "System.Resources.ResourceManager": "4.0.0",
+          "System.IO.FileSystem": "4.0.0",
+          "System.IO.FileSystem.Primitives": "4.0.0",
+          "System.Threading.Overlapped": "4.0.0",
+          "System.Runtime.Handles": "4.0.0",
+          "Microsoft.Win32.Primitives": "4.0.0",
+          "System.Runtime.Extensions": "4.0.10",
+          "System.Threading": "4.0.10"
         },
         "compile": {
           "ref/dotnet/System.IO.FileSystem.Watcher.dll": {}
@@ -297,12 +317,12 @@
     }
   },
   "libraries": {
-    "Microsoft.Win32.Primitives/4.0.0-beta-23127": {
+    "Microsoft.Win32.Primitives/4.0.0": {
       "serviceable": true,
-      "sha512": "RhBDkPQpFEEx6gHmNlge7eG9up6U0lC41Sbgh8ugosNeputVZRzbskXMOPkgNz3I5FMU/E+g0YuJB/T8K0Slhg==",
+      "sha512": "CypEz9/lLOup8CEhiAmvr7aLs1zKPYyEU1sxQeEr6G0Ci8/F0Y6pYR1zzkROjM8j8Mq0typmbu676oYyvErQvg==",
       "files": [
-        "Microsoft.Win32.Primitives.4.0.0-beta-23127.nupkg",
-        "Microsoft.Win32.Primitives.4.0.0-beta-23127.nupkg.sha512",
+        "Microsoft.Win32.Primitives.4.0.0.nupkg",
+        "Microsoft.Win32.Primitives.4.0.0.nupkg.sha512",
         "Microsoft.Win32.Primitives.nuspec",
         "lib/dotnet/Microsoft.Win32.Primitives.dll",
         "lib/MonoAndroid10/_._",
@@ -359,6 +379,37 @@
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
         "runtimes/win8-aot/lib/netcore50/System.Collections.dll"
+      ]
+    },
+    "System.Console/4.0.0-beta-23213": {
+      "serviceable": true,
+      "sha512": "JMXpqaP1+67/fISmYRXlRm6tGQHXu6seqgY56pAuSLMxpsK5FOYqUXx7RnUIG0SmIJO25ivTfTXLDVv2wTXYAg==",
+      "files": [
+        "System.Console.4.0.0-beta-23213.nupkg",
+        "System.Console.4.0.0-beta-23213.nupkg.sha512",
+        "System.Console.nuspec",
+        "lib/DNXCore50/System.Console.dll",
+        "lib/MonoAndroid10/_._",
+        "lib/MonoTouch10/_._",
+        "lib/net46/System.Console.dll",
+        "lib/xamarinios10/_._",
+        "lib/xamarinmac20/_._",
+        "ref/dotnet/System.Console.dll",
+        "ref/dotnet/System.Console.xml",
+        "ref/dotnet/de/System.Console.xml",
+        "ref/dotnet/es/System.Console.xml",
+        "ref/dotnet/fr/System.Console.xml",
+        "ref/dotnet/it/System.Console.xml",
+        "ref/dotnet/ja/System.Console.xml",
+        "ref/dotnet/ko/System.Console.xml",
+        "ref/dotnet/ru/System.Console.xml",
+        "ref/dotnet/zh-hans/System.Console.xml",
+        "ref/dotnet/zh-hant/System.Console.xml",
+        "ref/MonoAndroid10/_._",
+        "ref/MonoTouch10/_._",
+        "ref/net46/System.Console.dll",
+        "ref/xamarinios10/_._",
+        "ref/xamarinmac20/_._"
       ]
     },
     "System.Diagnostics.Contracts/4.0.0": {
@@ -586,12 +637,12 @@
         "ref/xamarinmac20/_._"
       ]
     },
-    "System.IO.FileSystem.Watcher/4.0.0-beta-23127": {
+    "System.IO.FileSystem.Watcher/4.0.0-beta-23213": {
       "serviceable": true,
-      "sha512": "WSayzShVRSzQCVUJE5Lj+SJopWf7963T25kDU1+47UwjPZ8NVxqtWq51JTt1nzt2t6UVgZB3wo+C95Kh5SzxhA==",
+      "sha512": "IU9Tt3GFYsRTNCxGfuEi4+UJo0S3ehOqcX2EXcd55DJnngMcsxtBavQ94fDRaj4O3nNNh+LSHIXCYo5zAwk5zg==",
       "files": [
-        "System.IO.FileSystem.Watcher.4.0.0-beta-23127.nupkg",
-        "System.IO.FileSystem.Watcher.4.0.0-beta-23127.nupkg.sha512",
+        "System.IO.FileSystem.Watcher.4.0.0-beta-23213.nupkg",
+        "System.IO.FileSystem.Watcher.4.0.0-beta-23213.nupkg.sha512",
         "System.IO.FileSystem.Watcher.nuspec",
         "lib/DNXCore50/System.IO.FileSystem.Watcher.dll",
         "lib/MonoAndroid10/_._",
@@ -1064,6 +1115,7 @@
   "projectFileDependencyGroups": {
     "": [
       "System.Collections >= 4.0.10",
+      "System.Console >= 4.0.0-beta-*",
       "System.Diagnostics.Contracts >= 4.0.0",
       "System.Diagnostics.Debug >= 4.0.10",
       "System.Globalization.Calendars >= 4.0.0",

@@ -45,6 +45,8 @@ namespace Internal.Cryptography.Pal
             List<X509Certificate2> downloaded,
             OidCollection applicationPolicy,
             OidCollection certificatePolicy,
+            X509RevocationMode revocationMode,
+            X509RevocationFlag revocationFlag,
             DateTime verificationTime)
         {
             X509ChainElement[] elements;
@@ -67,6 +69,17 @@ namespace Internal.Cryptography.Pal
                     if (!Interop.libcrypto.X509_STORE_add_cert(store, pal.SafeHandle))
                     {
                         throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                    }
+                }
+
+                if (revocationMode != X509RevocationMode.NoCheck)
+                {
+                    vfyFlags = revocationFlag == X509RevocationFlag.EndCertificateOnly ?
+                        EEOnly :
+                        WholeChain;
+
+                    if (!Interop.libcrypto.X509_STORE_set_flags(store, vfyFlags))
+                    {
                     }
                 }
 
