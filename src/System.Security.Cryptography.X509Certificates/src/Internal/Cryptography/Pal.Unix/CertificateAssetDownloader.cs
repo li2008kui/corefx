@@ -9,7 +9,7 @@ namespace Internal.Cryptography.Pal
 {
     internal static class CertificateAssetDownloader
     {
-        private static unsafe Interop.libcurl.curl_unsafe_write_callback s_writeCallback = CurlWriteCallback;
+        private static readonly unsafe Interop.libcurl.curl_unsafe_write_callback s_writeCallback = CurlWriteCallback;
 
         internal static X509Certificate2 DownloadCertificate(string uri, ref TimeSpan remainingDownloadTime)
         {
