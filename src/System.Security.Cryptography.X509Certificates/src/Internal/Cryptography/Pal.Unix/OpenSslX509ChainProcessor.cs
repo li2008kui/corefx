@@ -47,7 +47,8 @@ namespace Internal.Cryptography.Pal
             OidCollection certificatePolicy,
             X509RevocationMode revocationMode,
             X509RevocationFlag revocationFlag,
-            DateTime verificationTime)
+            DateTime verificationTime,
+            ref TimeSpan remainingDownloadTime)
         {
             X509ChainElement[] elements;
             List<X509ChainStatus> overallStatus = new List<X509ChainStatus>();
@@ -62,6 +63,8 @@ namespace Internal.Cryptography.Pal
                 Interop.libcrypto.CheckValidOpenSslHandle(store);
                 Interop.libcrypto.CheckValidOpenSslHandle(storeCtx);
 
+                bool lookupCrl = revocationMode != X509RevocationMode.NoCheck;
+
                 foreach (X509Certificate2 cert in candidates)
                 {
                     OpenSslX509CertificateReader pal = (OpenSslX509CertificateReader)cert.Pal;
@@ -69,6 +72,15 @@ namespace Internal.Cryptography.Pal
                     if (!Interop.libcrypto.X509_STORE_add_cert(store, pal.SafeHandle))
                     {
                         throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                    }
+
+                    if (lookupCrl)
+                    {
+                        CrlCache.AddCrlForCertificate(cert, store, revocationMode, ref remainingDownloadTime);
+
+                        // If we only wanted the end-entity certificate CRL then don't look up
+                        // any more of them.
+                        lookupCrl = revocationFlag != X509RevocationFlag.EndCertificateOnly;
                     }
                 }
 
@@ -498,6 +510,18 @@ namespace Internal.Cryptography.Pal
                 return null;
             }
 
+            string uri = FindHttpAiaRecord(authorityInformationAccess, Oids.CertificateAuthorityIssuers);
+
+            if (uri == null)
+            {
+                return null;
+            }
+
+            return CertificateAssetDownloader.DownloadCertificate(uri, ref remainingDownloadTime);
+        }
+
+        internal static string FindHttpAiaRecord(byte[] authorityInformationAccess, string recordTypeOid)
+        {
             DerSequenceReader reader = new DerSequenceReader(authorityInformationAccess);
 
             while (reader.HasData)
@@ -512,7 +536,7 @@ namespace Internal.Cryptography.Pal
 
                 Oid oid = innerReader.ReadOid();
 
-                if (StringComparer.Ordinal.Equals(oid.Value, Oids.CertificateAuthorityIssuers))
+                if (StringComparer.Ordinal.Equals(oid.Value, recordTypeOid))
                 {
                     string uri = innerReader.ReadIA5String();
 
@@ -527,7 +551,150 @@ namespace Internal.Cryptography.Pal
                         continue;
                     }
 
-                    return CertificateAssetDownloader.DownloadCertificate(uri, ref remainingDownloadTime);
+                    return uri;
+                }
+            }
+
+            return null;
+        }
+    }
+
+    internal static class CrlCache
+    {
+        public static void AddCrlForCertificate(
+            X509Certificate2 cert,
+            SafeX509StoreHandle store,
+            X509RevocationMode revocationMode,
+            ref TimeSpan remainingDownloadTime)
+        {
+            //if (AddCachedCrl(cert, store))
+            //{
+            //    return;
+            //}
+
+            // Don't do any work if we're over limit or prohibited from fetching new CRLs
+            if (remainingDownloadTime <= TimeSpan.Zero ||
+                revocationMode != X509RevocationMode.Online)
+            {
+                return;
+            }
+
+            string url = GetCdpUrl(cert);
+
+            if (url == null)
+            {
+                Console.WriteLine("No CDP returned");
+                return;
+            }
+
+            Console.WriteLine("Would totally download " + url);
+        }
+
+        private static string GetCdpUrl(X509Certificate2 cert)
+        {
+            byte[] crlDistributionPoints = null;
+
+            foreach (X509Extension extension in cert.Extensions)
+            {
+                if (StringComparer.Ordinal.Equals(extension.Oid.Value, Oids.CrlDistributionPoints))
+                {
+                    // If there's an Authority Information Access extension, it might be used for
+                    // looking up additional certificates for the chain.
+                    crlDistributionPoints = extension.RawData;
+                    break;
+                }
+            }
+
+            if (crlDistributionPoints == null)
+            {
+                Console.WriteLine("No CDP for certificate " + cert.GetNameInfo(X509NameType.SimpleName, false));
+                return null;
+            }
+
+            // CRLDistributionPoints ::= SEQUENCE SIZE (1..MAX) OF DistributionPoint
+            //
+            // DistributionPoint ::= SEQUENCE {
+            //    distributionPoint       [0]     DistributionPointName OPTIONAL,
+            //    reasons                 [1]     ReasonFlags OPTIONAL,
+            //    cRLIssuer               [2]     GeneralNames OPTIONAL }
+            //
+            // DistributionPointName ::= CHOICE {
+            //    fullName                [0]     GeneralNames,
+            //    nameRelativeToCRLIssuer [1]     RelativeDistinguishedName }
+            //
+            // GeneralNames ::= SEQUENCE SIZE (1..MAX) OF GeneralName
+            //
+            // GeneralName ::= CHOICE {
+            //    otherName                       [0]     OtherName,
+            //    rfc822Name                      [1]     IA5String,
+            //    dNSName                         [2]     IA5String,
+            //    x400Address                     [3]     ORAddress,
+            //    directoryName                   [4]     Name,
+            //    ediPartyName                    [5]     EDIPartyName,
+            //    uniformResourceIdentifier       [6]     IA5String,
+            //    iPAddress                       [7]     OCTET STRING,
+            //    registeredID                    [8]     OBJECT IDENTIFIER }
+
+            DerSequenceReader cdpSequence = new DerSequenceReader(crlDistributionPoints);
+
+            while (cdpSequence.HasData)
+            {
+                const byte ContextSpecificFlag = 0x80;
+                const byte ContextSpecific0 = ContextSpecificFlag;
+                const byte ConstructedFlag = 0x20;
+                const byte ContextSpecificConstructed0 = ContextSpecific0 | ConstructedFlag;
+                const byte GeneralNameUri = ContextSpecificFlag | 0x06;
+
+                DerSequenceReader distributionPointReader = cdpSequence.ReadSequence();
+                byte tag = distributionPointReader.PeekTag();
+
+                Console.WriteLine("First DistributionPoint element has tag {0:X}", tag);
+
+                // Only distributionPoint is supported
+                if (tag != ContextSpecificConstructed0)
+                {
+                    continue;
+                }
+
+                // The DistributionPointName is a CHOICE, not a SEQUENCE, but the reader is the same.
+                DerSequenceReader dpNameReader = distributionPointReader.ReadSequence();
+                tag = dpNameReader.PeekTag();
+
+                Console.WriteLine("DistributionPointName element has tag {0:X}", tag);
+
+                // Only fullName is supported,
+                // nameRelativeToCRLIssuer is for LDAP-based lookup.
+                if (tag != ContextSpecificConstructed0)
+                {
+                    continue;
+                }
+
+                DerSequenceReader fullNameReader = dpNameReader.ReadSequence();
+
+                while (fullNameReader.HasData)
+                {
+                    tag = fullNameReader.PeekTag();
+
+                    Console.WriteLine("FullName value has tag {0:X}", tag);
+
+                    if (tag != GeneralNameUri)
+                    {
+                        fullNameReader.SkipValue();
+                        continue;
+                    }
+
+                    string uri = fullNameReader.ReadIA5String();
+
+                    Console.WriteLine("FullName value is {0}", uri);
+
+                    Uri parsedUri = new Uri(uri);
+
+                    if (!StringComparer.Ordinal.Equals(parsedUri.Scheme, "http"))
+                    {
+                        continue;
+                    }
+
+                    return uri;
                 }
             }
 

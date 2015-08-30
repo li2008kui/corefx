@@ -51,7 +51,8 @@ namespace Internal.Cryptography.Pal
                 certificatePolicy,
                 revocationMode,
                 revocationFlag,
-                verificationTime);
+                verificationTime,
+                ref remainingDownloadTime);
 
             if (chain.ChainStatus.Length == 0 && downloaded.Count > 0)
             {

@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using Microsoft.Win32.SafeHandles;
 
 namespace Internal.Cryptography.Pal
 {
@@ -30,7 +31,29 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        internal static unsafe byte[] DownloadAsset(string uri, ref TimeSpan remainingDownloadTime)
+        internal static SafeX509CrlHandle DownloadCrl(string uri, ref TimeSpan remainingDownloadTime)
+        {
+            byte[] data = DownloadAsset(uri, ref remainingDownloadTime);
+
+            if (data == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                unsafe
+                {
+                    return Interop.libcrypto.OpenSslD2I((ptr, b, i) => Interop.libcrypto.d2i_X509_CRL(ptr, b, i), data);
+                }
+            }
+            catch (CryptographicException)
+            {
+                return null;
+            }
+        }
+
+        private static unsafe byte[] DownloadAsset(string uri, ref TimeSpan remainingDownloadTime)
         {
             if (remainingDownloadTime <= TimeSpan.Zero)
             {

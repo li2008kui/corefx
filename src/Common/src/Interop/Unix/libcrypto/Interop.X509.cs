@@ -14,6 +14,15 @@ internal static partial class Interop
     internal static partial class libcrypto
     {
         [DllImport(Libraries.LibCrypto)]
+        internal static extern void X509_CRL_free(IntPtr a);
+
+        [DllImport(Libraries.LibCrypto)]
+        internal static unsafe extern SafeX509CrlHandle d2i_X509_CRL(IntPtr zero, byte** ppin, int len);
+    }
+
+    internal static partial class libcrypto
+    {
+        [DllImport(Libraries.LibCrypto)]
         internal static extern void X509_free(IntPtr a);
 
         [DllImport(Libraries.LibCrypto)]
