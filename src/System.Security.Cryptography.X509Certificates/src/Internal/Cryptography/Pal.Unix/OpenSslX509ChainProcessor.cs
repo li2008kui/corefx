@@ -74,12 +74,16 @@ namespace Internal.Cryptography.Pal
 
                 if (revocationMode != X509RevocationMode.NoCheck)
                 {
-                    vfyFlags = revocationFlag == X509RevocationFlag.EndCertificateOnly ?
-                        EEOnly :
-                        WholeChain;
+                    Interop.libcrypto.X509VerifyFlags vfyFlags = Interop.libcrypto.X509VerifyFlags.X509_V_FLAG_CRL_CHECK;
+
+                    if (revocationFlag != X509RevocationFlag.EndCertificateOnly)
+                    {
+                        vfyFlags |= Interop.libcrypto.X509VerifyFlags.X509_V_FLAG_CRL_CHECK_ALL;
+                    }
 
                     if (!Interop.libcrypto.X509_STORE_set_flags(store, vfyFlags))
                     {
+                        throw Interop.libcrypto.CreateOpenSslCryptographicException();
                     }
                 }
 

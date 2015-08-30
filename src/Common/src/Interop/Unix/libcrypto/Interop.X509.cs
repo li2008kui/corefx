@@ -87,6 +87,10 @@ internal static partial class Interop
         internal static extern bool X509_STORE_add_cert(SafeX509StoreHandle ctx, SafeX509Handle x);
 
         [DllImport(Libraries.LibCrypto)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool X509_STORE_set_flags(SafeX509StoreHandle ctx, X509VerifyFlags flags);
+
+        [DllImport(Libraries.LibCrypto)]
         internal static extern SafeX509StoreCtxHandle X509_STORE_CTX_new();
 
         [DllImport(Libraries.LibCrypto)]
@@ -110,6 +114,28 @@ internal static partial class Interop
 
         [DllImport(Libraries.LibCrypto)]
         internal static extern string X509_verify_cert_error_string(X509VerifyStatusCode n);
+
+        // This is "unsigned long" in native, which means ulong on x64, uint on x86
+        // But we only support x64 for now.
+        [Flags]
+        internal enum X509VerifyFlags : ulong
+        {
+            None = 0,
+            X509_V_FLAG_CB_ISSUER_CHECK = 0x0001,
+            X509_V_FLAG_USE_CHECK_TIME = 0x0002,
+            X509_V_FLAG_CRL_CHECK = 0x0004,
+            X509_V_FLAG_CRL_CHECK_ALL = 0x0008,
+            X509_V_FLAG_IGNORE_CRITICAL = 0x0010,
+            X509_V_FLAG_X509_STRICT = 0x0020,
+            X509_V_FLAG_ALLOW_PROXY_CERTS = 0x0040,
+            X509_V_FLAG_POLICY_CHECK = 0x0080,
+            X509_V_FLAG_EXPLICIT_POLICY = 0x0100,
+            X509_V_FLAG_INHIBIT_ANY = 0x0200,
+            X509_V_FLAG_INHIBIT_MAP = 0x0400,
+            X509_V_FLAG_NOTIFY_POLICY = 0x0800,
+
+            X509_V_FLAG_CHECK_SS_SIGNATURE = 0x4000,
+        }
 
         internal enum X509VerifyStatusCode
         {
