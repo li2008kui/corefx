@@ -34,6 +34,9 @@ internal static partial class Interop
         internal static extern IntPtr GetX509NotAfter(SafeX509Handle x509);
 
         [DllImport(Libraries.CryptoNative)]
+        internal static extern IntPtr GetX509CrlNextUpdate(SafeX509CrlHandle crl);
+
+        [DllImport(Libraries.CryptoNative)]
         internal static extern int GetX509Version(SafeX509Handle x509);
 
         [DllImport(Libraries.CryptoNative)]

@@ -11,9 +11,17 @@ namespace Internal.Cryptography.Pal
             X509Certificate2 cert,
             SafeX509StoreHandle store,
             X509RevocationMode revocationMode,
+            DateTime effectiveDate,
             ref TimeSpan remainingDownloadTime)
         {
-            if (AddCachedCrl(cert, store))
+            // In Offline mode, accept any cached CRL we have.
+            // "CRL is Expired" is a better match for Offline than "Could not find CRL"
+            if (revocationMode != X509RevocationMode.Online)
+            {
+                effectiveDate = DateTime.MaxValue;
+            }
+
+            if (AddCachedCrl(cert, store, effectiveDate))
             {
                 return;
             }
@@ -28,7 +36,7 @@ namespace Internal.Cryptography.Pal
             DownloadAndAddCrl(cert, store, ref remainingDownloadTime);
         }
 
-        private static bool AddCachedCrl(X509Certificate2 cert, SafeX509StoreHandle store)
+        private static bool AddCachedCrl(X509Certificate2 cert, SafeX509StoreHandle store, DateTime effectiveDate)
         {
             string crlFile = GetCachedCrlPath(cert);
 
@@ -48,13 +56,25 @@ namespace Internal.Cryptography.Pal
                         return false;
                     }
 
-                    // TODO: If the CRL isn't valid for our CheckTime, return false.
+                    // If crl.LastUpdate is in the past, downloading a new version isn't really going
+                    // to help, since we can't rewind the Internet. So this is just going to fail, but
+                    // at least it can fail without using the network.
+                    //
+                    // If crl.NextUpdate is in the past, try downloading a newer version.
+                    DateTime nextUpdate = OpenSslX509CertificateReader.ExtractValidityDateTime(
+                        Interop.Crypto.GetX509CrlNextUpdate(crl));
+
+                    if (nextUpdate < effectiveDate)
+                    {
+                        Console.WriteLine("Cached CRL is expired");
+                        return false;
+                    }
 
                     Console.WriteLine("Adding cached CRL to X509_STORE");
 
                     if (!Interop.libcrypto.X509_STORE_add_crl(store, crl))
                     {
-                        Console.WriteLine("This failed, and I should throw except for the one expected error");
+                        Console.WriteLine("!!This failed, and I should throw except for the one expected error");
                         //error:0B07D065:x509 certificate routines:X509_STORE_add_crl:cert already in hash table
                         //throw Interop.libcrypto.CreateOpenSslCryptographicException();
                     }
@@ -90,7 +110,7 @@ namespace Internal.Cryptography.Pal
 
                     if (!Interop.libcrypto.X509_STORE_add_crl(store, crl))
                     {
-                        Console.WriteLine("This failed, and I should throw except for the one expected error");
+                        Console.WriteLine("!!This failed, and I should throw except for the one expected error");
                         //error:0B07D065:x509 certificate routines:X509_STORE_add_crl:cert already in hash table
                         //throw Interop.libcrypto.CreateOpenSslCryptographicException();
                     }
