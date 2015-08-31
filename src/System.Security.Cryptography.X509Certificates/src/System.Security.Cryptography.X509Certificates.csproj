@@ -134,6 +134,7 @@
     <Compile Include="Internal\Cryptography\Pal.Unix\CertificatePolicy.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\ChainPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\CollectionBackedStoreProvider.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\CrlCache.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\DerSequenceReader.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\DirectoryBasedStoreProvider.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslPkcs12Reader.cs" />

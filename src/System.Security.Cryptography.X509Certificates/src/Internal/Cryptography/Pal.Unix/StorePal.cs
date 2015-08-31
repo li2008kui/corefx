@@ -285,8 +285,20 @@ namespace Internal.Cryptography.Pal
                     continue;
                 }
 
+                bool isSelfSigned;
+
+                try
+                {
+                    isSelfSigned = StringComparer.Ordinal.Equals(cert.Subject, cert.Issuer);
+                }
+                catch (CryptographicException)
+                {
+                    cert.Dispose();
+                    continue;
+                }
+
                 // The HashSets are just used for uniqueness filters, they do not survive this method.
-                if (StringComparer.Ordinal.Equals(cert.Subject, cert.Issuer))
+                if (isSelfSigned)
                 {
                     if (uniqueRootCerts.Add(cert))
                     {
