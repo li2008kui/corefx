@@ -11,17 +11,17 @@ namespace Internal.Cryptography.Pal
             X509Certificate2 cert,
             SafeX509StoreHandle store,
             X509RevocationMode revocationMode,
-            DateTime effectiveDate,
+            DateTime verificationTime,
             ref TimeSpan remainingDownloadTime)
         {
             // In Offline mode, accept any cached CRL we have.
             // "CRL is Expired" is a better match for Offline than "Could not find CRL"
             if (revocationMode != X509RevocationMode.Online)
             {
-                effectiveDate = DateTime.MaxValue;
+                verificationTime = DateTime.MinValue;
             }
 
-            if (AddCachedCrl(cert, store, effectiveDate))
+            if (AddCachedCrl(cert, store, verificationTime))
             {
                 return;
             }
@@ -36,7 +36,7 @@ namespace Internal.Cryptography.Pal
             DownloadAndAddCrl(cert, store, ref remainingDownloadTime);
         }
 
-        private static bool AddCachedCrl(X509Certificate2 cert, SafeX509StoreHandle store, DateTime effectiveDate)
+        private static bool AddCachedCrl(X509Certificate2 cert, SafeX509StoreHandle store, DateTime verificationTime)
         {
             string crlFile = GetCachedCrlPath(cert);
 
@@ -64,7 +64,7 @@ namespace Internal.Cryptography.Pal
                     DateTime nextUpdate = OpenSslX509CertificateReader.ExtractValidityDateTime(
                         Interop.Crypto.GetX509CrlNextUpdate(crl));
 
-                    if (nextUpdate < effectiveDate)
+                    if (nextUpdate < verificationTime)
                     {
                         Console.WriteLine("Cached CRL is expired");
                         return false;

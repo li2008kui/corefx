@@ -76,7 +76,12 @@ namespace Internal.Cryptography.Pal
 
                     if (lookupCrl)
                     {
-                        CrlCache.AddCrlForCertificate(cert, store, revocationMode, ref remainingDownloadTime);
+                        CrlCache.AddCrlForCertificate(
+                            cert,
+                            store,
+                            revocationMode,
+                            verificationTime,
+                            ref remainingDownloadTime);
 
                         // If we only wanted the end-entity certificate CRL then don't look up
                         // any more of them.
