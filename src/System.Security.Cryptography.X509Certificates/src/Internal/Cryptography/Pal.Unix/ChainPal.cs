@@ -33,6 +33,15 @@ namespace Internal.Cryptography.Pal
                 timeout = TimeSpan.MaxValue;
             }
 
+            // Let Unspecified mean Local, so only convert if the source was UTC.
+            //
+            // Converge on Local instead of UTC because OpenSSL is going to assume we gave it
+            // local time.
+            if (verificationTime.Kind == DateTimeKind.Utc)
+            {
+                verificationTime = verificationTime.ToLocalTime();
+            }
+
             TimeSpan remainingDownloadTime = timeout;
             X509Certificate2 leaf = new X509Certificate2(cert.Handle);
             List<X509Certificate2> downloaded = new List<X509Certificate2>();

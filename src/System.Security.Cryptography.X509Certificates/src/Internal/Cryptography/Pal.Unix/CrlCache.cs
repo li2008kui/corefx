@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
@@ -64,7 +65,20 @@ namespace Internal.Cryptography.Pal
                     DateTime nextUpdate = OpenSslX509CertificateReader.ExtractValidityDateTime(
                         Interop.Crypto.GetX509CrlNextUpdate(crl));
 
-                    if (nextUpdate < verificationTime)
+                    // OpenSSL is going to convert our input time to universal, so we should be in Local or
+                    // Unspecified (local-assumed).
+                    Debug.Assert(verificationTime.Kind != DateTimeKind.Utc, "UTC verifyTime should have been normalized to Local");
+
+                    Console.WriteLine(
+                        "nextUpdate: {0:yyyy-MM-dd HH:mm:ss} ({1}), verificationTime: {2:yyyy-MM-dd HH:mm:ss} ({3})",
+                        nextUpdate,
+                        nextUpdate.Kind,
+                        verificationTime,
+                        verificationTime.Kind);
+
+                    // In the event that we're to-the-second accurate on the match, OpenSSL will consider this
+                    // to be already expired.
+                    if (nextUpdate <= verificationTime)
                     {
                         Console.WriteLine("Cached CRL is expired");
                         return false;

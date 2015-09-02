@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 using Microsoft.Win32.SafeHandles;
@@ -135,12 +136,10 @@ internal static partial class Interop
 
         internal static void SetX509ChainVerifyTime(SafeX509StoreCtxHandle ctx, DateTime verifyTime)
         {
-            // Let Unspecified mean Local, so only convert if the source was UTC.
-            if (verifyTime.Kind == DateTimeKind.Utc)
-            {
-                verifyTime = verifyTime.ToLocalTime();
-            }
-
+            // OpenSSL is going to convert our input time to universal, so we should be in Local or
+            // Unspecified (local-assumed).
+            Debug.Assert(verifyTime.Kind != DateTimeKind.Utc, "UTC verifyTime should have been normalized to Local");
+            
             int succeeded = SetX509ChainVerifyTime(
                 ctx,
                 verifyTime.Year,
