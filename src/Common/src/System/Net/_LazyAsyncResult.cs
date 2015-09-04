@@ -399,7 +399,7 @@ namespace System.Net
                     {
                         GlobalLog.Print("LazyAsyncResult::Complete *** OFFLOADED the user callback ***");
                         Task.Factory.StartNew(
-                            s => WorkerThreadComplete(s), 
+                            s => WorkerThreadComplete(s),
                             null,
                             CancellationToken.None,
                             TaskCreationOptions.DenyChildAttach,
