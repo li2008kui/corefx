@@ -24,7 +24,7 @@ namespace System.Net.Security
 
         private Stream _InnerStream;
 
-        // TODO: Implement using TPL instead of APM.
+        // TODO (Issue #3114): Implement using TPL instead of APM.
         private StreamAsyncHelper _InnerStreamAPM;
 
         private _SslStream _SecureStream;

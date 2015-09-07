@@ -5,7 +5,7 @@ namespace System.Security.Cryptography.X509Certificates
 {
     internal static class X509StoreExtensions
     {
-        // TODO: remove this shim as soon as the implementation is available.
+        // TODO (Issue #3114): remove this shim as soon as the implementation is available.
         // Placeholder for the X509Store(IntPtr) ctor.
         internal static X509Store CreateFromNativeHandle(IntPtr storeHandle)
         {

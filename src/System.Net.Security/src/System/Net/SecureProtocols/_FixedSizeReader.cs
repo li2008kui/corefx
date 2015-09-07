@@ -12,7 +12,7 @@ namespace System.Net
     {
         private static readonly AsyncCallback s_readCallback = new AsyncCallback(ReadCallback);
 
-        // TODO: Implement this using TPL instead of APM.
+        // TODO (Issue #3114): Implement this using TPL instead of APM.
         private readonly StreamAsyncHelper _TransportAPM;
         private readonly Stream _Transport;
         private AsyncProtocolRequest _Request;

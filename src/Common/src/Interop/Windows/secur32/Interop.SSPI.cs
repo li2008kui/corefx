@@ -9,7 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Secur32
     {
-        // TODO: Throughout the entire file: replace with OS names from <sspi.h> and <schannel.h>
+        // TODO (Issue #3114): Throughout the entire file: replace with OS names from <sspi.h> and <schannel.h>
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         internal struct SSPIHandle

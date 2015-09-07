@@ -683,7 +683,7 @@ namespace System.Net
         public static readonly int SizeOf = Marshal.SizeOf<SecSizes>();
     }
 
-    // TODO: Move to Interop. 
+    // TODO (Issue #3114): Move to Interop. 
     // From Schannel.h
     [StructLayout(LayoutKind.Sequential)]
     internal class SslConnectionInfo
