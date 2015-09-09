@@ -400,7 +400,7 @@ namespace System.Net
                         GlobalLog.Print("LazyAsyncResult::Complete *** OFFLOADED the user callback ***");
                         Task.Factory.StartNew(
                             s => WorkerThreadComplete(s),
-                            null,
+                            this,
                             CancellationToken.None,
                             TaskCreationOptions.DenyChildAttach,
                             TaskScheduler.Default);
@@ -430,15 +430,18 @@ namespace System.Net
         }
 
         // Only called in the above method
-        private void WorkerThreadComplete(object state)
+        private static void WorkerThreadComplete(object state)
         {
+            Debug.Assert(state is LazyAsyncResult);
+            LazyAsyncResult thisPtr = (LazyAsyncResult)state;
+
             try
             {
-                _asyncCallback(this);
+                thisPtr._asyncCallback(thisPtr);
             }
             finally
             {
-                Cleanup();
+                thisPtr.Cleanup();
             }
         }
 
