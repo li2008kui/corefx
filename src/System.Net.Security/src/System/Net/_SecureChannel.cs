@@ -134,7 +134,7 @@ namespace System.Net.Security
                 return _isRemoteCertificateAvailable;
             }
         }
-        
+
         private unsafe static class UnmanagedCertificateContext
         {
             internal static X509Certificate2Collection GetStore(SafeFreeCertContext certContext)
@@ -144,7 +144,7 @@ namespace System.Net.Security
                 if (certContext.IsInvalid)
                     return result;
 
-                Interop.Crypt32.CERT_CONTEXT context = 
+                Interop.Crypt32.CERT_CONTEXT context =
                     Marshal.PtrToStructure<Interop.Crypt32.CERT_CONTEXT>(certContext.DangerousGetHandle());
 
                 if (context.hCertStore != IntPtr.Zero)
@@ -729,7 +729,7 @@ namespace System.Net.Security
                     // So we don't want to reuse **anonymous** cached credential for a new SSL connection if the client has passed some certificate.
                     // The following block happens if client did specify a certificate but no cached creds were found in the cache.
                     // Since we don't restart a session the server side can still challenge for a client cert.
-                    if ((object) clientCertificate != (object) selectedCert)
+                    if ((object)clientCertificate != (object)selectedCert)
                     {
                         selectedCert.Dispose();
                     }
@@ -772,7 +772,7 @@ namespace System.Net.Security
             finally
             {
                 // An extra cert could have been created, dispose it now.
-                if (selectedCert != null && (object) clientCertificate != (object) selectedCert)
+                if (selectedCert != null && (object)clientCertificate != (object)selectedCert)
                 {
                     selectedCert.Dispose();
                 }
@@ -1020,7 +1020,7 @@ namespace System.Net.Security
                 if (_refreshCredentialNeeded)
                 {
                     _refreshCredentialNeeded = false;
-                    
+
                     //
                     // Assuming the ISC or ASC has referenced the credential,
                     // we want to call dispose so to decrement the effective ref count.

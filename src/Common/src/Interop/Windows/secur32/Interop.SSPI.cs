@@ -246,7 +246,7 @@ internal static partial class Interop
                 aIssuers = handle;
                 fixed (byte* voidPtr = nativeBuffer)
                 {
-                    // if this breaks on 64 bit, do the sizeof(IntPtr) trick
+                    // TODO (Issue #3114): Properly marshal the struct instead of assuming no padding.
                     cIssuers = *((uint*)(voidPtr + IntPtr.Size));
                 }
             }

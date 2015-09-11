@@ -11,7 +11,7 @@ namespace System.Net.Security.Tests
     internal static class TestConfiguration
     {
         public const SslProtocols DefaultSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls;
-        
+
         public static X509Certificate2 GetServerCertificate()
         {
             X509Certificate2 certificate = null;

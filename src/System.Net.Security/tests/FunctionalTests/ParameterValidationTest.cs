@@ -29,7 +29,8 @@ namespace System.Net.Security.Tests
             {
                 client.Connect(_remoteServer.RemoteEndPoint);
 
-                Assert.Throws<ArgumentException>(() => {
+                Assert.Throws<ArgumentException>(() =>
+                {
                     SslStream sslStream = new SslStream(client.GetStream(), false, AllowAnyServerCertificate, null, (EncryptionPolicy)100);
                 });
             }

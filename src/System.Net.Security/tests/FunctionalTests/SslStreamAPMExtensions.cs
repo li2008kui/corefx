@@ -5,6 +5,7 @@
 /// Extensions that add the legacy APM Pattern (Begin/End) for generic Streams
 /// </summary>
 
+
 using System.Threading.Tasks;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;

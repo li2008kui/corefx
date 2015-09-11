@@ -61,7 +61,8 @@ namespace System.Net.Security.Tests
                 auth[0] = client.AuthenticateAsClientAsync("incorrectServer");
                 auth[1] = server.AuthenticateAsServerAsync(TestConfiguration.GetServerCertificate());
 
-                Assert.Throws<AuthenticationException>(()=> {
+                Assert.Throws<AuthenticationException>(() =>
+                {
                     auth[0].GetAwaiter().GetResult();
                 });
 
@@ -136,7 +137,7 @@ namespace System.Net.Security.Tests
                 _network = network;
                 _isServer = isServer;
             }
-            
+
             public override bool CanRead
             {
                 get
@@ -220,7 +221,7 @@ namespace System.Net.Security.Tests
 
                 byte[] innerBuffer;
                 _network.ReadFrame(_isServer, out innerBuffer);
-                
+
                 _readStream = new MemoryStream(innerBuffer);
             }
         }

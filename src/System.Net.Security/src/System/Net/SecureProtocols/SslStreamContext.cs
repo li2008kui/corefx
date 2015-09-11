@@ -19,6 +19,6 @@ namespace System.Net
             return _sslStream.GetChannelBinding(kind);
         }
 
-        private SslStream _sslStream;
+        private readonly SslStream _sslStream;
     }
 }

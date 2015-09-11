@@ -19,7 +19,7 @@ namespace System.Net.Security
             private byte[] _CertThumbPrint;
             private int _AllowedProtocols;
             private EncryptionPolicy _EncryptionPolicy;
-            private int _HashCode;
+            private readonly int _HashCode;
 
             //
             // SECURITY: X509Certificate.GetCertHash() is virtual hence before going here,
@@ -40,7 +40,7 @@ namespace System.Net.Security
                     if (3 < _CertThumbPrint.Length)
                         _HashCode ^= (_CertThumbPrint[3] << 24);
                 }
-                _HashCode ^= (int)allowedProtocols;
+                _HashCode ^= allowedProtocols;
                 _HashCode ^= (int)encryptionPolicy;
                 _AllowedProtocols = allowedProtocols;
                 _EncryptionPolicy = encryptionPolicy;
@@ -54,49 +54,33 @@ namespace System.Net.Security
             public static bool operator ==(SslCredKey sslCredKey1,
                                             SslCredKey sslCredKey2)
             {
-                if ((object)sslCredKey1 == (object)sslCredKey2)
-                {
-                    return true;
-                }
-                if ((object)sslCredKey1 == null || (object)sslCredKey2 == null)
-                {
-                    return false;
-                }
                 return sslCredKey1.Equals(sslCredKey2);
             }
 
             public static bool operator !=(SslCredKey sslCredKey1,
                                             SslCredKey sslCredKey2)
             {
-                if ((object)sslCredKey1 == (object)sslCredKey2)
-                {
-                    return false;
-                }
-                if ((object)sslCredKey1 == null || (object)sslCredKey2 == null)
-                {
-                    return true;
-                }
                 return !sslCredKey1.Equals(sslCredKey2);
             }
 
             public override bool Equals(Object y)
             {
-                SslCredKey she = (SslCredKey)y;
+                SslCredKey other = (SslCredKey)y;
 
-                if (_CertThumbPrint.Length != she._CertThumbPrint.Length)
+                if (_CertThumbPrint.Length != other._CertThumbPrint.Length)
                     return false;
 
-                if (_HashCode != she._HashCode)
+                if (_HashCode != other._HashCode)
                     return false;
 
-                if (_EncryptionPolicy != she._EncryptionPolicy)
+                if (_EncryptionPolicy != other._EncryptionPolicy)
                     return false;
 
-                if (_AllowedProtocols != she._AllowedProtocols)
+                if (_AllowedProtocols != other._AllowedProtocols)
                     return false;
 
                 for (int i = 0; i < _CertThumbPrint.Length; ++i)
-                    if (_CertThumbPrint[i] != she._CertThumbPrint[i])
+                    if (_CertThumbPrint[i] != other._CertThumbPrint[i])
                         return false;
 
                 return true;

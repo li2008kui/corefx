@@ -183,10 +183,10 @@
           "lib/DNXCore50/System.Net.Primitives.dll": {}
         }
       },
-      "System.Net.Sockets/4.1.0-beta-23308": {
+      "System.Net.Sockets/4.1.0-beta-23311": {
         "dependencies": {
           "System.Runtime": "4.0.20",
-          "System.Private.Networking": "4.0.1-beta-23308"
+          "System.Private.Networking": "4.0.1-beta-23311"
         },
         "compile": {
           "ref/dotnet/System.Net.Sockets.dll": {}
@@ -195,29 +195,29 @@
           "lib/DNXCore50/System.Net.Sockets.dll": {}
         }
       },
-      "System.Private.Networking/4.0.1-beta-23308": {
+      "System.Private.Networking/4.0.1-beta-23311": {
         "dependencies": {
           "System.Runtime": "4.0.20",
           "System.Runtime.InteropServices": "4.0.20",
           "System.Diagnostics.Tracing": "4.0.20",
           "System.Resources.ResourceManager": "4.0.0",
           "System.Runtime.Handles": "4.0.0",
-          "System.Security.Cryptography.X509Certificates": "4.0.0-beta-23308",
+          "System.Security.Cryptography.X509Certificates": "4.0.0-beta-23311",
           "System.Collections.Concurrent": "4.0.0",
           "System.Collections.NonGeneric": "4.0.0",
-          "System.Security.SecureString": "4.0.0-beta-23308",
-          "System.Security.Principal.Windows": "4.0.0-beta-23308",
+          "System.Security.SecureString": "4.0.0-beta-23311",
+          "System.Security.Principal.Windows": "4.0.0-beta-23311",
           "Microsoft.Win32.Primitives": "4.0.0",
           "System.IO.FileSystem": "4.0.0",
           "System.Threading.Overlapped": "4.0.0",
-          "System.Security.Cryptography.Primitives": "4.0.0-beta-23308",
+          "System.Security.Cryptography.Primitives": "4.0.0-beta-23311",
           "System.IO.FileSystem.Primitives": "4.0.0",
           "System.Collections": "4.0.10",
           "System.Threading": "4.0.10",
           "System.Threading.Tasks": "4.0.10",
           "System.IO": "4.0.10",
           "System.Diagnostics.Debug": "4.0.10",
-          "System.Threading.ThreadPool": "4.0.10-beta-23308",
+          "System.Threading.ThreadPool": "4.0.10-beta-23311",
           "System.ComponentModel.EventBasedAsync": "4.0.10",
           "System.Runtime.Extensions": "4.0.10",
           "System.Globalization": "4.0.10"
@@ -359,12 +359,12 @@
           "lib/dotnet/System.Security.Claims.dll": {}
         }
       },
-      "System.Security.Cryptography.Algorithms/4.0.0-beta-23308": {
+      "System.Security.Cryptography.Algorithms/4.0.0-beta-23311": {
         "dependencies": {
           "System.Runtime": "4.0.20",
           "System.Resources.ResourceManager": "4.0.0",
           "System.Runtime.Handles": "4.0.0",
-          "System.Security.Cryptography.Primitives": "4.0.0-beta-23308",
+          "System.Security.Cryptography.Primitives": "4.0.0-beta-23311",
           "System.Text.Encoding.Extensions": "4.0.0",
           "System.Text.Encoding": "4.0.0",
           "System.IO": "4.0.10"
@@ -376,14 +376,14 @@
           "lib/DNXCore50/System.Security.Cryptography.Algorithms.dll": {}
         }
       },
-      "System.Security.Cryptography.Cng/4.0.0-beta-23308": {
+      "System.Security.Cryptography.Cng/4.0.0-beta-23311": {
         "dependencies": {
           "System.Runtime": "4.0.20",
           "System.Runtime.InteropServices": "4.0.20",
           "System.Resources.ResourceManager": "4.0.0",
-          "System.Security.Cryptography.Primitives": "4.0.0-beta-23308",
+          "System.Security.Cryptography.Primitives": "4.0.0-beta-23311",
           "System.Runtime.Handles": "4.0.0",
-          "System.Security.Cryptography.Algorithms": "4.0.0-beta-23308",
+          "System.Security.Cryptography.Algorithms": "4.0.0-beta-23311",
           "System.Runtime.Extensions": "4.0.0",
           "System.IO": "4.0.10"
         },
@@ -394,15 +394,15 @@
           "lib/DNXCore50/System.Security.Cryptography.Cng.dll": {}
         }
       },
-      "System.Security.Cryptography.Csp/4.0.0-beta-23308": {
+      "System.Security.Cryptography.Csp/4.0.0-beta-23311": {
         "dependencies": {
           "System.Runtime": "4.0.20",
           "System.Runtime.InteropServices": "4.0.20",
           "System.Resources.ResourceManager": "4.0.0",
-          "System.Security.Cryptography.Encoding": "4.0.0-beta-23308",
-          "System.Security.Cryptography.Algorithms": "4.0.0-beta-23308",
+          "System.Security.Cryptography.Encoding": "4.0.0-beta-23311",
+          "System.Security.Cryptography.Algorithms": "4.0.0-beta-23311",
           "System.Reflection": "4.0.0",
-          "System.Security.Cryptography.Primitives": "4.0.0-beta-23308",
+          "System.Security.Cryptography.Primitives": "4.0.0-beta-23311",
           "System.Runtime.Handles": "4.0.0",
           "System.IO": "4.0.10",
           "System.Runtime.Extensions": "4.0.10",
@@ -416,13 +416,13 @@
           "lib/DNXCore50/System.Security.Cryptography.Csp.dll": {}
         }
       },
-      "System.Security.Cryptography.Encoding/4.0.0-beta-23308": {
+      "System.Security.Cryptography.Encoding/4.0.0-beta-23311": {
         "dependencies": {
           "System.Runtime": "4.0.20",
           "System.Runtime.InteropServices": "4.0.20",
           "System.Resources.ResourceManager": "4.0.0",
           "System.Runtime.Handles": "4.0.0",
-          "System.Security.Cryptography.Primitives": "4.0.0-beta-23308",
+          "System.Security.Cryptography.Primitives": "4.0.0-beta-23311",
           "System.Diagnostics.Debug": "4.0.10"
         },
         "compile": {
@@ -432,7 +432,7 @@
           "lib/DNXCore50/System.Security.Cryptography.Encoding.dll": {}
         }
       },
-      "System.Security.Cryptography.Primitives/4.0.0-beta-23308": {
+      "System.Security.Cryptography.Primitives/4.0.0-beta-23311": {
         "dependencies": {
           "System.Runtime": "4.0.20",
           "System.Resources.ResourceManager": "4.0.0",
@@ -449,20 +449,20 @@
           "lib/DNXCore50/System.Security.Cryptography.Primitives.dll": {}
         }
       },
-      "System.Security.Cryptography.X509Certificates/4.0.0-beta-23308": {
+      "System.Security.Cryptography.X509Certificates/4.0.0-beta-23311": {
         "dependencies": {
           "System.Runtime": "4.0.20",
           "System.Runtime.InteropServices": "4.0.20",
           "System.Resources.ResourceManager": "4.0.0",
-          "System.Security.Cryptography.Primitives": "4.0.0-beta-23308",
-          "System.Security.Cryptography.Csp": "4.0.0-beta-23308",
-          "System.Security.Cryptography.Encoding": "4.0.0-beta-23308",
-          "System.Security.Cryptography.Algorithms": "4.0.0-beta-23308",
+          "System.Security.Cryptography.Primitives": "4.0.0-beta-23311",
+          "System.Security.Cryptography.Csp": "4.0.0-beta-23311",
+          "System.Security.Cryptography.Encoding": "4.0.0-beta-23311",
+          "System.Security.Cryptography.Algorithms": "4.0.0-beta-23311",
           "System.Runtime.Handles": "4.0.0",
           "System.Runtime.Numerics": "4.0.0",
           "System.Globalization.Calendars": "4.0.0",
           "System.IO.FileSystem": "4.0.0",
-          "System.Security.Cryptography.Cng": "4.0.0-beta-23308",
+          "System.Security.Cryptography.Cng": "4.0.0-beta-23311",
           "System.Globalization": "4.0.10",
           "System.Collections": "4.0.10",
           "System.IO": "4.0.10",
@@ -489,7 +489,7 @@
           "lib/dotnet/System.Security.Principal.dll": {}
         }
       },
-      "System.Security.Principal.Windows/4.0.0-beta-23308": {
+      "System.Security.Principal.Windows/4.0.0-beta-23311": {
         "dependencies": {
           "System.Runtime": "4.0.20",
           "System.Runtime.InteropServices": "4.0.20",
@@ -511,13 +511,13 @@
           "lib/DNXCore50/System.Security.Principal.Windows.dll": {}
         }
       },
-      "System.Security.SecureString/4.0.0-beta-23308": {
+      "System.Security.SecureString/4.0.0-beta-23311": {
         "dependencies": {
           "System.Runtime": "4.0.20",
           "System.Runtime.InteropServices": "4.0.20",
           "System.Resources.ResourceManager": "4.0.0",
           "System.Runtime.Handles": "4.0.0",
-          "System.Security.Cryptography.Primitives": "4.0.0-beta-23308",
+          "System.Security.Cryptography.Primitives": "4.0.0-beta-23311",
           "System.Threading": "4.0.10"
         },
         "compile": {
@@ -585,7 +585,7 @@
           "lib/DNXCore50/System.Threading.Tasks.dll": {}
         }
       },
-      "System.Threading.ThreadPool/4.0.10-beta-23308": {
+      "System.Threading.ThreadPool/4.0.10-beta-23311": {
         "dependencies": {
           "System.Runtime": "4.0.0",
           "System.Runtime.InteropServices": "4.0.0"
@@ -597,56 +597,54 @@
           "lib/DNXCore50/System.Threading.ThreadPool.dll": {}
         }
       },
-      "xunit/2.0.0-beta5-build2785": {
+      "xunit/2.1.0-beta3-build3029": {
         "dependencies": {
-          "xunit.core": "[2.0.0-beta5-build2785]",
-          "xunit.assert": "[2.0.0-beta5-build2785]"
+          "xunit.core": "[2.1.0-beta3-build3029]",
+          "xunit.assert": "[2.1.0-beta3-build3029]"
         }
       },
-      "xunit.abstractions/2.0.0-beta5-build2785": {
+      "xunit.abstractions/2.0.0": {
         "compile": {
-          "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.abstractions.dll": {}
+          "lib/portable-net45+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS/xunit.abstractions.dll": {}
         },
         "runtime": {
-          "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.abstractions.dll": {}
+          "lib/portable-net45+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS/xunit.abstractions.dll": {}
         }
       },
-      "xunit.abstractions.netcore/1.0.0-prerelease": {
+      "xunit.assert/2.1.0-beta3-build3029": {
         "compile": {
-          "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS/xunit.abstractions.dll": {}
+          "lib/portable-net45+dnxcore50+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS/xunit.assert.dll": {}
         },
         "runtime": {
-          "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS/xunit.abstractions.dll": {}
+          "lib/portable-net45+dnxcore50+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS/xunit.assert.dll": {}
         }
       },
-      "xunit.assert/2.0.0-beta5-build2785": {
-        "compile": {
-          "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monoandroid+monotouch10/xunit.assert.dll": {}
-        },
-        "runtime": {
-          "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monoandroid+monotouch10/xunit.assert.dll": {}
-        }
-      },
-      "xunit.core/2.0.0-beta5-build2785": {
+      "xunit.core/2.1.0-beta3-build3029": {
         "dependencies": {
-          "xunit.abstractions": "[2.0.0-beta5-build2785]"
-        },
-        "compile": {
-          "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.core.dll": {}
-        },
-        "runtime": {
-          "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.core.dll": {}
+          "xunit.extensibility.core": "[2.1.0-beta3-build3029]",
+          "xunit.extensibility.execution": "[2.1.0-beta3-build3029]"
         }
       },
-      "xunit.core.netcore/1.0.1-prerelease": {
+      "xunit.extensibility.core/2.1.0-beta3-build3029": {
         "dependencies": {
-          "xunit.abstractions": "[2.0.0-beta5-build2785]"
+          "xunit.abstractions": "[2.0.0]"
         },
         "compile": {
-          "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.core.dll": {}
+          "lib/portable-net45+dnxcore50+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS/xunit.core.dll": {}
         },
         "runtime": {
-          "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.core.dll": {}
+          "lib/portable-net45+dnxcore50+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS/xunit.core.dll": {}
+        }
+      },
+      "xunit.extensibility.execution/2.1.0-beta3-build3029": {
+        "dependencies": {
+          "xunit.extensibility.core": "[2.1.0-beta3-build3029]"
+        },
+        "compile": {
+          "lib/dnxcore50/xunit.execution.dnx.dll": {}
+        },
+        "runtime": {
+          "lib/dnxcore50/xunit.execution.dnx.dll": {}
         }
       },
       "xunit.netcore.extensions/1.0.0-prerelease-00085": {
@@ -1139,12 +1137,12 @@
         "ref/xamarinmac20/_._"
       ]
     },
-    "System.Net.Sockets/4.1.0-beta-23308": {
+    "System.Net.Sockets/4.1.0-beta-23311": {
       "serviceable": true,
-      "sha512": "owoLEqisi/Khl6URkUJFvK+pHLA79nDYJZtC4UOWZEwxjuNytW7pO0YVvKAU9b4Sdl0mCUXrI1gy78JwYnGC3w==",
+      "sha512": "l9OuafxuR1K6xbktxd8eseRDX5lq/qekTMj9mgumR+xqF+Rowfho/EOgaZSehJzY3y5WmuyODbE/Iymdbv581g==",
       "files": [
-        "System.Net.Sockets.4.1.0-beta-23308.nupkg",
-        "System.Net.Sockets.4.1.0-beta-23308.nupkg.sha512",
+        "System.Net.Sockets.4.1.0-beta-23311.nupkg",
+        "System.Net.Sockets.4.1.0-beta-23311.nupkg.sha512",
         "System.Net.Sockets.nuspec",
         "System.Net.Sockets.xml",
         "de/System.Net.Sockets.xml",
@@ -1170,12 +1168,12 @@
         "zh-hant/System.Net.Sockets.xml"
       ]
     },
-    "System.Private.Networking/4.0.1-beta-23308": {
+    "System.Private.Networking/4.0.1-beta-23311": {
       "serviceable": true,
-      "sha512": "JCtjeP7u/0jzolGuQldmvYxeRll8ksyDw/FWA82a9SdESPxC/2P2AJIh+Mml5A/TwjOvELbsgvplFOK6PzbrMA==",
+      "sha512": "26SmurZIUMIWKmU0exNc14Efg9dDxPV0/eRuGPbbBUWiddmx4y4h1wj3OOQwtuWmVix9EnnYYGRShG0Mb6rYrg==",
       "files": [
-        "System.Private.Networking.4.0.1-beta-23308.nupkg",
-        "System.Private.Networking.4.0.1-beta-23308.nupkg.sha512",
+        "System.Private.Networking.4.0.1-beta-23311.nupkg",
+        "System.Private.Networking.4.0.1-beta-23311.nupkg.sha512",
         "System.Private.Networking.nuspec",
         "lib/DNXCore50/System.Private.Networking.dll",
         "lib/netcore50/System.Private.Networking.dll",
@@ -1507,12 +1505,12 @@
         "ref/xamarinmac20/_._"
       ]
     },
-    "System.Security.Cryptography.Algorithms/4.0.0-beta-23308": {
+    "System.Security.Cryptography.Algorithms/4.0.0-beta-23311": {
       "serviceable": true,
-      "sha512": "hznlyivHcIuzZfBdedOCNVGfHuKXZ7B1pqrVyPrmYU9FfADHPhYuBZuNWgkqk4UFNhRcGXSSwzEUmx0LMzE/5g==",
+      "sha512": "1l9b838cbDrV/KUwlnLmGTF2JbHBt7yJ0tw9mCl2LXZk31y+W0vzo0gA0RUfdr4ASvhF1dOzq6cUwolPScc7wQ==",
       "files": [
-        "System.Security.Cryptography.Algorithms.4.0.0-beta-23308.nupkg",
-        "System.Security.Cryptography.Algorithms.4.0.0-beta-23308.nupkg.sha512",
+        "System.Security.Cryptography.Algorithms.4.0.0-beta-23311.nupkg",
+        "System.Security.Cryptography.Algorithms.4.0.0-beta-23311.nupkg.sha512",
         "System.Security.Cryptography.Algorithms.nuspec",
         "lib/DNXCore50/System.Security.Cryptography.Algorithms.dll",
         "lib/MonoAndroid10/_._",
@@ -1528,12 +1526,12 @@
         "ref/xamarinmac20/_._"
       ]
     },
-    "System.Security.Cryptography.Cng/4.0.0-beta-23308": {
+    "System.Security.Cryptography.Cng/4.0.0-beta-23311": {
       "serviceable": true,
-      "sha512": "CArTr52F0BeB5i2epPCdHAmpfry/DONPJLgYGLyDruMX+m9pA/ybxmlEqVzeILK1E5S2H96tw3PfhXP1mULzIQ==",
+      "sha512": "T/vjQNnI4FSk1+faUCyVCS1pJzgGocBPRC1s/UhJltwyHB195pOmYLwJJBxwqBT85XaWl0Emb/XL/2TXnBMK+Q==",
       "files": [
-        "System.Security.Cryptography.Cng.4.0.0-beta-23308.nupkg",
-        "System.Security.Cryptography.Cng.4.0.0-beta-23308.nupkg.sha512",
+        "System.Security.Cryptography.Cng.4.0.0-beta-23311.nupkg",
+        "System.Security.Cryptography.Cng.4.0.0-beta-23311.nupkg.sha512",
         "System.Security.Cryptography.Cng.nuspec",
         "lib/DNXCore50/System.Security.Cryptography.Cng.dll",
         "lib/net46/System.Security.Cryptography.Cng.dll",
@@ -1541,12 +1539,12 @@
         "ref/net46/System.Security.Cryptography.Cng.dll"
       ]
     },
-    "System.Security.Cryptography.Csp/4.0.0-beta-23308": {
+    "System.Security.Cryptography.Csp/4.0.0-beta-23311": {
       "serviceable": true,
-      "sha512": "xOK8k/knNGibfhrXvKm1MwcLPwfYXM5uvZju/oDsH+UsrQrKkSrF8dmkNrQGcXRKS40UO1Ehuf+o29KHcmlchw==",
+      "sha512": "DHqs+RZcJgXgcOL/AOZJpOpJwpxK/9PJgg4b2h/M1VGl/MpT+jN1IE7ExVVT5OE/2lw3YZgg9DIV5HxQVQOKGQ==",
       "files": [
-        "System.Security.Cryptography.Csp.4.0.0-beta-23308.nupkg",
-        "System.Security.Cryptography.Csp.4.0.0-beta-23308.nupkg.sha512",
+        "System.Security.Cryptography.Csp.4.0.0-beta-23311.nupkg",
+        "System.Security.Cryptography.Csp.4.0.0-beta-23311.nupkg.sha512",
         "System.Security.Cryptography.Csp.nuspec",
         "lib/DNXCore50/System.Security.Cryptography.Csp.dll",
         "lib/MonoAndroid10/_._",
@@ -1562,12 +1560,12 @@
         "ref/xamarinmac20/_._"
       ]
     },
-    "System.Security.Cryptography.Encoding/4.0.0-beta-23308": {
+    "System.Security.Cryptography.Encoding/4.0.0-beta-23311": {
       "serviceable": true,
-      "sha512": "JEmCo4yYI9Vqa38SopsJGXH1QToQ5gSsi7oCAvvoXjahjhPzo7GLJ/Qn+KlZ80hWPEI9kafIM1yETNpzyaAzbg==",
+      "sha512": "dtzZI2XMpdO7NuEaxib9QYJc7+zHcQoZiKjnah61fEj7MTbLyi4Bv6MD/phjM6Rq0gIq+tGwFOHzh7kcblTn+w==",
       "files": [
-        "System.Security.Cryptography.Encoding.4.0.0-beta-23308.nupkg",
-        "System.Security.Cryptography.Encoding.4.0.0-beta-23308.nupkg.sha512",
+        "System.Security.Cryptography.Encoding.4.0.0-beta-23311.nupkg",
+        "System.Security.Cryptography.Encoding.4.0.0-beta-23311.nupkg.sha512",
         "System.Security.Cryptography.Encoding.nuspec",
         "System.Security.Cryptography.Encoding.xml",
         "de/System.Security.Cryptography.Encoding.xml",
@@ -1593,12 +1591,12 @@
         "zh-hant/System.Security.Cryptography.Encoding.xml"
       ]
     },
-    "System.Security.Cryptography.Primitives/4.0.0-beta-23308": {
+    "System.Security.Cryptography.Primitives/4.0.0-beta-23311": {
       "serviceable": true,
-      "sha512": "2Jk/gxGH4P66pS3lX3/3yCEbzegrnoEecVBLeJduheDUdZJzmSZLWToD/Dkd0e3YfbToBVeTBDMA2qKKQiXc3Q==",
+      "sha512": "znDa+79gOts4Kgfvy/JmZ6m5xLE4q7CJSCxkPFl3t+BJE7IXwwkUQ489oc7E02YrIm1EpnYTcyUnnI0EqmgGXQ==",
       "files": [
-        "System.Security.Cryptography.Primitives.4.0.0-beta-23308.nupkg",
-        "System.Security.Cryptography.Primitives.4.0.0-beta-23308.nupkg.sha512",
+        "System.Security.Cryptography.Primitives.4.0.0-beta-23311.nupkg",
+        "System.Security.Cryptography.Primitives.4.0.0-beta-23311.nupkg.sha512",
         "System.Security.Cryptography.Primitives.nuspec",
         "lib/DNXCore50/System.Security.Cryptography.Primitives.dll",
         "lib/MonoAndroid10/_._",
@@ -1614,12 +1612,12 @@
         "ref/xamarinmac20/_._"
       ]
     },
-    "System.Security.Cryptography.X509Certificates/4.0.0-beta-23308": {
+    "System.Security.Cryptography.X509Certificates/4.0.0-beta-23311": {
       "serviceable": true,
-      "sha512": "fHWbFeEnSDXl3hoACPBj03OWZnVRoCChl6ZVLheihD771Ue3Y0jTxvWvPx1eUQr2NOP/RpgZnPMImFrwmGtklg==",
+      "sha512": "OdLrb0zAibmK8zzlyKPG+fUzxzkptgLlgYIMdP2+00348/mhmzX9ZcCtNsEvxJByN+TnJ8adCPJOcml5b/nYzQ==",
       "files": [
-        "System.Security.Cryptography.X509Certificates.4.0.0-beta-23308.nupkg",
-        "System.Security.Cryptography.X509Certificates.4.0.0-beta-23308.nupkg.sha512",
+        "System.Security.Cryptography.X509Certificates.4.0.0-beta-23311.nupkg",
+        "System.Security.Cryptography.X509Certificates.4.0.0-beta-23311.nupkg.sha512",
         "System.Security.Cryptography.X509Certificates.nuspec",
         "System.Security.Cryptography.X509Certificates.xml",
         "de/System.Security.Cryptography.X509Certificates.xml",
@@ -1693,12 +1691,12 @@
         "ref/wpa81/_._"
       ]
     },
-    "System.Security.Principal.Windows/4.0.0-beta-23308": {
+    "System.Security.Principal.Windows/4.0.0-beta-23311": {
       "serviceable": true,
-      "sha512": "i+4jlbyUv7LAwFTxNxppUx140Ikb5EpdZSC5V2yuczlMrCnK0Pqwa24Rhx7Jg0KjKIquSfoBSbkCFMh184eqMg==",
+      "sha512": "6prP/ZgRLLvcAJyM0AqRHSmGGWuLJTnIB4aVw3f1ffM5L+m0G/5REKcLytubqOxIAAEy5kUPfKQaS+SQBdmtfg==",
       "files": [
-        "System.Security.Principal.Windows.4.0.0-beta-23308.nupkg",
-        "System.Security.Principal.Windows.4.0.0-beta-23308.nupkg.sha512",
+        "System.Security.Principal.Windows.4.0.0-beta-23311.nupkg",
+        "System.Security.Principal.Windows.4.0.0-beta-23311.nupkg.sha512",
         "System.Security.Principal.Windows.nuspec",
         "System.Security.Principal.Windows.xml",
         "de/System.Security.Principal.Windows.xml",
@@ -1716,12 +1714,12 @@
         "zh-hant/System.Security.Principal.Windows.xml"
       ]
     },
-    "System.Security.SecureString/4.0.0-beta-23308": {
+    "System.Security.SecureString/4.0.0-beta-23311": {
       "serviceable": true,
-      "sha512": "YtyEz4KOiFc8Hm52d17WNFDoj2UgHDcI+KxHt3b2tX2j4f6QTJ4YH0FqkjvHFVOSGtjHAcMH268r30THxbiVVw==",
+      "sha512": "izUtxnsuX6Qw91jPbOhlxP7lolyNHIeliBWUX2RWcTpmfZf3MnGLPsf2F66OjBnLv983D2Cf7MA3cLG8fveztQ==",
       "files": [
-        "System.Security.SecureString.4.0.0-beta-23308.nupkg",
-        "System.Security.SecureString.4.0.0-beta-23308.nupkg.sha512",
+        "System.Security.SecureString.4.0.0-beta-23311.nupkg",
+        "System.Security.SecureString.4.0.0-beta-23311.nupkg.sha512",
         "System.Security.SecureString.nuspec",
         "System.Security.SecureString.xml",
         "de/System.Security.SecureString.xml",
@@ -1903,12 +1901,12 @@
         "[Content_Types].xml"
       ]
     },
-    "System.Threading.ThreadPool/4.0.10-beta-23308": {
+    "System.Threading.ThreadPool/4.0.10-beta-23311": {
       "serviceable": true,
-      "sha512": "OdtNuFXji5xcdFM/HWLvU/ZGQJYmJori5kj4s7wu7BzyKRwFDnXdrwLceDyanokLFcWTVaoigllpGwkbLpGMYg==",
+      "sha512": "KF1vm7tZIPslDE262oI6FXlKlXOoz5K4HMR1V6DlZIstkL6CyLISv8c6vhdj3R0k2vmmVKcp2GyF4sOWbD0Y2A==",
       "files": [
-        "System.Threading.ThreadPool.4.0.10-beta-23308.nupkg",
-        "System.Threading.ThreadPool.4.0.10-beta-23308.nupkg.sha512",
+        "System.Threading.ThreadPool.4.0.10-beta-23311.nupkg",
+        "System.Threading.ThreadPool.4.0.10-beta-23311.nupkg.sha512",
         "System.Threading.ThreadPool.nuspec",
         "lib/DNXCore50/System.Threading.ThreadPool.dll",
         "lib/MonoAndroid10/_._",
@@ -1924,98 +1922,111 @@
         "ref/xamarinmac20/_._"
       ]
     },
-    "xunit/2.0.0-beta5-build2785": {
-      "sha512": "bNycxZe/83M7o7j0IbGp3/daiPLi17hZgYZB6xttgCVDnxgAuw/TP1zetiUTW1yVUPASnAjlkBeJayv/G2Crsw==",
+    "xunit/2.1.0-beta3-build3029": {
+      "sha512": "NMFXV0ePe/GrfhMSPGAlWmiUZCzjaatpdAGcavf2B6vYTRyMTpyJT01LI6jemMV/VSDXLrtHp0Ov9xZyR1cLLg==",
       "files": [
         "_rels/.rels",
         "xunit.nuspec",
-        "package/services/metadata/core-properties/6c890516e9584d3ab4031ef8a539ff70.psmdcp",
+        "package/services/metadata/core-properties/d8f65b6e50974443be49b52c7aaafb11.psmdcp",
         "[Content_Types].xml"
       ]
     },
-    "xunit.abstractions/2.0.0-beta5-build2785": {
-      "sha512": "b2RCnV2/wilCH1dsh7bAF82Ou+Vs+WfYLEItzRUUbD3YHNODx0ncpQwLz1JYjL/voBFc5mQh77hxIbgCGmyxKA==",
+    "xunit.abstractions/2.0.0": {
+      "sha512": "NAdxKQRzuLnCZ0g++x6i87/8rMBpQoRiRlRNLAqfODm2zJPbteHRoSER3DXfxnqrHXyBJT8rFaZ8uveBeQyaMA==",
       "files": [
         "_rels/.rels",
         "xunit.abstractions.nuspec",
         "lib/net35/xunit.abstractions.dll",
         "lib/net35/xunit.abstractions.xml",
-        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.abstractions.dll",
-        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.abstractions.xml",
-        "package/services/metadata/core-properties/399f3731609f4d74afacd3835adec3ef.psmdcp",
+        "lib/portable-net45+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS/xunit.abstractions.dll",
+        "lib/portable-net45+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS/xunit.abstractions.xml",
+        "package/services/metadata/core-properties/24083640fee244bf9de77f4c35d40a72.psmdcp",
         "[Content_Types].xml"
       ]
     },
-    "xunit.abstractions.netcore/1.0.0-prerelease": {
-      "sha512": "fajSAvVztuUVSb/o1GxYM5I33Ikvx6CNNscpOnDAl6AnDAKqhOeu3iPTL0VzDhzXiXyOKbRi4iewv4hAWTgeuw==",
-      "files": [
-        "xunit.abstractions.netcore.1.0.0-prerelease.nupkg",
-        "xunit.abstractions.netcore.1.0.0-prerelease.nupkg.sha512",
-        "xunit.abstractions.netcore.nuspec",
-        "lib/net35/xunit.abstractions.dll",
-        "lib/net35/xunit.abstractions.xml",
-        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS/xunit.abstractions.dll",
-        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS/xunit.abstractions.xml"
-      ]
-    },
-    "xunit.assert/2.0.0-beta5-build2785": {
-      "sha512": "1PTLrP+jLzSIhqO3JzzgPcMPmSyBlFadpFH6v3d2Vm08x/bIYHnF78h20qt6wk/t3wMu7smOsyoNcUFeP2ZnGg==",
+    "xunit.assert/2.1.0-beta3-build3029": {
+      "sha512": "AMS7Fv77DayXVRCBMmVEDwOXPcbxk8dCBA/iACsve+6+UQqopMtNyAynyIcXPFRK/peeitUKID4ChOXWisJmUw==",
       "files": [
         "_rels/.rels",
         "xunit.assert.nuspec",
-        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monoandroid+monotouch10/xunit.assert.dll",
-        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monoandroid+monotouch10/xunit.assert.pdb",
-        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monoandroid+monotouch10/xunit.assert.xml",
-        "package/services/metadata/core-properties/9744844535724f06a45b33a9b7fe9d6b.psmdcp",
+        "lib/portable-net45+dnxcore50+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS/xunit.assert.dll",
+        "lib/portable-net45+dnxcore50+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS/xunit.assert.pdb",
+        "lib/portable-net45+dnxcore50+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS/xunit.assert.xml",
+        "package/services/metadata/core-properties/38c52763215f45f28d084a9c1b6e4fa2.psmdcp",
         "[Content_Types].xml"
       ]
     },
-    "xunit.core/2.0.0-beta5-build2785": {
-      "sha512": "3rDhbyvCS1iA20A7uXxYvw3LLa4MtyXUX9Y6i3QjY/dRhIHEZcSxBjBfGP3MjPm900WnsBx2H0ryQo2RWABhhg==",
+    "xunit.core/2.1.0-beta3-build3029": {
+      "sha512": "uDUBbwZSRx226BMwj6VylzXQPVpEIelNIulT+LxbSEH52y2a4btR9d5ptQmkSVjmJXP5/hGCc4cu1DSCu0pgUA==",
       "files": [
         "_rels/.rels",
         "xunit.core.nuspec",
-        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.core.dll",
-        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.core.pdb",
-        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.core.xml",
-        "build/portable-net45+win+wpa81+wp80+monotouch+monoandroid/xunit.core.props",
-        "build/portable-net45+win+wpa81+wp80+monotouch+monoandroid/xunit.execution.dll",
-        "build/win8/xunit.core.props",
-        "build/win8/xunit.core.targets",
-        "build/win8/xunit.execution.dll",
-        "build/win8/device/xunit.execution.dll",
-        "build/wpa81/xunit.core.props",
-        "build/wpa81/xunit.core.targets",
-        "build/wpa81/xunit.execution.dll",
-        "build/wpa81/device/xunit.execution.dll",
-        "build/wpa81/device/xunit.execution.pri",
+        "build/_Desktop/xunit.execution.desktop.dll",
+        "build/monoandroid/xunit.core.props",
+        "build/monoandroid/xunit.execution.MonoAndroid.dll",
+        "build/monotouch/xunit.core.props",
+        "build/monotouch/xunit.execution.MonoTouch.dll",
+        "build/portable-net45+dnxcore50+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS/xunit.core.props",
+        "build/portable-win81+wpa81/xunit.core.props",
+        "build/portable-win81+wpa81/xunit.core.targets",
+        "build/portable-win81+wpa81/xunit.execution.universal.dll",
+        "build/portable-win81+wpa81/xunit.execution.universal.pri",
         "build/wp8/xunit.core.props",
         "build/wp8/xunit.core.targets",
-        "build/wp8/xunit.execution.dll",
-        "build/wp8/device/xunit.execution.dll",
-        "build/monotouch/xunit.core.props",
-        "build/monotouch/xunit.execution.dll",
-        "build/monoandroid/xunit.core.props",
-        "build/monoandroid/xunit.execution.dll",
-        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.core.dll.tdnet",
-        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.runner.tdnet.dll",
-        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.runner.utility.dll",
-        "package/services/metadata/core-properties/7e3ae190162d4ceaa2151619ccd704ef.psmdcp",
+        "build/wp8/xunit.execution.wp8.dll",
+        "build/Xamarin.iOS/xunit.core.props",
+        "build/Xamarin.iOS/xunit.execution.iOS-Universal.dll",
+        "package/services/metadata/core-properties/7cc532c455474d1dac8f8b0cfe0b3522.psmdcp",
         "[Content_Types].xml"
       ]
     },
-    "xunit.core.netcore/1.0.1-prerelease": {
-      "sha512": "iy2u6WUx6CxSn7ahvJrBOrrpsLphtu1kjDGmyJKOiCmoCPczZEHjPOVL1OCt4V3EWCwS0zypWV8uVSqn1/UM8g==",
+    "xunit.extensibility.core/2.1.0-beta3-build3029": {
+      "sha512": "lsPro5U3NLasHI/RwqjKzXiRlh9N0IOlR3cluwXYVtihXbGtySeSnU/Fh5MTcWYxh+MVpoNop5zDD0/A2nrHsA==",
       "files": [
-        "xunit.core.netcore.1.0.1-prerelease.nupkg",
-        "xunit.core.netcore.1.0.1-prerelease.nupkg.sha512",
-        "xunit.core.netcore.nuspec",
-        "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.core.dll",
-        "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.core.pdb",
-        "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.core.xml",
-        "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.runner.utility.dll",
-        "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.runner.utility.pdb",
-        "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.runner.utility.xml"
+        "_rels/.rels",
+        "xunit.extensibility.core.nuspec",
+        "lib/portable-net45+dnxcore50+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS/xunit.core.dll",
+        "lib/portable-net45+dnxcore50+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS/xunit.core.dll.tdnet",
+        "lib/portable-net45+dnxcore50+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS/xunit.core.pdb",
+        "lib/portable-net45+dnxcore50+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS/xunit.core.xml",
+        "lib/portable-net45+dnxcore50+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS/xunit.runner.tdnet.dll",
+        "lib/portable-net45+dnxcore50+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS/xunit.runner.utility.desktop.dll",
+        "package/services/metadata/core-properties/40eb326fb1ea4e05a77fef0e7c6571cc.psmdcp",
+        "[Content_Types].xml"
+      ]
+    },
+    "xunit.extensibility.execution/2.1.0-beta3-build3029": {
+      "sha512": "WuUYamK4RHrHxihvNuX7NkryMhQrpH1+ziJ/mPIQbm18zevSgre8BwUuVZvmLZa8uVob3xS4dvAah2+HCgLiXg==",
+      "files": [
+        "_rels/.rels",
+        "xunit.extensibility.execution.nuspec",
+        "lib/dnx451/xunit.execution.dnx.dll",
+        "lib/dnx451/xunit.execution.dnx.pdb",
+        "lib/dnx451/xunit.execution.dnx.xml",
+        "lib/dnxcore50/xunit.execution.dnx.dll",
+        "lib/dnxcore50/xunit.execution.dnx.pdb",
+        "lib/dnxcore50/xunit.execution.dnx.xml",
+        "lib/monoandroid/xunit.execution.MonoAndroid.dll",
+        "lib/monoandroid/xunit.execution.MonoAndroid.pdb",
+        "lib/monoandroid/xunit.execution.MonoAndroid.xml",
+        "lib/monotouch/xunit.execution.MonoTouch.dll",
+        "lib/monotouch/xunit.execution.MonoTouch.pdb",
+        "lib/monotouch/xunit.execution.MonoTouch.xml",
+        "lib/net45/xunit.execution.desktop.dll",
+        "lib/net45/xunit.execution.desktop.pdb",
+        "lib/net45/xunit.execution.desktop.xml",
+        "lib/portable-wpa81+win81/xunit.execution.universal.dll",
+        "lib/portable-wpa81+win81/xunit.execution.universal.pdb",
+        "lib/portable-wpa81+win81/xunit.execution.universal.xml",
+        "lib/portable-wpa81+win81/xunit.execution.universal.pri",
+        "lib/wp8/xunit.execution.wp8.dll",
+        "lib/wp8/xunit.execution.wp8.pdb",
+        "lib/wp8/xunit.execution.wp8.xml",
+        "lib/Xamarin.iOS/xunit.execution.iOS-Universal.dll",
+        "lib/Xamarin.iOS/xunit.execution.iOS-Universal.pdb",
+        "lib/Xamarin.iOS/xunit.execution.iOS-Universal.xml",
+        "package/services/metadata/core-properties/632d17654a7d4ee58b8c7032b6bae6bf.psmdcp",
+        "[Content_Types].xml"
       ]
     },
     "xunit.netcore.extensions/1.0.0-prerelease-00085": {
@@ -2034,10 +2045,7 @@
       "System.Net.Primitives >= 4.0.10-beta-*",
       "System.Net.Sockets >= 4.1.0-beta-*",
       "System.Security.Cryptography.X509Certificates.TestData >= 1.0.0-prerelease",
-      "xunit >= 2.0.0-beta5-build2785",
-      "xunit.abstractions.netcore >= 1.0.0-prerelease",
-      "xunit.assert >= 2.0.0-beta5-build2785",
-      "xunit.core.netcore >= 1.0.1-prerelease",
+      "xunit >= 2.1.0-beta3-*",
       "xunit.netcore.extensions >= 1.0.0-prerelease-*"
     ],
     "DNXCore,Version=v5.0": []

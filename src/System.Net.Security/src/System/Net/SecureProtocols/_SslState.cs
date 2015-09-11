@@ -199,7 +199,7 @@ namespace System.Net.Security
         {
             _CertValidationDelegate = certValidationCallback;
         }
-        
+
         //
         // This will return selected local cert for both client/server streams
         //
@@ -211,7 +211,7 @@ namespace System.Net.Security
                 return InternalLocalCertificate;
             }
         }
-        
+
         private X509Certificate InternalLocalCertificate
         {
             get
@@ -1027,7 +1027,7 @@ namespace System.Net.Security
             try
             {
                 sslState.InnerStreamAPM.EndWrite(transportResult);
-                
+
                 // Special case for an error notification.
                 object asyncState = asyncRequest.AsyncState;
                 Exception exception = asyncState as Exception;
@@ -1051,7 +1051,7 @@ namespace System.Net.Security
         private static void PartialFrameCallback(AsyncProtocolRequest asyncRequest)
         {
             GlobalLog.Print("SslState::PartialFrameCallback()");
-            
+
             // Async ONLY completion.
             SslState sslState = (SslState)asyncRequest.AsyncObject;
             try
@@ -1691,7 +1691,7 @@ namespace System.Net.Security
         private void CompleteRequestWaitCallback(object state)
         {
             AsyncProtocolRequest request = (AsyncProtocolRequest)state;
-            
+
             // Force async completion.
             if (request.MustCompleteSynchronously)
                 throw new InternalException();
