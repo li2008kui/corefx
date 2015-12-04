@@ -14,6 +14,8 @@ internal partial class Interop
         internal static class BCryptPropertyStrings
         {
             internal const string BCRYPT_HASH_LENGTH = "HashDigestLength";
+            internal const string BCRYPT_AUTH_TAG_LENGTH = "AuthTagLength";
+
         }
     }
 }

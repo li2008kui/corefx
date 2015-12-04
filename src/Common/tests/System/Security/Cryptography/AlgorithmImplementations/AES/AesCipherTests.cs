@@ -97,7 +97,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
             TestAesDecrypt(CipherMode.ECB, s_aes192Key, null, encryptedBytes, s_multiBlockBytes);
         }
-        
+
         [Fact]
         public static void VerifyInPlaceEncryption()
         {
@@ -348,6 +348,28 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 cipherBytes: new byte[] { 0x6C, 0xD0, 0x25, 0x13, 0xE8, 0xD4, 0xDC, 0x98, 0x6B, 0x4A, 0xFE, 0x08, 0x7A, 0x60, 0xBD, 0x0C });
         }
 
+        [Theory]
+        [MemberData("GetNistGcmTestCases")]
+        public static void GcmReferenceTest(AuthModeReferenceTest testCase)
+        {
+            byte[] iv = testCase.GetIV();
+            bool optimalLength = (iv != null && iv.Length == 12);
+
+            try
+            {
+                TestAesTransformDirectKey(
+                    CipherMode.GCM,
+                    PaddingMode.None,
+                    key: testCase.GetKey(),
+                    iv: iv,
+                    plainBytes: testCase.GetPlainText(),
+                    cipherBytes: testCase.GetCipherText(),
+                    authData: testCase.GetAuthData(),
+                    authTag: testCase.GetAuthTag());
+            }
+            catch (CryptographicException)
+        }
+
         [Fact]
         public static void WrongKeyFailDecrypt()
         {
@@ -588,45 +610,89 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             byte[] key,
             byte[] iv,
             byte[] plainBytes,
-            byte[] cipherBytes)
+            byte[] cipherBytes,
+            byte[] authData=null,
+            byte[] authTag=null)
         {
             byte[] liveEncryptBytes;
             byte[] liveDecryptBytes;
+            byte[] liveAuthTag;
+            int tagLen = authTag == null ? 0 : authTag.Length;
 
             using (Aes aes = AesFactory.Create())
             {
                 aes.Mode = cipherMode;
                 aes.Padding = paddingMode;
 
-                liveEncryptBytes = AesEncryptDirectKey(aes, key, iv, plainBytes);
-                liveDecryptBytes = AesDecryptDirectKey(aes, key, iv, cipherBytes);
+                liveEncryptBytes = AesEncryptDirectKey(aes, key, iv, plainBytes, authData, tagLen, out liveAuthTag);
+                liveDecryptBytes = AesDecryptDirectKey(aes, key, iv, cipherBytes, authData, authTag);
             }
 
             Assert.Equal(plainBytes, liveDecryptBytes);
             Assert.Equal(cipherBytes, liveEncryptBytes);
+            Assert.Equal(authTag, liveAuthTag);
         }
 
-        private static byte[] AesEncryptDirectKey(Aes aes, byte[] key, byte[] iv, byte[] plainBytes)
+        private static byte[] AesEncryptDirectKey(Aes aes, byte[] key, byte[] iv, byte[] plainBytes, byte[] authData, int tagLen, out byte[] authTag)
         {
-            using (MemoryStream output = new MemoryStream())
-            using (CryptoStream cryptoStream = new CryptoStream(output, aes.CreateEncryptor(key, iv), CryptoStreamMode.Write))
-            {
-                cryptoStream.Write(plainBytes, 0, plainBytes.Length);
-                cryptoStream.FlushFinalBlock();
+            IAuthenticatedEncryptionTransform authenticatedEncryptionTransform = null;
 
-                return output.ToArray();
+            using (MemoryStream output = new MemoryStream())
+            {
+                ICryptoTransform cryptoTransform;
+
+                if (aes.IsAuthenticatedMode)
+                {
+                    authenticatedEncryptionTransform = aes.CreateAuthenticatedEncryptor(key, iv, authData, tagLen);
+                    cryptoTransform = authenticatedEncryptionTransform;
+                }
+                else
+                {
+                    cryptoTransform = aes.CreateEncryptor(key, iv);
+                }
+
+                using (cryptoTransform)
+                using (var cryptoStream = new CryptoStream(output, cryptoTransform, CryptoStreamMode.Write))
+                {
+                    cryptoStream.Write(plainBytes, 0, plainBytes.Length);
+                    cryptoStream.FlushFinalBlock();
+
+                    if (authenticatedEncryptionTransform != null)
+                    {
+                        authTag = authenticatedEncryptionTransform.GetAuthenticationTag();
+                    }
+                    else
+                    {
+                        authTag = null;
+                    }
+
+                    return output.ToArray();
+                }
             }
         }
 
-        private static byte[] AesDecryptDirectKey(Aes aes, byte[] key, byte[] iv, byte[] cipherBytes)
+        private static byte[] AesDecryptDirectKey(Aes aes, byte[] key, byte[] iv, byte[] cipherBytes, byte[] authData, byte[] authTag)
         {
             using (MemoryStream output = new MemoryStream())
-            using (CryptoStream cryptoStream = new CryptoStream(output, aes.CreateDecryptor(key, iv), CryptoStreamMode.Write))
             {
-                cryptoStream.Write(cipherBytes, 0, cipherBytes.Length);
-                cryptoStream.FlushFinalBlock();
+                ICryptoTransform cryptoTransform;
 
-                return output.ToArray();
+                if (aes.IsAuthenticatedMode)
+                {
+                    cryptoTransform = aes.CreateAuthenticatedDecryptor(key, iv, authData, authTag);
+                }
+                else
+                {
+                    cryptoTransform = aes.CreateDecryptor(key, iv);
+                }
+
+                using (var cryptoStream = new CryptoStream(output, cryptoTransform, CryptoStreamMode.Write))
+                {
+                    cryptoStream.Write(cipherBytes, 0, cipherBytes.Length);
+                    cryptoStream.FlushFinalBlock();
+
+                    return output.ToArray();
+                }
             }
         }
     }

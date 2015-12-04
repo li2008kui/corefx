@@ -12,8 +12,21 @@ namespace Internal.Cryptography
             PaddingMode paddingMode,
             byte[] key,
             byte[] iv,
-            int blockSize)
+            int blockSize,
+            byte[] authenticatedData,
+            int authTagSize)
         {
+            if (IsAuthenticatedCipherMode(cipherMode))
+            {
+                return new AesCngAuthenticatedEncryptor(
+                    cipherMode,
+                    key,
+                    iv,
+                    blockSize,
+                    authenticatedData,
+                    authTagSize);
+            }
+
             return new AesCngCryptoEncryptor(cipherMode, paddingMode, key, iv, blockSize);
         }
 
@@ -22,11 +35,18 @@ namespace Internal.Cryptography
             PaddingMode paddingMode,
             byte[] key,
             byte[] iv,
-            int blockSize)
+            int blockSize,
+            byte[] authenticatedData,
+            byte[] authTag)
         {
+            if (IsAuthenticatedCipherMode(cipherMode))
+            {
+                return new AesCngAuthenticatedDecryptor(cipherMode, key, iv, blockSize, authenticatedData, authTag);
+            }
+
             return new AesCngCryptoDecryptor(cipherMode, paddingMode, key, iv, blockSize);
         }
-
+        
         // -----------------------------
         // ---- PAL layer ends here ----
         // -----------------------------

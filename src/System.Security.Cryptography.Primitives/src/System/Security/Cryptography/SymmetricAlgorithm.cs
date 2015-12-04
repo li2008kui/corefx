@@ -162,6 +162,102 @@ namespace System.Security.Cryptography
 
         public abstract ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] rgbIV);
 
+        /// <summary>
+        /// When overridden in a derived class, creates a symmetric decryptor object for an
+        /// authenticated cipher mode with the specified authentication data and
+        /// authentication tag. The secret key is read from the <see cref="Key"/> property, and
+        /// the initialization vector (nonce) is read from the <see cref="IV"/> property.
+        /// </summary>
+        /// <param name="authenticatedData">The authenticated data buffer.</param>
+        /// <param name="authTag">The authentication tag value which was computed at the time of encryption.</param>
+        /// <returns>A symmetric decryptor object.</returns>
+        /// <exception cref="CryptographicException">The current <see cref="Mode"/> is not an authenticated mode.</exception>
+        /// <seealso cref="IsAuthenticatedMode"/>
+        public virtual ICryptoTransform CreateAuthenticatedDecryptor(
+            byte[] authenticatedData,
+            byte[] authTag)
+        {
+            return CreateAuthenticatedDecryptor(Key, IV, authenticatedData, authTag);
+        }
+
+        /// <summary>
+        /// When overridden in a derived class, creates a symmetric decryptor object for an
+        /// authenticated cipher mode with the specified key, initialization vector (nonce), authentication data, and
+        /// authentication tag.
+        /// </summary>
+        /// <param name="key">The secret key to use for the symmetric algorithm.</param>
+        /// <param name="IV">The initialization vector to use for the symmetric algorithm. For authenticated modes this is also known as the nonce.</param>
+        /// <param name="authenticatedData">The authenticated data buffer.</param>
+        /// <param name="authTag">The authentication tag value which was computed at the time of encryption.</param>
+        /// <returns>A symmetric decryptor object.</returns>
+        /// <exception cref="CryptographicException">The current <see cref="Mode"/> is not an authenticated mode.</exception>
+        /// <seealso cref="IsAuthenticatedMode"/>
+        public abstract ICryptoTransform CreateAuthenticatedDecryptor(
+            byte[] key,
+            byte[] IV,
+            byte[] authenticatedData,
+            byte[] authTag);
+
+        /// <summary>
+        /// When overridden in a derived class, creates a symmetric encryptor object for an
+        /// authenticated cipher mode with the specified authentication data and output tag size. The secret key is read from
+        /// the <see cref="Key"/> property, and the initialization vector (nonce) is read from the <see cref="IV"/> property.
+        /// </summary>
+        /// <param name="authenticatedData">The authenticated data buffer.</param>
+        /// <param name="tagSizeBits">The size, in bits, of the authentication tag to generate.</param>
+        /// <returns>A symmetric encryptor object.</returns>
+        /// <exception cref="CryptographicException">The current <see cref="Mode"/> is not an authenticated mode.</exception>
+        /// <seealso cref="IsAuthenticatedMode"/>
+        public virtual IAuthenticatedEncryptionTransform CreateAuthenticatedEncryptor(
+            byte[] authenticatedData,
+            int tagSizeBits)
+        {
+            return CreateAuthenticatedEncryptor(Key, IV, authenticatedData, tagSizeBits);
+        }
+
+        /// <summary>
+        /// When overridden in a derived class, creates a symmetric encryptor object for an
+        /// authenticated cipher mode with the specified key, initialization vector (nonce), authentication data, and output tag size.
+        /// </summary>
+        /// <param name="key">The secret key to use for the symmetric algorithm.</param>
+        /// <param name="IV">The initialization vector to use for the symmetric algorithm. For authenticated modes this is also known as the nonce.</param>
+        /// <param name="authenticatedData">The authenticated data buffer.</param>
+        /// <param name="tagSizeBits">The size, in bits, of the authentication tag to generate.</param>
+        /// <returns>A symmetric encryptor object.</returns>
+        /// <exception cref="CryptographicException">The current <see cref="Mode"/> is not an authenticated mode.</exception>
+        /// <seealso cref="IsAuthenticatedMode"/>
+        public abstract IAuthenticatedEncryptionTransform CreateAuthenticatedEncryptor(
+            byte[] key,
+            byte[] IV,
+            byte[] authenticatedData,
+            int tagSizeBits);
+
+        /// <summary>
+        /// Indicates whether the current <see cref="Mode"/> value represents an Authenticated Encryption (AE) mode or not.
+        /// </summary>
+        /// <seealso cref="IsAuthenticatedCipherMode"/>
+        public bool IsAuthenticatedMode
+        {
+            get { return IsAuthenticatedCipherMode(Mode); }
+        }
+
+        /// <summary>
+        /// Indicates whether the specified <see cref="CipherMode"/> value represents an Authenticated Encryption (AE) mode or not.
+        /// </summary>
+        /// <param name="mode">The CipherMode value to test.</param>
+        /// <returns><c>true</c> if <paramref name="mode"/> represents an Authenticated Encryption (AE) mode, <c>false</c> otherwise.</returns>
+        public static bool IsAuthenticatedCipherMode(CipherMode mode)
+        {
+            switch (mode)
+            {
+                case CipherMode.GCM:
+                case CipherMode.CCM:
+                    return true;
+            }
+
+            return false;
+        }
+
         public void Dispose()
         {
             Dispose(true);

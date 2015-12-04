@@ -11,7 +11,12 @@ namespace Internal.Cryptography
 {
     internal sealed class AesCngCryptoDecryptor : AesCngCryptoTransform
     {
-        public AesCngCryptoDecryptor(CipherMode cipherMode, PaddingMode paddingMode, byte[] key, byte[] iv, int blockSize)
+        public AesCngCryptoDecryptor(
+            CipherMode cipherMode,
+            PaddingMode paddingMode,
+            byte[] key,
+            byte[] iv,
+            int blockSize)
             : base(cipherMode, paddingMode, key, iv, blockSize)
         {
         }
@@ -154,5 +159,54 @@ namespace Internal.Cryptography
         // or TransformFinalBlock must include the decryption of _heldoverCipher in the results.
         //
         private byte[] _heldoverCipher;
+    }
+
+    internal sealed class AesCngAuthenticatedDecryptor : AesCngAuthenticatedTransform
+    {
+        public AesCngAuthenticatedDecryptor(
+            CipherMode cipherMode,
+            byte[] key,
+            byte[] iv,
+            int blockSize,
+            byte[] authenticatedData,
+            byte[] authTag)
+            : base(cipherMode, key, iv, blockSize, authenticatedData, authTag)
+        {
+        }
+
+        protected override int UncheckedTransformBlock(SafeKeyHandle hKey, byte[] currentIv, byte[] inputBuffer, int inputOffset, int inputCount,
+            byte[] outputBuffer, int outputOffset)
+        {
+            int numBytesWritten = hKey.BCryptDecrypt(inputBuffer, inputOffset, inputCount, ref _modeInfo, _chainData, outputBuffer, outputOffset, outputBuffer.Length);
+            return numBytesWritten;
+        }
+
+        protected override sealed byte[] UncheckedTransformFinalBlock(
+           SafeKeyHandle hKey,
+           byte[] currentIv,
+           byte[] inputBuffer,
+           int inputOffset,
+           int inputCount)
+        {
+            // Remove the chaining call flag, but retain the rest.
+            _modeInfo.dwFlags &= ~Cng.AuthenticatedCipherModeInfoFlags.ChainCalls;
+
+            //_collectorStream.Write(inputBuffer, inputOffset, inputCount);
+            //byte[] allData = _collectorStream.ToArray();
+
+            // None of the authenticated modes require padding
+            int outputSize = inputCount;
+            byte[] output = GetOutputBuffer(outputSize);
+
+            outputSize = hKey.BCryptDecrypt(inputBuffer, inputOffset, inputCount, ref _modeInfo, _chainData, output, 0, output.Length);
+
+            if (outputSize == 0)
+            {
+                return Array.Empty<byte>();
+            }
+
+            Array.Resize(ref output, outputSize);
+            return output;
+        }
     }
 }

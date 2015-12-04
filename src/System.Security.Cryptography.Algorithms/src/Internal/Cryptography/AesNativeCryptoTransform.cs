@@ -10,6 +10,7 @@ namespace Internal.Cryptography
     internal abstract class AesNativeCryptoTransform : ICryptoTransform
     {
         private readonly int _blockSize;
+        private bool _dirty = true;
 
         protected CipherMode CipherMode { get; private set; }
         protected PaddingMode PaddingMode { get; private set; }
@@ -41,7 +42,6 @@ namespace Internal.Cryptography
             get { return _blockSize; }
         }
 
-
         public void Dispose()
         {
             Dispose(true);
@@ -68,7 +68,13 @@ namespace Internal.Cryptography
                 throw new ArgumentOutOfRangeException("outputOffset");
             if (inputCount > outputBuffer.Length - outputOffset)
                 throw new ArgumentOutOfRangeException("outputOffset", SR.Cryptography_TransformBeyondEndOfBuffer);
-            
+
+            if (_dirty)
+            {
+                Reset();
+                _dirty = false;
+            }
+
             return UncheckedTransformBlock(inputBuffer, inputOffset, inputCount, outputBuffer, outputOffset);
         }
 
@@ -85,8 +91,15 @@ namespace Internal.Cryptography
             if (inputCount > inputBuffer.Length - inputOffset)
                 throw new ArgumentOutOfRangeException("inputCount", SR.Cryptography_TransformBeyondEndOfBuffer);
 
+            if (_dirty)
+            {
+                Reset();
+            }
+
             byte[] output = UncheckedTransformFinalBlock(inputBuffer, inputOffset, inputCount);
-            Reset();
+
+            _dirty = true;
+
             return output;
         }
 

@@ -6,6 +6,11 @@ using System.Diagnostics;
 
 namespace System.Security.Cryptography
 {
+    public interface IAuthenticatedEncryptionTransform : ICryptoTransform
+    {
+        byte[] GetAuthenticationTag();
+    }
+
     public interface ICryptoTransform : IDisposable
     {
         int InputBlockSize { get; }

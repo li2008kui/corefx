@@ -37,7 +37,7 @@ namespace System.Security.Cryptography
             return new AesImplementation();
         }
 
-
+        public override CipherMode Mode { get; set; }
 
         private static readonly KeySizes[] s_legalBlockSizes = { new KeySizes(128, 128, 0) };
         private static readonly KeySizes[] s_legalKeySizes = { new KeySizes(128, 256, 64) };

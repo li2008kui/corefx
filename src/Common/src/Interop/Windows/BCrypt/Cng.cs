@@ -10,6 +10,7 @@ using System.Security.Cryptography;
 using System.Runtime.InteropServices;
 
 using Internal.Cryptography;
+using Microsoft.Win32.SafeHandles;
 
 namespace Internal.NativeCrypto
 {
@@ -70,16 +71,16 @@ namespace Internal.NativeCrypto
 
         public const String BCRYPT_AES_ALGORITHM = "AES";
 
-        public static SafeAlgorithmHandle BCryptOpenAlgorithmProvider(String pszAlgId, String pszImplementation, OpenAlgorithmProviderFlags dwFlags)
+        public static SafeBCryptAlgorithmHandle BCryptOpenAlgorithmProvider(String pszAlgId, String pszImplementation, OpenAlgorithmProviderFlags dwFlags)
         {
-            SafeAlgorithmHandle hAlgorithm = null;
+            SafeBCryptAlgorithmHandle hAlgorithm = null;
             NTSTATUS ntStatus = Interop.BCryptOpenAlgorithmProvider(out hAlgorithm, pszAlgId, pszImplementation, (int)dwFlags);
             if (ntStatus != NTSTATUS.STATUS_SUCCESS)
                 throw CreateCryptographicException(ntStatus);
             return hAlgorithm;
         }
 
-        public static SafeKeyHandle BCryptImportKey(this SafeAlgorithmHandle hAlg, byte[] key)
+        public static SafeKeyHandle BCryptImportKey(this SafeBCryptAlgorithmHandle hAlg, byte[] key)
         {
             unsafe
             {
@@ -114,7 +115,41 @@ namespace Internal.NativeCrypto
             public const UInt32 BCRYPT_KEY_DATA_BLOB_VERSION1 = 0x1;
         }
 
-        public static void SetCipherMode(this SafeAlgorithmHandle hAlg, string cipherMode)
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO
+        {
+            internal int cbSize;
+            internal int dwInfoVersion;
+
+            internal IntPtr pbNonce;
+            internal int cbNonce;
+
+            internal IntPtr pbAuthData;
+            internal int cbAuthData;
+
+            internal IntPtr pbTag;
+            internal int cbTag;
+
+            internal IntPtr pbMacContext;
+            internal int cbMacContext;
+
+            internal int cbAAD;
+            internal long cbData;
+            internal AuthenticatedCipherModeInfoFlags dwFlags;
+        }
+
+        /// <summary>
+        ///     Flags for use with the BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO structure
+        /// </summary>
+        [Flags]
+        internal enum AuthenticatedCipherModeInfoFlags
+        {
+            None = 0x00000000,
+            ChainCalls = 0x00000001,                           // BCRYPT_AUTH_MODE_CHAIN_CALLS_FLAG
+            InProgress = 0x00000002,                           // BCRYPT_AUTH_MODE_IN_PROGRESS_FLAG
+        }
+
+        public static void SetCipherMode(this SafeBCryptAlgorithmHandle hAlg, string cipherMode)
         {
             NTSTATUS ntStatus = Interop.BCryptSetProperty(hAlg, "ChainingMode", cipherMode, (cipherMode.Length + 1) * 2, 0);
 
@@ -152,6 +187,52 @@ namespace Internal.NativeCrypto
             }
         }
 
+        // Note: input and output are allowed to be the same buffer. BCryptEncrypt will correctly do the encryption in place according to CNG documentation.
+        public static int BCryptEncrypt(this SafeKeyHandle hKey, byte[] input, int inputOffset, int inputCount, ref BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO modeInfo, byte[] iv, byte[] output, int outputOffset, int outputCount)
+        {
+            Debug.Assert(input != null);
+            Debug.Assert(inputOffset >= 0);
+            Debug.Assert(inputCount >= 0);
+            Debug.Assert(inputCount <= input.Length - inputOffset);
+            Debug.Assert(output != null);
+            Debug.Assert(outputOffset >= 0);
+            Debug.Assert(outputCount >= 0);
+            Debug.Assert(outputCount <= output.Length - outputOffset);
+
+            unsafe
+            {
+                fixed (byte* pbInput = input)
+                {
+                    fixed (byte* pbOutput = output)
+                    {
+                        Console.WriteLine(
+                            "BCryptEncrypt(key, {0}, {1}, {2}, {3}, {4}, {5}, {6}, out, 0)",
+                            (ulong)(IntPtr)(pbInput + inputOffset),
+                            inputCount,
+                            modeInfo.dwFlags,
+                            iv == null ? "null" : "iv",
+                            iv == null ? 0 : iv.Length,
+                            (ulong)(IntPtr)(pbOutput + outputOffset),
+                            outputCount);
+
+                        int cbResult;
+                        NTSTATUS ntStatus = Interop.BCryptEncrypt(hKey, pbInput + inputOffset, inputCount, ref modeInfo, iv, iv == null ? 0 : iv.Length, pbOutput + outputOffset, outputCount, out cbResult, 0);
+
+                        Console.WriteLine(
+                           "  => {0} (0x{1}), flags: {2}, bytesWritten: {3}",
+                           ntStatus,
+                           ((uint)ntStatus).ToString("x8"),
+                           modeInfo.dwFlags,
+                           cbResult);
+
+                        if (ntStatus != NTSTATUS.STATUS_SUCCESS)
+                            throw CreateCryptographicException(ntStatus);
+                        return cbResult;
+                    }
+                }
+            }
+        }
+
         // Note: input and output are allowed to be the same buffer. BCryptDecrypt will correctly do the decryption in place according to CNG documentation.
         public static int BCryptDecrypt(this SafeKeyHandle hKey, byte[] input, int inputOffset, int inputCount, byte[] iv, byte[] output, int outputOffset, int outputCount)
         {
@@ -172,6 +253,52 @@ namespace Internal.NativeCrypto
                     {
                         int cbResult;
                         NTSTATUS ntStatus = Interop.BCryptDecrypt(hKey, pbInput + inputOffset, inputCount, IntPtr.Zero, iv, iv == null ? 0 : iv.Length, pbOutput + outputOffset, outputCount, out cbResult, 0);
+                        if (ntStatus != NTSTATUS.STATUS_SUCCESS)
+                            throw CreateCryptographicException(ntStatus);
+                        return cbResult;
+                    }
+                }
+            }
+        }
+
+        // Note: input and output are allowed to be the same buffer. BCryptDecrypt will correctly do the decryption in place according to CNG documentation.
+        public static int BCryptDecrypt(this SafeKeyHandle hKey, byte[] input, int inputOffset, int inputCount, ref BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO modeInfo, byte[] iv, byte[] output, int outputOffset, int outputCount)
+        {
+            Debug.Assert(input != null);
+            Debug.Assert(inputOffset >= 0);
+            Debug.Assert(inputCount >= 0);
+            Debug.Assert(inputCount <= input.Length - inputOffset);
+            Debug.Assert(output != null);
+            Debug.Assert(outputOffset >= 0);
+            Debug.Assert(outputCount >= 0);
+            Debug.Assert(outputCount <= output.Length - outputOffset);
+
+            unsafe
+            {
+                fixed (byte* pbInput = input)
+                {
+                    fixed (byte* pbOutput = output)
+                    {
+                        Console.WriteLine(
+                            "BCryptDecrypt(key, {0}, {1}, {2}, {3}, {4}, {5}, {6}, out, 0)",
+                            (ulong)(IntPtr)(pbInput + inputOffset),
+                            inputCount,
+                            modeInfo.dwFlags,
+                            iv == null ? "null" : "iv",
+                            iv == null ? 0 : iv.Length,
+                            (ulong)(IntPtr)(pbOutput + outputOffset),
+                            outputCount);
+
+                        int cbResult;
+                        NTSTATUS ntStatus = Interop.BCryptDecrypt(hKey, pbInput + inputOffset, inputCount, ref modeInfo, iv, iv == null ? 0 : iv.Length, pbOutput + outputOffset, outputCount, out cbResult, 0);
+
+                        Console.WriteLine(
+                           "  => {0} (0x{1}), flags: {2}, bytesWritten: {3}",
+                           ntStatus,
+                           ((uint)ntStatus).ToString("x8"),
+                           modeInfo.dwFlags,
+                           cbResult);
+
                         if (ntStatus != NTSTATUS.STATUS_SUCCESS)
                             throw CreateCryptographicException(ntStatus);
                         return cbResult;
@@ -222,18 +349,24 @@ namespace Internal.NativeCrypto
         private static class Interop
         {
             [DllImport(CngDll, CharSet = CharSet.Unicode)]
-            public static extern NTSTATUS BCryptOpenAlgorithmProvider(out SafeAlgorithmHandle phAlgorithm, String pszAlgId, String pszImplementation, int dwFlags);
+            public static extern NTSTATUS BCryptOpenAlgorithmProvider(out SafeBCryptAlgorithmHandle phAlgorithm, String pszAlgId, String pszImplementation, int dwFlags);
 
             [DllImport(CngDll, CharSet = CharSet.Unicode)]
-            public static extern unsafe NTSTATUS BCryptSetProperty(SafeAlgorithmHandle hObject, String pszProperty, String pbInput, int cbInput, int dwFlags);
+            public static extern unsafe NTSTATUS BCryptSetProperty(SafeBCryptAlgorithmHandle hObject, String pszProperty, String pbInput, int cbInput, int dwFlags);
             [DllImport(CngDll, CharSet = CharSet.Unicode)]
-            public static extern NTSTATUS BCryptImportKey(SafeAlgorithmHandle hAlgorithm, IntPtr hImportKey, String pszBlobType, out SafeKeyHandle hKey, IntPtr pbKeyObject, int cbKeyObject, byte[] pbInput, int cbInput, int dwFlags);
+            public static extern NTSTATUS BCryptImportKey(SafeBCryptAlgorithmHandle hAlgorithm, IntPtr hImportKey, String pszBlobType, out SafeKeyHandle hKey, IntPtr pbKeyObject, int cbKeyObject, byte[] pbInput, int cbInput, int dwFlags);
+
+            [DllImport(CngDll, CharSet = CharSet.Unicode)]
+            public static extern unsafe NTSTATUS BCryptEncrypt(SafeKeyHandle hKey, byte* pbInput, int cbInput, ref BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO modeInfo, [In, Out] byte[] pbIV, int cbIV, byte* pbOutput, int cbOutput, out int cbResult, int dwFlags);
 
             [DllImport(CngDll, CharSet = CharSet.Unicode)]
             public static extern unsafe NTSTATUS BCryptEncrypt(SafeKeyHandle hKey, byte* pbInput, int cbInput, IntPtr paddingInfo, [In,Out] byte [] pbIV, int cbIV, byte* pbOutput, int cbOutput, out int cbResult, int dwFlags);
 
             [DllImport(CngDll, CharSet = CharSet.Unicode)]
             public static extern unsafe NTSTATUS BCryptDecrypt(SafeKeyHandle hKey, byte* pbInput, int cbInput, IntPtr paddingInfo, [In, Out] byte[] pbIV, int cbIV, byte* pbOutput, int cbOutput, out int cbResult, int dwFlags);
+
+            [DllImport(CngDll, CharSet = CharSet.Unicode)]
+            public static extern unsafe NTSTATUS BCryptDecrypt(SafeKeyHandle hKey, byte* pbInput, int cbInput, ref BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO modeInfo, [In, Out] byte[] pbIV, int cbIV, byte* pbOutput, int cbOutput, out int cbResult, int dwFlags);
 
             [DllImport(Capi2Dll, CharSet = CharSet.Ansi, SetLastError = true, BestFitMapping = false)]
             public static extern bool CryptFormatObject(
@@ -250,48 +383,8 @@ namespace Internal.NativeCrypto
                 [In, Out] ref int pcbFormat);       // Sends/receives length of formatted String.
         }
     }
-
-    internal abstract class SafeBCryptHandle : SafeHandle
-    {
-        public SafeBCryptHandle()
-            : base(IntPtr.Zero, true)
-        {
-        }
-
-        public sealed override bool IsInvalid
-        {
-            get
-            {
-                return handle == IntPtr.Zero;
-            }
-        }
-    }
-
-    internal sealed class SafeAlgorithmHandle : SafeBCryptHandle
-    {
-        protected sealed override bool ReleaseHandle()
-        {
-            uint ntStatus = BCryptCloseAlgorithmProvider(handle, 0);
-            return ntStatus == 0;
-        }
-
-        [DllImport(Cng.CngDll)]
-        private static extern uint BCryptCloseAlgorithmProvider(IntPtr hAlgorithm, int dwFlags);
-    }
-
-    internal sealed class SafeHashHandle : SafeBCryptHandle
-    {
-        protected sealed override bool ReleaseHandle()
-        {
-            uint ntStatus = BCryptDestroyHash(handle);
-            return ntStatus == 0;
-        }
-
-        [DllImport(Cng.CngDll)]
-        private static extern uint BCryptDestroyHash(IntPtr hHash);
-    }
-
-    internal sealed class SafeKeyHandle : SafeBCryptHandle
+    
+    internal sealed class SafeKeyHandle : Microsoft.Win32.SafeHandles.SafeBCryptHandle
     {
         protected sealed override bool ReleaseHandle()
         {

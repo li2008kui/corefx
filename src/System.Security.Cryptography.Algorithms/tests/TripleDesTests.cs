@@ -97,6 +97,17 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
             {
                 throw new NotSupportedException();
             }
+
+            public override ICryptoTransform CreateAuthenticatedDecryptor(byte[] key, byte[] IV, byte[] authenticatedData, byte[] authTag)
+            {
+                throw new NotSupportedException();
+            }
+
+            public override IAuthenticatedEncryptionTransform CreateAuthenticatedEncryptor(byte[] key, byte[] IV, byte[] authenticatedData,
+                int tagSizeBits)
+            {
+                throw new NotSupportedException();
+            }
         }
     }
 }

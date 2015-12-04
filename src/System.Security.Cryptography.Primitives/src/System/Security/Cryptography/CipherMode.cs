@@ -14,5 +14,15 @@ namespace System.Security.Cryptography
         CBC = 1,
         CTS = 5,
         ECB = 2,
+
+        /// <summary>
+        /// Galois/Counter Mode, an Authenticated Encryption (AE) mode.
+        /// </summary>
+        GCM = 10001,
+
+        /// <summary>
+        /// Counter with CBC-MAC mode, an Authenticated Encryption (AE) mode.
+        /// </summary>
+        CCM = 10002,
     }
 }
