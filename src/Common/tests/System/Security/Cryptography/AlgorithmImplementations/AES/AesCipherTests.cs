@@ -353,10 +353,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         public static void GcmReferenceTest(AuthModeReferenceTest testCase)
         {
             byte[] iv = testCase.GetIV();
-            bool optimalLength = (iv != null && iv.Length == 12);
 
-            try
-            {
                 TestAesTransformDirectKey(
                     CipherMode.GCM,
                     PaddingMode.None,
@@ -366,8 +363,6 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     cipherBytes: testCase.GetCipherText(),
                     authData: testCase.GetAuthData(),
                     authTag: testCase.GetAuthTag());
-            }
-            catch (CryptographicException)
         }
 
         [Fact]

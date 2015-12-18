@@ -77,7 +77,7 @@ namespace Internal.Cryptography
             int outputSize = inputCount;
             byte[] output = GetOutputBuffer(outputSize);
 
-            Console.WriteLine("InputCount: {0}, OutputSize: {1}", inputCount, outputSize);
+            Console.WriteLine("InputCount: {0}, inputBuffer.Length: {1}", inputCount, inputBuffer.Length);
 
             outputSize = hKey.BCryptEncrypt(inputBuffer, inputOffset, inputCount, ref _modeInfo, _chainData, output, 0, output.Length);
 

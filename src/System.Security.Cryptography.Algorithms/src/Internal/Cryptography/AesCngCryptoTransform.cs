@@ -216,6 +216,8 @@ namespace Internal.Cryptography
                         out pcbResult,
                         0);
 
+                    Console.WriteLine("{0} {1} {2}", keyLengths.dwMinLength, keyLengths.dwMaxLength, keyLengths.dwIncrement);
+
                     if (ntStatus != Interop.BCrypt.NTSTATUS.STATUS_SUCCESS)
                         throw Interop.BCrypt.CreateCryptographicException(ntStatus);
 
