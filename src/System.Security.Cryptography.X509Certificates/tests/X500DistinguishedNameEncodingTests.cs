@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using Test.Cryptography;
 using Xunit;
@@ -11,6 +12,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 {
     public static class X500DistinguishedNameEncodingTests
     {
+        private const string InvalidX500NameFragment = "invalid X500 name";
+        private const string InvalidIA5StringFragment = "7 bit ASCII";
+
         [Fact]
         public static void EncodeEmptyValue()
         {
@@ -84,6 +88,19 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             X500DistinguishedName dn = new X500DistinguishedName(input, flags);
 
             Assert.Equal(expected, dn.Format(false));
+        }
+
+        [Theory]
+        [InlineData(",", InvalidX500NameFragment)]
+        public static void InvalidInput(string input, string messageFragment)
+        {
+            CryptographicException exception =
+                Assert.ThrowsAny<CryptographicException>(() => new X500DistinguishedName(input));
+
+            if (CultureInfo.CurrentCulture.Name == "en-US")
+            {
+                Assert.Contains(messageFragment, exception.Message);
+            }
         }
 
         private static void ProcessTestCase(SimpleEncoderTestCase testCase, X500DistinguishedName dn)
