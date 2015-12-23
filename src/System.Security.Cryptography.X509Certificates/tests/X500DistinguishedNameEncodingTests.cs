@@ -11,6 +11,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 {
     public static class X500DistinguishedNameEncodingTests
     {
+        [Fact]
+        public static void EncodeEmptyValue()
+        {
+            X500DistinguishedName dn = new X500DistinguishedName("");
+            
+            ProcessTestCase(
+                new SimpleEncoderTestCase(
+                    "",
+                    null,
+                    "3000",
+                    null),
+                dn);
+        }
+
         [Theory]
         [MemberData("SingleRdnTestCases")]
         public static void EncodeSingleRdn(SimpleEncoderTestCase testCase)
