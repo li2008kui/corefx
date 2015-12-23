@@ -453,7 +453,7 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(str != null);
 
-            byte[] encodedBytes = Encoding.UTF8.GetBytes(str);
+            byte[] encodedBytes = System.Text.Encoding.UTF8.GetBytes(str);
 
             return new byte[][]
             {
@@ -495,13 +495,13 @@ namespace System.Security.Cryptography
                 {
                     char* charsWithOffset = chars + offset;
 
-                    encodedSize = Encoding.UTF8.GetByteCount(charsWithOffset, count);
+                    encodedSize = System.Text.Encoding.UTF8.GetByteCount(charsWithOffset, count);
                 }
             }
 
             byte[] encodedBytes = new byte[encodedSize];
 
-            int writtenSize = Encoding.UTF8.GetBytes(str, offset, count, encodedBytes, 0);
+            int writtenSize = System.Text.Encoding.UTF8.GetBytes(str, offset, count, encodedBytes, 0);
 
             Debug.Assert(encodedSize == writtenSize);
 
