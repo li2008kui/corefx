@@ -91,7 +91,22 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Theory]
+        // Separator character with no tag
         [InlineData(",", InvalidX500NameFragment)]
+        // Control character preceding tag
+        [InlineData("\u0008CN=a", InvalidX500NameFragment)]
+        // Control character after tag
+        [InlineData("CN\u0008=a", InvalidX500NameFragment)]
+        // Control character within tag
+        [InlineData("C\u0008N=a", InvalidX500NameFragment)]
+        // Control character after whitespace after tag
+        [InlineData("CN \u0008=a", InvalidX500NameFragment)]
+        // Unresolvable OID
+        [InlineData("1.a.1.3=a", InvalidX500NameFragment)]
+        // Open quote with no close quote. (Don't you hate it when people do that?
+        [InlineData("CN=\"unterminated", InvalidX500NameFragment)]
+        // Non-ASCII values in an E field
+        [InlineData("E=\u65E5\u672C\u8A9E", InvalidIA5StringFragment)]
         public static void InvalidInput(string input, string messageFragment)
         {
             CryptographicException exception =
@@ -217,6 +232,16 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             new object[]
             {
+                // Common Name with a dangling separator.
+                new SimpleEncoderTestCase(
+                    "CN=Common Name,",
+                    "CN=Common Name",
+                    "3016311430120603550403130B436F6D6D6F6E204E616D65",
+                    null),
+            },
+
+            new object[]
+            {
                 // Unnecessarily quoted value
                 new SimpleEncoderTestCase(
                     "CN=\"Common Name\"",
@@ -300,6 +325,26 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     "30493147304506035504031E3E0043006F006D006D006F006E0020004E006100" +
                         "6D0065002C00200045003D00750073006500720040006500780061006D007000" +
                         "6C0065002E0063006F006D"),
+            },
+
+            new object[]
+            {
+                // Control codes are valid in the value portion (as the first character)
+                new SimpleEncoderTestCase(
+                    "CN=\u0008",
+                    null,
+                    "300C310A300806035504030C0108",
+                    "300D310B300906035504031E020008"),
+            },
+
+            new object[]
+            {
+                // Control codes are valid in the value portion (anywhere, really)
+                new SimpleEncoderTestCase(
+                    "CN=a     \u0008",
+                    null,
+                    "30123110300E06035504030C0761202020202008",
+                    "30193117301506035504031E0E0061002000200020002000200008"),
             },
 
             //[ActiveIssue(5102, PlatformID.AnyUnix)]
@@ -522,6 +567,41 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 },
             },
         };
+
+        //public static readonly object[][] ParserBoundaryCases =
+        //{
+        //    new object[]
+        //    {
+        //        // First RDN goes from = to , directly.
+        //        // First-to-second transition has no whitespace
+        //        // Second RDN goes from = to the end of the string.
+        //        new SimpleEncoderTestCase(
+        //            "CN=,O=",
+        //            "CN=\"\", O=\"\"",
+        //            "3016310930070603550403130031093007060355040A1300", 
+        //            null)
+        //    },
+
+        //    new object[]
+        //    {
+        //        // Same as above, but with abundant whitespace.
+        //        new SimpleEncoderTestCase(
+        //            "  CN=                  ,    O=  ",
+        //            "CN=\"\", O=\"\"",
+        //            "3016310930070603550403130031093007060355040A1300",
+        //            null)
+        //    },
+
+        //    new object[]
+        //    {
+        //        // Lets add some quotes for good measure.
+        //        new SimpleEncoderTestCase(
+        //            "  CN=                \"\"  ,    O= \"\" ",
+        //            "CN=\"\", O=\"\"",
+        //            "3016310930070603550403130031093007060355040A1300",
+        //            null)
+        //    },
+        //};
 
         public class SimpleEncoderTestCase
         {
