@@ -33,7 +33,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [MemberData("SingleRdnTestCases")]
         public static void EncodeSingleRdn(SimpleEncoderTestCase testCase)
         {
-            X500DistinguishedName dn = new X500DistinguishedName(testCase.Input);
+            X500DistinguishedName dn = new X500DistinguishedName(testCase.Input, X500DistinguishedNameFlags.None);
 
             ProcessTestCase(testCase, dn);
         }
@@ -116,6 +116,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 Assert.Contains(messageFragment, exception.Message);
             }
+        }
+
+        [Theory]
+        [MemberData("ParserBoundaryCases")]
+        public static void CheckParserBoundaryCases(SimpleEncoderTestCase testCase)
+        {
+            X500DistinguishedName dn = new X500DistinguishedName(testCase.Input, X500DistinguishedNameFlags.None);
+
+            ProcessTestCase(testCase, dn);
         }
 
         private static void ProcessTestCase(SimpleEncoderTestCase testCase, X500DistinguishedName dn)
@@ -347,16 +356,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     "30193117301506035504031E0E0061002000200020002000200008"),
             },
 
-            //[ActiveIssue(5102, PlatformID.AnyUnix)]
-            //new object[]
-            //{
-            //    // Empty values are legal.
-            //    new SimpleEncoderTestCase(
-            //        "CN=",
-            //        "CN=\"\"",
-            //        "300B3109300706035504031300",
-            //        null),
-            //}, 
+            new object[]
+            {
+                // Empty values are legal.
+                new SimpleEncoderTestCase(
+                    "CN=",
+                    "CN=\"\"",
+                    "300B3109300706035504031300",
+                    null),
+            },
         };
 
         public static IEnumerable<object[]> GetFlagBasedDnCases()
@@ -568,40 +576,87 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             },
         };
 
-        //public static readonly object[][] ParserBoundaryCases =
-        //{
-        //    new object[]
-        //    {
-        //        // First RDN goes from = to , directly.
-        //        // First-to-second transition has no whitespace
-        //        // Second RDN goes from = to the end of the string.
-        //        new SimpleEncoderTestCase(
-        //            "CN=,O=",
-        //            "CN=\"\", O=\"\"",
-        //            "3016310930070603550403130031093007060355040A1300", 
-        //            null)
-        //    },
+        public static readonly object[][] ParserBoundaryCases =
+        {
+            // The parser states referenced here are based on the managed implementation
+            // used by the Unix builds.
 
-        //    new object[]
-        //    {
-        //        // Same as above, but with abundant whitespace.
-        //        new SimpleEncoderTestCase(
-        //            "  CN=                  ,    O=  ",
-        //            "CN=\"\", O=\"\"",
-        //            "3016310930070603550403130031093007060355040A1300",
-        //            null)
-        //    },
+            new object[]
+            {
+                // First RDN goes from = to , directly.
+                // First-to-second transition has no whitespace
+                // Second RDN goes from = to the end of the string.
+                // Parser ends in SeekValueStart without having done the loop in that state.
+                new SimpleEncoderTestCase(
+                    "CN=,O=",
+                    "CN=\"\", O=\"\"",
+                    "3016310930070603550403130031093007060355040A1300",
+                    null)
+            },
 
-        //    new object[]
-        //    {
-        //        // Lets add some quotes for good measure.
-        //        new SimpleEncoderTestCase(
-        //            "  CN=                \"\"  ,    O= \"\" ",
-        //            "CN=\"\", O=\"\"",
-        //            "3016310930070603550403130031093007060355040A1300",
-        //            null)
-        //    },
-        //};
+            new object[]
+            {
+                // Same as above, but with abundant whitespace.
+                // Parser ends in SeekValueStart after having processed some whitespace
+                new SimpleEncoderTestCase(
+                    "  CN=                  ,    O=  ",
+                    "CN=\"\", O=\"\"",
+                    "3016310930070603550403130031093007060355040A1300",
+                    null)
+            },
+
+             new object[]
+            {
+                // Lets add some quotes for good measure.
+                // Parser ends in MaybeEndQuote
+                new SimpleEncoderTestCase(
+                    "  CN=                \"\"  ,    O= \"\"",
+                    "CN=\"\", O=\"\"",
+                    "3016310930070603550403130031093007060355040A1300",
+                    null)
+            },
+
+            new object[]
+            {
+                // Same as above, with trailing whitespace.
+                // Parser ends in SeekComma
+                new SimpleEncoderTestCase(
+                    "  CN=                \"\"  ,    O= \"\" ",
+                    "CN=\"\", O=\"\"",
+                    "3016310930070603550403130031093007060355040A1300",
+                    null)
+            },
+
+            new object[]
+            {
+                // Give the parser the comma it wanted, now it ends in SeekTag
+                new SimpleEncoderTestCase(
+                    "  CN=                \"\"  ,    O= \"\" ,",
+                    "CN=\"\", O=\"\"",
+                    "3016310930070603550403130031093007060355040A1300",
+                    null)
+            },
+
+            new object[]
+            {
+                // Parser ends in SeekValueEnd with no whitespace
+                new SimpleEncoderTestCase(
+                    "  CN=                \"\"  ,    O= a",
+                    "CN=\"\", O=a",
+                    "30173109300706035504031300310A3008060355040A130161",
+                    null)
+            },
+
+            new object[]
+            {
+                // Parser ends in SeekValueEnd after reading whitespace
+                new SimpleEncoderTestCase(
+                    "  CN=                \"\"  ,    O= a ",
+                    "CN=\"\", O=a",
+                    "30173109300706035504031300310A3008060355040A130161",
+                    null)
+            },
+        };
 
         public class SimpleEncoderTestCase
         {

@@ -505,7 +505,7 @@ namespace Internal.Cryptography.Pal
             // * 'CN="a"'
             //   state: MaybeEndQuote.  valueEnd is marking at the end-quote.
             // * 'CN="a" '
-            //   state: SeekComma.  There's nothing to do here.
+            //   state: SeekComma.  This is the same as MaybeEndQuote.
             // * 'CN=a,'
             //   state: SeekTag.  There's nothing to do here.
             // * ''
@@ -522,21 +522,21 @@ namespace Internal.Cryptography.Pal
                 case ParseState.SeekValueStart:
                     valueStart = stringForm.Length;
                     valueEnd = valueStart;
-                    goto case ParseState.MaybeEndQuote;
+                    goto case ParseState.SeekComma;
                 // If we were in an unquoted value and just ran out of text
                 case ParseState.SeekValueEnd:
                     Debug.Assert(!hadEscapedQuote);
-                    goto case ParseState.MaybeEndQuote;
-                // If the last character was a close quote
+                    goto case ParseState.SeekComma;
+                // If the last character was a close quote, or it was a close quote
+                // then some whitespace.
                 case ParseState.MaybeEndQuote:
+                case ParseState.SeekComma:
                     Debug.Assert(tagOid != null);
                     Debug.Assert(valueStart != -1);
                     Debug.Assert(valueEnd != -1);
 
                     encodedSets.Add(ParseRdn(tagOid, stringForm, valueStart, valueEnd, hadEscapedQuote));
                     break;
-                // If the last value ended with a quote, but then had whitespace
-                case ParseState.SeekComma:
                 // If the entire string was empty, or ended in a dnSeparator.
                 case ParseState.SeekTag:
                     break;
