@@ -711,7 +711,6 @@ namespace System.Security.Cryptography
         internal static byte[][] SegmentedEncodeIA5String(string str)
         {
             Debug.Assert(str != null);
-            Debug.Assert(IsValidIA5String(str));
 
             return SegmentedEncodeIA5String(str, 0, str.Length);
         }
@@ -731,8 +730,6 @@ namespace System.Security.Cryptography
             Debug.Assert(count >= 0);
             Debug.Assert(count <= str.Length);
             Debug.Assert(offset + count <= str.Length);
-
-            Debug.Assert(IsValidIA5String(str, offset, count));
 
             // ITU-T X.690 (08/2015) 8.23.5 says to encode PrintableString as ISO/IEC 2022 using an implicit
             // context of G0=6 (ANSI/ASCII) and no explicit escape sequences are allowed.
