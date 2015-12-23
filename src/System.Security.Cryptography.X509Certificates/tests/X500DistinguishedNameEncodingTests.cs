@@ -385,7 +385,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         "6C0065002E0063006F006D"
                 },
 
-                // Reversed processing isn't quite the same as doing a scan from the right.  This is CN only, not invalid.
+                // Reversed processing isn't quite the same as doing a scan from the right.
+                // This is CN only, not an invalid value.
                 {
                     X500DistinguishedNameFlags.UseSemicolons | X500DistinguishedNameFlags.Reversed,
                     "CN=\"Common Name, E=user@example.com\"",
@@ -464,6 +465,29 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     "CN=@",
                     "300C310A300806035504030C0140",
                     "300C310A30080603550403140140"
+                },
+            },
+
+            new FlagVariantEncoderTestCases("CN=a\nO=b\rOU=c\r\nL=d\n\n \n")
+            {
+                // One very-whitespaced value.  Note that the whatespace at the end
+                // was removed, even though the default-printed form has quotes.
+                {
+                    X500DistinguishedNameFlags.None,
+                    "CN=\"a\nO=b\rOU=c\r\nL=d\"",
+                    "301A3118301606035504030C0F610A4F3D620D4F553D630D0A4C3D64",
+                    "30293127302506035504031E1E0061000A004F003D0062000D004F0055003D00" +
+                        "63000D000A004C003D0064"
+                },
+
+                // \r and \n are the only delimiters that are allowed to
+                // appear consecutively.  That's because they're also whitespace.
+                {
+                    X500DistinguishedNameFlags.UseNewLines,
+                    "CN=a, O=b, OU=c, L=d",
+                    "3030310A30080603550403130161310A3008060355040A130162310A30080603" +
+                        "55040B130163310A30080603550407130164",
+                    null
                 },
             },
         };
