@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 
@@ -304,10 +305,11 @@ namespace System.Security.Cryptography
             int keySize = KeySize;
             for (int i = 0; i < s_supportedAlgorithms.Length; i++)
             {
-                if (keySize == s_supportedAlgorithms[i].KeySize)
+                SupportedAlgorithm algorithm = s_supportedAlgorithms[i];
+
+                if (keySize == algorithm.KeySize)
                 {
-                    int nid = s_supportedAlgorithms[i].Nid;
-                    SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByCurveName(nid);
+                    SafeEcKeyHandle key = algorithm.CreateKey();
                     if (key == null || key.IsInvalid)
                         throw Interop.Crypto.CreateOpenSslCryptographicException();
 
@@ -325,26 +327,178 @@ namespace System.Security.Cryptography
 
         private Lazy<SafeEcKeyHandle> _key;
 
-        private struct SupportedAlgorithm
+        private sealed class SupportedAlgorithm
         {
+            private static readonly Lazy<int[]> s_knownCurves = new Lazy<int[]>(GetKnownCurves);
+
+            private bool? _isKnownCurve;
+
+            public int KeySize { get; private set; }
+            public int Nid { get; private set; }
+            public ExplicitPrimeCurveParameters ExplicitParameters { get; set; }
+
             public SupportedAlgorithm(int keySize, int nid)
-                : this()
             {
                 KeySize = keySize;
                 Nid = nid;
             }
 
-            public int KeySize { get; private set; }
-            public int Nid { get; private set; }
+            private static int[] GetKnownCurves()
+            {
+                int nCurves = Interop.Crypto.EcGetKnownCurveNids(null, 0);
+                Debug.Assert(nCurves >= 0);
+
+                int[] knownCurves = new int[nCurves];
+                int nCurves2 = Interop.Crypto.EcGetKnownCurveNids(knownCurves, nCurves);
+                Debug.Assert(nCurves == nCurves2);
+
+                Console.WriteLine("Found {0} known curve(s):", nCurves);
+
+                foreach (int nid in knownCurves)
+                {
+                    Console.Write(nid);
+                    Console.Write(", ");
+                }
+
+                Console.WriteLine();
+
+                return knownCurves;
+            }
+
+            public SafeEcKeyHandle CreateKey()
+            {
+                if (!_isKnownCurve.HasValue)
+                {
+                    _isKnownCurve = (Array.IndexOf(s_knownCurves.Value, Nid) >= 0);
+                }
+
+                if (_isKnownCurve.Value)
+                {
+                    Console.WriteLine("Creating key for a known curve (size={0})", KeySize);
+                    return Interop.Crypto.EcKeyCreateByCurveName(Nid);
+                }
+
+                if (ExplicitParameters != null)
+                {
+                    return ExplicitParameters.CreateKey();
+                }
+
+                throw new CryptographicException("Unable to create a curve with keysize " + KeySize);
+            }
+        }
+
+        private sealed class ExplicitPrimeCurveParameters
+        {
+            private readonly Lazy<SafeEcGroupHandle> _referenceGroup;
+
+            public byte[] Prime { get; private set; }
+            public byte[] A { get; private set; }
+            public byte[] B { get; private set; }
+            public byte[] Gx { get; private set; }
+            public byte[] Gy { get; private set; }
+            public byte[] Order { get; private set; }
+            public byte[] Cofactor { get; private set; }
+
+            public ExplicitPrimeCurveParameters(
+                byte[] prime,
+                byte[] a,
+                byte[] b,
+                byte[] gx,
+                byte[] gy,
+                byte[] order,
+                byte[] cofactor)
+            {
+                Prime = prime;
+                A = a;
+                B = b;
+                Gx = gx;
+                Gy = gy;
+                Order = order;
+                Cofactor = cofactor;
+
+                _referenceGroup = new Lazy<SafeEcGroupHandle>(BuildGroup);
+            }
+
+            private SafeEcGroupHandle BuildGroup()
+            {
+                Console.WriteLine("Constructing an EC_GROUP");
+                SafeEcGroupHandle handle = Interop.Crypto.EcGroupCreatePrimeCurve(
+                    Prime, Prime.Length,
+                    A, A.Length,
+                    B, B.Length,
+                    Gx, Gx.Length,
+                    Gy, Gy.Length,
+                    Order, Order.Length,
+                    Cofactor, Cofactor.Length);
+
+                Interop.Crypto.CheckValidOpenSslHandle(handle);
+
+                return handle;
+            }
+
+            public SafeEcKeyHandle CreateKey()
+            {
+                Console.WriteLine("Creating key for a built curve.");
+                return Interop.Crypto.EcKeyCreateForCurve(_referenceGroup.Value);
+            }
         }
 
         private static readonly SupportedAlgorithm[] s_supportedAlgorithms =
-            new SupportedAlgorithm[]
+        {
+            new SupportedAlgorithm(keySize: 224, nid: 832)
             {
-                new SupportedAlgorithm(keySize: 224, nid: Interop.Crypto.NID_secp224r1),
-                new SupportedAlgorithm(keySize: 256, nid: Interop.Crypto.NID_X9_62_prime256v1),
-                new SupportedAlgorithm(keySize: 384, nid: Interop.Crypto.NID_secp384r1),
-                new SupportedAlgorithm(keySize: 521, nid: Interop.Crypto.NID_secp521r1),
-            };
+                ExplicitParameters = new ExplicitPrimeCurveParameters(
+                    prime: new byte[]
+                    {
+                        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                        0x00, 0x00, 0x00, 0x01,
+                    },
+                    a: new byte[]
+                    {
+                        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE,
+                        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                        0xFF, 0xFF, 0xFF, 0xFE,
+
+                    },
+                    b: new byte[]
+                    {
+                        0xB4, 0x05, 0x0A, 0x85, 0x0C, 0x04, 0xB3, 0xAB,
+                        0xF5, 0x41, 0x32, 0x56, 0x50, 0x44, 0xB0, 0xB7,
+                        0xD7, 0xBF, 0xD8, 0xBA, 0x27, 0x0B, 0x39, 0x43,
+                        0x23, 0x55, 0xFF, 0xB4,
+                    },
+                    gx: new byte[]
+                    {
+                        0xB7, 0x0E, 0x0C, 0xBD, 0x6B, 0xB4, 0xBF, 0x7F,
+                        0x32, 0x13, 0x90, 0xB9, 0x4A, 0x03, 0xC1, 0xD3,
+                        0x56, 0xC2, 0x11, 0x22, 0x34, 0x32, 0x80, 0xD6,
+                        0x11, 0x5C, 0x1D, 0x21,
+                    },
+                    gy: new byte[]
+                    {
+                        0xBD, 0x37, 0x63, 0x88, 0xB5, 0xF7, 0x23, 0xFB,
+                        0x4C, 0x22, 0xDF, 0xE6, 0xCD, 0x43, 0x75, 0xA0,
+                        0x5A, 0x07, 0x47, 0x64, 0x44, 0xD5, 0x81, 0x99,
+                        0x85, 0x00, 0x7E, 0x34,
+                    },
+                    order: new byte[]
+                    {
+                        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x16, 0xA2,
+                        0xE0, 0xB8, 0xF0, 0x3E, 0x13, 0xDD, 0x29, 0x45,
+                        0x5C, 0x5C, 0x2A, 0x3D,
+                    },
+                    cofactor: new byte[]
+                    {
+                        0x01,
+                    })
+            },
+            new SupportedAlgorithm(keySize: 256, nid: Interop.Crypto.NID_X9_62_prime256v1),
+            new SupportedAlgorithm(keySize: 384, nid: Interop.Crypto.NID_secp384r1),
+            new SupportedAlgorithm(keySize: 521, nid: Interop.Crypto.NID_secp521r1),
+        };
     }
 }

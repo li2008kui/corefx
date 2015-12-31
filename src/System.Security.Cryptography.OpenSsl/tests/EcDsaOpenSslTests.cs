@@ -16,15 +16,7 @@ namespace System.Security.Cryptography.EcDsaOpenSsl.Tests
         {
             get
             {
-                try
-                {
-                    using (ECDsaOpenSsl e = new ECDsaOpenSsl(224)) e.Exercise();
-                    return true;
-                }
-                catch (Exception exc)
-                {
-                    return !exc.Message.Contains("unknown group");
-                }
+                return true;
             }
         }
 

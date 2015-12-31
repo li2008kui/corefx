@@ -17,6 +17,9 @@ internal static partial class Interop
         internal static extern SafeEcKeyHandle EcKeyCreateByCurveName(int nid);
 
         [DllImport(Libraries.CryptoNative)]
+        internal static extern SafeEcKeyHandle EcKeyCreateForCurve(SafeEcGroupHandle curve);
+
+        [DllImport(Libraries.CryptoNative)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool EcKeyGenerateKey(SafeEcKeyHandle eckey);
 

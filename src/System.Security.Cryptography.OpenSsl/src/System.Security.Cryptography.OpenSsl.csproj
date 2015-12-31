@@ -36,6 +36,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.EcDsa.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EcDsa.cs"</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.EcGroup.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EcGroup.cs"</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.EcKey.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EcKey.cs"</Link>
     </Compile>
