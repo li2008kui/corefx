@@ -335,6 +335,7 @@ namespace Internal.Cryptography.Pal
                         tagEnd = pos + 1;
                         state = ParseState.SeekTagEnd;
                         break;
+
                     case ParseState.SeekTagEnd:
                         if (c == keyValueSeparator)
                         {
@@ -359,6 +360,7 @@ namespace Internal.Cryptography.Pal
                         // end (non-inclusive) to the next character.
                         tagEnd = pos + 1;
                         break;
+
                     case ParseState.SeekEquals:
                         if (c == keyValueSeparator)
                         {
@@ -377,6 +379,7 @@ namespace Internal.Cryptography.Pal
                         }
 
                         break;
+
                     case ParseState.SeekValueStart:
                         if (char.IsWhiteSpace(c))
                         {
@@ -406,6 +409,7 @@ namespace Internal.Cryptography.Pal
                         valueStart = pos;
                         valueEnd = pos + 1;
                         break;
+
                     case ParseState.SeekEndQuote:
                         // The only escape sequence in DN parsing is that a quoted
                         // value can embed quotes via "", the same as a C# verbatim
@@ -422,6 +426,7 @@ namespace Internal.Cryptography.Pal
 
                         // Everything else is okay.
                         break;
+
                     case ParseState.MaybeEndQuote:
                         if (c == quotedValueChar)
                         {
@@ -439,6 +444,7 @@ namespace Internal.Cryptography.Pal
                         // and go there.
                         state = ParseState.SeekComma;
                         goto case ParseState.SeekComma;
+
                     case ParseState.SeekValueEnd:
                         // Every time we see a non-whitespace character we need to mark it
                         if (dnSeparators.Contains(c))
@@ -455,6 +461,7 @@ namespace Internal.Cryptography.Pal
                         valueEnd = pos + 1;
 
                         break;
+
                     case ParseState.SeekComma:
                         if (dnSeparators.Contains(c))
                         {
@@ -477,6 +484,7 @@ namespace Internal.Cryptography.Pal
                         }
 
                         break;
+
                     default:
                         Debug.Fail(
                             string.Format(
@@ -523,10 +531,12 @@ namespace Internal.Cryptography.Pal
                     valueStart = stringForm.Length;
                     valueEnd = valueStart;
                     goto case ParseState.SeekComma;
+
                 // If we were in an unquoted value and just ran out of text
                 case ParseState.SeekValueEnd:
                     Debug.Assert(!hadEscapedQuote);
                     goto case ParseState.SeekComma;
+
                 // If the last character was a close quote, or it was a close quote
                 // then some whitespace.
                 case ParseState.MaybeEndQuote:
@@ -537,9 +547,11 @@ namespace Internal.Cryptography.Pal
 
                     encodedSets.Add(ParseRdn(tagOid, stringForm, valueStart, valueEnd, hadEscapedQuote));
                     break;
+
                 // If the entire string was empty, or ended in a dnSeparator.
                 case ParseState.SeekTag:
                     break;
+
                 default:
                     // While this is an error, it should be due to bad input, so no Debug.Fail.
                     throw new CryptographicException(SR.Cryptography_Invalid_X500Name);

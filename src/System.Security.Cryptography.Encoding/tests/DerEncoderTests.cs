@@ -158,28 +158,6 @@ namespace System.Security.Cryptography.Encoding.Tests
 
         [Theory]
         [InlineData("", true)]
-        [InlineData("This is an IA5 string.", true)]
-        [InlineData("\u65E5\u672C\u8A9E is not an IA5 string", false)]
-        public static void CheckIA5String(string candidate, bool expected)
-        {
-            Assert.Equal(expected, DerEncoder.IsValidIA5String(candidate));
-        }
-
-        // No bounds check tests are done here, because the method is currently assert-based,
-        // not exception-based.
-        [Theory]
-        [InlineData("", 0, 0, true)]
-        [InlineData("This is an IA5 string.", 0, 22, true)]
-        [InlineData("\u65E5\u672C\u8A9E is not an IA5 string", 0, 24, false)]
-        [InlineData("\u65E5\u672C\u8A9E is not an IA5 string", 11, 13, true)]
-        [InlineData("\u65E5\u672C\u8A9E is not an IA5 string", 3, 21, true)]
-        public static void CheckIA5Substring(string candidate, int offset, int length, bool expected)
-        {
-            Assert.Equal(expected, DerEncoder.IsValidIA5String(candidate, offset, length));
-        }
-
-        [Theory]
-        [InlineData("", true)]
         [InlineData("This is a PrintableString.", true)]
         [InlineData("This is not @ PrintableString.", false)]
         [InlineData("\u65E5\u672C\u8A9E is not a PrintableString", false)]

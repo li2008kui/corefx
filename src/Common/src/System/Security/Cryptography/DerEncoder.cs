@@ -476,8 +476,7 @@ namespace System.Security.Cryptography
             Debug.Assert(offset >= 0);
             Debug.Assert(offset <= str.Length);
             Debug.Assert(count >= 0);
-            Debug.Assert(count <= str.Length);
-            Debug.Assert(offset + count <= str.Length);
+            Debug.Assert(count <= str.Length - offset);
 
             int encodedSize;
 
@@ -587,8 +586,7 @@ namespace System.Security.Cryptography
             Debug.Assert(offset >= 0);
             Debug.Assert(offset <= str.Length);
             Debug.Assert(count >= 0);
-            Debug.Assert(count <= str.Length);
-            Debug.Assert(offset + count <= str.Length);
+            Debug.Assert(count <= str.Length - offset);
 
             int end = count + offset;
 
@@ -654,56 +652,6 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Test to see if the input string contains only characters permitted by the ASN.1
-        /// IA5String restricted character set.
-        /// </summary>
-        /// <param name="str">The string to test.</param>
-        /// <returns>
-        /// <c>true</c> if all of the characters in <paramref name="str"/> are valid IA5String characters,
-        /// <c>false</c> otherwise.
-        /// </returns>
-        internal static bool IsValidIA5String(string str)
-        {
-            Debug.Assert(str != null);
-
-            return IsValidIA5String(str, 0, str.Length);
-        }
-
-        /// <summary>
-        /// Test to see if the input substring contains only characters permitted by the ASN.1
-        /// IA5String restricted character set.
-        /// </summary>
-        /// <param name="str">The string to test.</param>
-        /// <param name="offset">The starting character position within <paramref name="str"/>.</param>
-        /// <param name="count">The number of characters from <paramref name="str"/> to read.</param>
-        /// <returns>
-        /// <c>true</c> if all of the indexed characters in <paramref name="str"/> are valid IA5String
-        /// characters, <c>false</c> otherwise.
-        /// </returns>
-        internal static bool IsValidIA5String(string str, int offset, int count)
-        {
-            Debug.Assert(str != null);
-            Debug.Assert(offset >= 0);
-            Debug.Assert(offset <= str.Length);
-            Debug.Assert(count >= 0);
-            Debug.Assert(count <= str.Length);
-            Debug.Assert(offset + count <= str.Length);
-
-            int end = count + offset;
-
-            for (int i = offset; i < end; i++)
-            {
-                // IA5 is ASCII 0x00-0x7F.
-                if (str[i] > 127)
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        /// <summary>
         /// Encode a string as a IA5String value.
         /// </summary>
         /// <param name="str">The string to be encoded.</param>
@@ -743,12 +691,12 @@ namespace System.Security.Cryptography
                 char c = str[i + offset];
 
                 // IA5 is ASCII 0x00-0x7F.
-                if (str[i] > 127)
+                if (c > 127)
                 {
                     throw new CryptographicException(SR.Cryptography_Invalid_IA5String);
                 }
 
-                encodedString[i] = (byte)str[i + offset];
+                encodedString[i] = (byte)c;
             }
 
             return new byte[][]
