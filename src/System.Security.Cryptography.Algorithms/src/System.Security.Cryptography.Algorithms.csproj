@@ -55,6 +55,7 @@
     <Compile Include="System\Security\Cryptography\RSASignaturePadding.cs" />
     <Compile Include="System\Security\Cryptography\RSASignaturePaddingMode.cs" />
     <Compile Include="System\Security\Cryptography\TripleDES.cs" />
+    <Compile Include="Internal\Cryptography\AsymmetricFactory.cs" />
     <Compile Include="Internal\Cryptography\AesImplementation.cs" />
     <Compile Include="Internal\Cryptography\Helpers.cs" />
     <Compile Include="Internal\Cryptography\HMACCommon.cs" />
@@ -78,6 +79,7 @@
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' AND '$(TargetGroup)'==''">
     <Compile Include="System\Security\Cryptography\RNGCryptoServiceProvider.Windows.cs" />
     <Compile Include="Internal\Cryptography\AesImplementation.Windows.cs" />
+    <Compile Include="Internal\Cryptography\AsymmetricFactory.Windows.cs" />
     <Compile Include="Internal\Cryptography\CngCipher.cs" />
     <Compile Include="Internal\Cryptography\HashProviderDispenser.Windows.cs" />
     <Compile Include="Internal\Cryptography\TripleDesImplementation.Windows.cs" />
@@ -145,6 +147,7 @@
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="System\Security\Cryptography\RNGCryptoServiceProvider.Unix.cs" />
     <Compile Include="Internal\Cryptography\AesImplementation.Unix.cs" />
+    <Compile Include="Internal\Cryptography\AsymmetricFactory.Unix.cs" />
     <Compile Include="Internal\Cryptography\HashProviderDispenser.Unix.cs" />
     <Compile Include="Internal\Cryptography\OpenSslCipher.cs" />
     <Compile Include="Internal\Cryptography\TripleDesImplementation.Unix.cs" />

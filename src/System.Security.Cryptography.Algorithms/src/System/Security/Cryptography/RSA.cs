@@ -112,6 +112,11 @@ namespace System.Security.Cryptography
             return VerifyHash(hash, signature, hashAlgorithm, padding);
         }
 
+        public static RSA Create()
+        {
+            return AsymmetricFactory.CreateRSA();
+        }
+
         private static Exception HashAlgorithmNameNullOrEmpty()
         {
             return new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, "hashAlgorithm");

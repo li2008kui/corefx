@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.IO;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
@@ -84,5 +85,10 @@ namespace System.Security.Cryptography
 
         protected abstract byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm);
         protected abstract byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm);
+
+        public static ECDsa Create()
+        {
+            return AsymmetricFactory.CreateECDsa();
+        }
     }
 }
