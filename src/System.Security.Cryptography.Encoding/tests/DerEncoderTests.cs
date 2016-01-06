@@ -163,7 +163,7 @@ namespace System.Security.Cryptography.Encoding.Tests
         [InlineData("\u65E5\u672C\u8A9E is not a PrintableString", false)]
         public static void CheckPrintableString(string candidate, bool expected)
         {
-            Assert.Equal(expected, DerEncoder.IsValidPrintableString(candidate));
+            Assert.Equal(expected, DerEncoder.IsValidPrintableString(candidate.ToCharArray()));
         }
 
         // No bounds check tests are done here, because the method is currently assert-based,
@@ -181,7 +181,7 @@ namespace System.Security.Cryptography.Encoding.Tests
         [InlineData("\u65E5\u672C\u8A9E is not a PrintableString", 3, 24, true)]
         public static void CheckPrintableSubstring(string candidate, int offset, int length, bool expected)
         {
-            Assert.Equal(expected, DerEncoder.IsValidPrintableString(candidate, offset, length));
+            Assert.Equal(expected, DerEncoder.IsValidPrintableString(candidate.ToCharArray(), offset, length));
         }
 
         [Theory]
@@ -190,7 +190,7 @@ namespace System.Security.Cryptography.Encoding.Tests
         [InlineData("banana", "62616E616E61")]
         public static void CheckIA5StringEncoding(string input, string expectedHex)
         {
-            byte[][] encodedString = DerEncoder.SegmentedEncodeIA5String(input);
+            byte[][] encodedString = DerEncoder.SegmentedEncodeIA5String(input.ToCharArray());
 
             Assert.NotNull(encodedString);
             Assert.Equal(3, encodedString.Length);
@@ -218,7 +218,7 @@ namespace System.Security.Cryptography.Encoding.Tests
         [InlineData("banana", 1, 4, "616E616E")]
         public static void CheckIA5SubstringEncoding(string input, int offset, int length, string expectedHex)
         {
-            byte[][] encodedString = DerEncoder.SegmentedEncodeIA5String(input, offset, length);
+            byte[][] encodedString = DerEncoder.SegmentedEncodeIA5String(input.ToCharArray(), offset, length);
 
             Assert.NotNull(encodedString);
             Assert.Equal(3, encodedString.Length);
@@ -247,7 +247,7 @@ namespace System.Security.Cryptography.Encoding.Tests
         [InlineData("banana", "62616E616E61")]
         public static void CheckPrintableStringEncoding(string input, string expectedHex)
         {
-            byte[][] encodedString = DerEncoder.SegmentedEncodePrintableString(input);
+            byte[][] encodedString = DerEncoder.SegmentedEncodePrintableString(input.ToCharArray());
 
             Assert.NotNull(encodedString);
             Assert.Equal(3, encodedString.Length);
@@ -275,7 +275,7 @@ namespace System.Security.Cryptography.Encoding.Tests
         [InlineData("banana", 1, 4, "616E616E")]
         public static void CheckPrintableSubstringEncoding(string input, int offset, int length, string expectedHex)
         {
-            byte[][] encodedString = DerEncoder.SegmentedEncodePrintableString(input, offset, length);
+            byte[][] encodedString = DerEncoder.SegmentedEncodePrintableString(input.ToCharArray(), offset, length);
 
             Assert.NotNull(encodedString);
             Assert.Equal(3, encodedString.Length);
@@ -305,7 +305,7 @@ namespace System.Security.Cryptography.Encoding.Tests
         [InlineData("\u65E5\u672C\u8A9E", "E697A5E69CACE8AA9E")]
         public static void CheckUTF8StringEncoding(string input, string expectedHex)
         {
-            byte[][] encodedString = DerEncoder.SegmentedEncodeUtf8String(input);
+            byte[][] encodedString = DerEncoder.SegmentedEncodeUtf8String(input.ToCharArray());
 
             Assert.NotNull(encodedString);
             Assert.Equal(3, encodedString.Length);
@@ -334,7 +334,7 @@ namespace System.Security.Cryptography.Encoding.Tests
         [InlineData("\u65E5\u672C\u8A9E", 1, 1, "E69CAC")]
         public static void CheckUTF8SubstringEncoding(string input, int offset, int length, string expectedHex)
         {
-            byte[][] encodedString = DerEncoder.SegmentedEncodeUtf8String(input, offset, length);
+            byte[][] encodedString = DerEncoder.SegmentedEncodeUtf8String(input.ToCharArray(), offset, length);
             Assert.NotNull(encodedString);
             Assert.Equal(3, encodedString.Length);
 

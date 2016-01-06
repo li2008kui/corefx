@@ -282,9 +282,10 @@ namespace Internal.Cryptography.Pal
             // 7 + 6 = 13, round up to the nearest power-of-two.
             const int InitalRdnSize = 16;
             List<byte[][]> encodedSets = new List<byte[][]>(InitalRdnSize);
+            char[] chars = stringForm.ToCharArray();
 
             int pos;
-            int end = stringForm.Length;
+            int end = chars.Length;
 
             int tagStart = -1;
             int tagEnd = -1;
@@ -300,7 +301,7 @@ namespace Internal.Cryptography.Pal
 
             for (pos = 0; pos < end; pos++)
             {
-                char c = stringForm[pos];
+                char c = chars[pos];
 
                 switch (state)
                 {
@@ -469,7 +470,7 @@ namespace Internal.Cryptography.Pal
                             Debug.Assert(valueEnd != -1);
                             Debug.Assert(valueStart != -1);
 
-                            encodedSets.Add(ParseRdn(tagOid, stringForm, valueStart, valueEnd, hadEscapedQuote));
+                            encodedSets.Add(ParseRdn(tagOid, chars, valueStart, valueEnd, hadEscapedQuote));
                             tagOid = null;
                             valueStart = -1;
                             valueEnd = -1;
@@ -528,7 +529,7 @@ namespace Internal.Cryptography.Pal
             {
                 // The last semantic character parsed was =.
                 case ParseState.SeekValueStart:
-                    valueStart = stringForm.Length;
+                    valueStart = chars.Length;
                     valueEnd = valueStart;
                     goto case ParseState.SeekComma;
 
@@ -545,7 +546,7 @@ namespace Internal.Cryptography.Pal
                     Debug.Assert(valueStart != -1);
                     Debug.Assert(valueEnd != -1);
 
-                    encodedSets.Add(ParseRdn(tagOid, stringForm, valueStart, valueEnd, hadEscapedQuote));
+                    encodedSets.Add(ParseRdn(tagOid, chars, valueStart, valueEnd, hadEscapedQuote));
                     break;
 
                 // If the entire string was empty, or ended in a dnSeparator.
@@ -584,7 +585,7 @@ namespace Internal.Cryptography.Pal
             return new Oid(stringForm.Substring(tagStart, length));
         }
 
-        private static byte[][] ParseRdn(Oid tagOid, string stringForm, int valueStart, int valueEnd, bool hadEscapedQuote)
+        private static byte[][] ParseRdn(Oid tagOid, char[] chars, int valueStart, int valueEnd, bool hadEscapedQuote)
         {
             bool ia5String = (tagOid.Value == Oids.EmailAddress);
             byte[][] encodedOid;
@@ -600,17 +601,17 @@ namespace Internal.Cryptography.Pal
 
             if (hadEscapedQuote)
             {
-                string value = ExtractValue(stringForm, valueStart, valueEnd);
+                char[] value = ExtractValue(chars, valueStart, valueEnd);
 
                 return ParseRdn(encodedOid, value, ia5String);
             }
 
-            return ParseRdn(encodedOid, stringForm, valueStart, valueEnd, ia5String);
+            return ParseRdn(encodedOid, chars, valueStart, valueEnd, ia5String);
         }
 
         private static byte[][] ParseRdn(
             byte[][] encodedOid,
-            string stringForm,
+            char[] chars,
             int valueStart,
             int valueEnd,
             bool ia5String)
@@ -622,15 +623,15 @@ namespace Internal.Cryptography.Pal
             if (ia5String)
             {
                 // An email address with an invalid value will throw.
-                encodedValue = DerEncoder.SegmentedEncodeIA5String(stringForm, valueStart, length);
+                encodedValue = DerEncoder.SegmentedEncodeIA5String(chars, valueStart, length);
             }
-            else if (DerEncoder.IsValidPrintableString(stringForm, valueStart, length))
+            else if (DerEncoder.IsValidPrintableString(chars, valueStart, length))
             {
-                encodedValue = DerEncoder.SegmentedEncodePrintableString(stringForm, valueStart, length);
+                encodedValue = DerEncoder.SegmentedEncodePrintableString(chars, valueStart, length);
             }
             else
             {
-                encodedValue = DerEncoder.SegmentedEncodeUtf8String(stringForm, valueStart, length);
+                encodedValue = DerEncoder.SegmentedEncodeUtf8String(chars, valueStart, length);
             }
 
             return DerEncoder.ConstructSegmentedSet(
@@ -639,7 +640,7 @@ namespace Internal.Cryptography.Pal
                     encodedValue));
         }
 
-        private static byte[][] ParseRdn(byte[][] encodedOid, string value, bool ia5String)
+        private static byte[][] ParseRdn(byte[][] encodedOid, char[] value, bool ia5String)
         {
             byte[][] encodedValue;
 
@@ -663,17 +664,17 @@ namespace Internal.Cryptography.Pal
                     encodedValue));
         }
 
-        private static string ExtractValue(string stringForm, int valueStart, int valueEnd)
+        private static char[] ExtractValue(char[] chars, int valueStart, int valueEnd)
         {
             // The string is guaranteed to be between ((valueEnd - valueStart) / 2) (all quotes) and
             // (valueEnd - valueStart - 1) (one escaped quote)
-            StringBuilder builder = new StringBuilder(valueEnd - valueStart - 1);
+            List<char> builder = new List<char>(valueEnd - valueStart - 1);
 
             bool skippedQuote = false;
 
             for (int i = valueStart; i < valueEnd; i++)
             {
-                char c = stringForm[i];
+                char c = chars[i];
 
                 if (c == '"' && !skippedQuote)
                 {
@@ -686,10 +687,10 @@ namespace Internal.Cryptography.Pal
                 Debug.Assert(skippedQuote == (c == '"'));
 
                 skippedQuote = false;
-                builder.Append(c);
+                builder.Add(c);
             }
 
-            return builder.ToString();
+            return builder.ToArray();
         }
     }
 }

@@ -365,6 +365,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     "300B3109300706035504031300",
                     null),
             },
+
+            new object[]
+            {
+                // Contains two adjacent escaped quotes.
+                new SimpleEncoderTestCase(
+                    "CN=\"Adjacent Escaped\"\"\"\"Quotes\"",
+                    null,
+                    "30233121301F06035504030C1841646A6563616E742045736361706564222251756F746573",
+                    "303B3139303706035504031E3000410064006A006100630065006E00740020004500730063" +
+                        "00610070006500640022002200510075006F007400650073"),
+            },
         };
 
         public static IEnumerable<object[]> GetFlagBasedDnCases()
