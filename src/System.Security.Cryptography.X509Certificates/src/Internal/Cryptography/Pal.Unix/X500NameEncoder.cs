@@ -294,8 +294,8 @@ namespace Internal.Cryptography.Pal
             int valueEnd = -1;
             bool hadEscapedQuote = false;
 
-            const char keyValueSeparator = '=';
-            const char quotedValueChar = '"';
+            const char KeyValueSeparator = '=';
+            const char QuotedValueChar = '"';
 
             ParseState state = ParseState.SeekTag;
 
@@ -338,7 +338,7 @@ namespace Internal.Cryptography.Pal
                         break;
 
                     case ParseState.SeekTagEnd:
-                        if (c == keyValueSeparator)
+                        if (c == KeyValueSeparator)
                         {
                             goto case ParseState.SeekEquals;
                         }
@@ -363,7 +363,7 @@ namespace Internal.Cryptography.Pal
                         break;
 
                     case ParseState.SeekEquals:
-                        if (c == keyValueSeparator)
+                        if (c == KeyValueSeparator)
                         {
                             Debug.Assert(tagStart >= 0);
                             tagOid = ParseOid(stringForm, tagStart, tagEnd);
@@ -390,7 +390,7 @@ namespace Internal.Cryptography.Pal
                         // If the first non-whitespace character is a quote,
                         // this is a quoted string.  Unless the flags say to
                         // not interpret quoted strings.
-                        if (c == quotedValueChar && !noQuotes)
+                        if (c == QuotedValueChar && !noQuotes)
                         {
                             state = ParseState.SeekEndQuote;
                             valueStart = pos + 1;
@@ -418,7 +418,7 @@ namespace Internal.Cryptography.Pal
                         // quote we need to remember that this might have been the
                         // end, but be open to the possibility that there's another
                         // quote coming.
-                        if (c == quotedValueChar)
+                        if (c == QuotedValueChar)
                         {
                             state = ParseState.MaybeEndQuote;
                             valueEnd = pos;
@@ -429,7 +429,7 @@ namespace Internal.Cryptography.Pal
                         break;
 
                     case ParseState.MaybeEndQuote:
-                        if (c == quotedValueChar)
+                        if (c == QuotedValueChar)
                         {
                             state = ParseState.SeekEndQuote;
                             hadEscapedQuote = true;
