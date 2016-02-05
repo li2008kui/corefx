@@ -10,14 +10,14 @@
     <ProjectGuid>{81A05E2E-E3AE-4246-B4E6-DD5F31FB71F9}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Security.Cryptography.Algorithms</AssemblyName>
-    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <AssemblyVersion>4.1.0.0</AssemblyVersion>
+    <AssemblyVersion Condition="'$(TargetGroup)'=='net46'">4.0.0.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLSCompliant>false</CLSCompliant>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">dotnet5.4</PackageTargetFramework>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net46'">true</IsPartialFacadeAssembly>
-    <PackageTargetRuntime Condition=" '$(TargetsWindows)' == 'true'">win7</PackageTargetRuntime>
-    <PackageTargetRuntime Condition=" '$(TargetGroup)' == 'net46'"></PackageTargetRuntime>
-    <PackageTargetRuntime Condition="'$(TargetsUnix)' == 'true'">unix</PackageTargetRuntime>
+    <PackageTargetFramework Condition="'$(TargetGroup)'==''">dotnet5.5</PackageTargetFramework>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net46' OR '$(TargetGroup)'=='net461'">true</IsPartialFacadeAssembly>
+    <PackageTargetRuntime Condition=" '$(IsPartialFacadeAssembly)' == 'true'"></PackageTargetRuntime>
+    <UsePackageTargetRuntimeDefaults Condition=" '$(IsPartialFacadeAssembly)' != 'true'">true</UsePackageTargetRuntimeDefaults>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'FreeBSD_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'FreeBSD_Release|AnyCPU'" />
@@ -179,7 +179,7 @@
       <Link>Common\Microsoft\Win32\SafeHandles\SafeHmacCtxHandle.Unix.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='net46'">
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)'=='true'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
     <TargetingPackReference Include="System.Core" />
