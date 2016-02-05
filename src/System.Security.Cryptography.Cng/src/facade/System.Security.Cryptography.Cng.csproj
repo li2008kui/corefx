@@ -7,7 +7,8 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.Security.Cryptography.Cng</AssemblyName>
-    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <AssemblyVersion>4.1.0.0</AssemblyVersion>
+    <AssemblyVersion Condition="'$(TargetGroup)'=='net46'">4.0.0.0</AssemblyVersion>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
   </PropertyGroup>
 
@@ -17,7 +18,7 @@
 
   <ItemGroup>
     <TargetingPackReference Include="mscorlib" Condition="'$(TargetGroup)' != 'netcore50aot'" />
-    <TargetingPackReference Include="System.Core" Condition="'$(TargetGroup)' == 'net46'" />
+    <TargetingPackReference Include="System.Core" Condition="'$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'net461'" />
   </ItemGroup>
 
   <ItemGroup>
