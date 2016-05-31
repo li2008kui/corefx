@@ -1285,6 +1285,17 @@ static unsigned long GetCurrentThreadId()
 }
 #endif // __APPLE__
 
+extern void CryptoNative_StartMemChecking() { MemCheck_on(); MemCheck_start(); }
+
+extern void CryptoNative_StopMemChecking() { MemCheck_stop(); MemCheck_off(); }
+
+extern void CryptoNative_MemLeaks(char* path)
+{
+    FILE* output = fopen(path, "w");
+    CRYPTO_mem_leaks_fp(output);
+    fclose(output);
+}
+
 /*
 Function:
 EnsureOpenSslInitialized
@@ -1303,6 +1314,9 @@ extern int32_t CryptoNative_EnsureOpenSslInitialized()
     int randPollResult = 0;
 
     pthread_mutex_lock(&g_initLock);
+
+    CRYPTO_malloc_debug_init();
+    CRYPTO_set_mem_debug_options(V_CRYPTO_MDEBUG_ALL);
 
     if (g_locks != NULL)
     {
