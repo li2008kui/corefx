@@ -9,7 +9,7 @@ using System.Security;
 namespace Microsoft.Win32.SafeHandles
 {
     [SecurityCritical]
-    internal sealed class SafeBignumHandle : SafeHandle
+    internal sealed class SafeBignumHandle : DebugSafeHandle
     {
         private SafeBignumHandle() :
             base(IntPtr.Zero, ownsHandle: true)

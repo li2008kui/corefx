@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    internal abstract class SafeInteriorHandle : SafeHandle
+    internal abstract class SafeInteriorHandle : DebugSafeHandle
     {
         private SafeHandle _parent;
 

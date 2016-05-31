@@ -36,7 +36,7 @@ internal static partial class Interop
 
 namespace Microsoft.Win32.SafeHandles
 {
-    internal sealed class SafeX509StoreCtxHandle : SafeHandle
+    internal sealed class SafeX509StoreCtxHandle : DebugSafeHandle
     {
         private SafeX509StoreCtxHandle() :
             base(IntPtr.Zero, ownsHandle: true)

@@ -91,7 +91,7 @@ namespace Microsoft.Win32.SafeHandles
     }
 
     [SecurityCritical]
-    internal sealed class SafeX509NameStackHandle : SafeHandle
+    internal sealed class SafeX509NameStackHandle : DebugSafeHandle
     {
         private SafeX509NameStackHandle() :
             base(IntPtr.Zero, ownsHandle: true)

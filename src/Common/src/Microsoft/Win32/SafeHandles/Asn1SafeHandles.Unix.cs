@@ -8,8 +8,32 @@ using System.Security;
 
 namespace Microsoft.Win32.SafeHandles
 {
+    public abstract class DebugSafeHandle : SafeHandle
+    {
+        private static int _count;
+        private string _stack;
+
+        [DllImport("libc")]
+        private static extern int printf(string format, string arg);
+
+        internal DebugSafeHandle(IntPtr invalidHandle, bool ownsHandle) : base(invalidHandle, ownsHandle)
+        {
+            _stack = Environment.StackTrace;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (!disposing)
+            {
+                int count = System.Threading.Interlocked.Increment(ref _count);
+                printf("%s\n", $"Finalizing ({count}) {GetType().FullName}{Environment.NewLine}{_stack}");
+            }
+            base.Dispose(disposing);
+        }
+    }
+
     [SecurityCritical]
-    internal sealed class SafeAsn1ObjectHandle : SafeHandle
+    internal sealed class SafeAsn1ObjectHandle : DebugSafeHandle
     {
         private SafeAsn1ObjectHandle() :
             base(IntPtr.Zero, ownsHandle: true)
@@ -30,7 +54,7 @@ namespace Microsoft.Win32.SafeHandles
     }
 
     [SecurityCritical]
-    internal sealed class SafeAsn1BitStringHandle : SafeHandle
+    internal sealed class SafeAsn1BitStringHandle : DebugSafeHandle
     {
         private SafeAsn1BitStringHandle() :
             base(IntPtr.Zero, ownsHandle: true)
@@ -51,7 +75,7 @@ namespace Microsoft.Win32.SafeHandles
     }
 
     [SecurityCritical]
-    internal sealed class SafeAsn1OctetStringHandle : SafeHandle
+    internal sealed class SafeAsn1OctetStringHandle : DebugSafeHandle
     {
         private SafeAsn1OctetStringHandle() :
             base(IntPtr.Zero, ownsHandle: true)
@@ -72,7 +96,7 @@ namespace Microsoft.Win32.SafeHandles
     }
 
     [SecurityCritical]
-    internal sealed class SafeAsn1StringHandle : SafeHandle
+    internal sealed class SafeAsn1StringHandle : DebugSafeHandle
     {
         private SafeAsn1StringHandle() :
             base(IntPtr.Zero, ownsHandle: true)

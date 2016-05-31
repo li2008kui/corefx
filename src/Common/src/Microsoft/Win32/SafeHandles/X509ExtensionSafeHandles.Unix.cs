@@ -9,7 +9,7 @@ using System.Security;
 namespace Microsoft.Win32.SafeHandles
 {
     [SecurityCritical]
-    internal sealed class SafeX509ExtensionHandle : SafeHandle
+    internal sealed class SafeX509ExtensionHandle : DebugSafeHandle
     {
         private SafeX509ExtensionHandle() :
             base(IntPtr.Zero, ownsHandle: true)
@@ -30,7 +30,7 @@ namespace Microsoft.Win32.SafeHandles
     }
 
     [SecurityCritical]
-    internal sealed class SafeEkuExtensionHandle : SafeHandle
+    internal sealed class SafeEkuExtensionHandle : DebugSafeHandle
     {
         private SafeEkuExtensionHandle() :
             base(IntPtr.Zero, ownsHandle: true)

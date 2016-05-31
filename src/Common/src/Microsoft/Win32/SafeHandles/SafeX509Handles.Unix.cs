@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 namespace Microsoft.Win32.SafeHandles
 {
     [SecurityCritical]
-    internal sealed class SafeX509Handle : SafeHandle
+    internal sealed class SafeX509Handle : DebugSafeHandle
     {
         internal static readonly SafeX509Handle InvalidHandle = new SafeX509Handle();
 
@@ -34,7 +34,7 @@ namespace Microsoft.Win32.SafeHandles
         }
     }
 
-    internal sealed class SafeX509CrlHandle : SafeHandle
+    internal sealed class SafeX509CrlHandle : DebugSafeHandle
     {
         private SafeX509CrlHandle() :
             base(IntPtr.Zero, ownsHandle: true)
@@ -55,7 +55,7 @@ namespace Microsoft.Win32.SafeHandles
     }
 
     [SecurityCritical]
-    internal sealed class SafeX509StoreHandle : SafeHandle
+    internal sealed class SafeX509StoreHandle : DebugSafeHandle
     {
         private SafeX509StoreHandle() :
             base(IntPtr.Zero, ownsHandle: true)

@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 namespace Microsoft.Win32.SafeHandles
 {
     [SecurityCritical]
-    internal sealed class SafeX509NameHandle : SafeHandle
+    internal sealed class SafeX509NameHandle : DebugSafeHandle
     {
         private SafeX509NameHandle() :
             base(IntPtr.Zero, ownsHandle: true)

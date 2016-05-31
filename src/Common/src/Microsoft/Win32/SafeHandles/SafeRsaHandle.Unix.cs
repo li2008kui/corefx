@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 namespace Microsoft.Win32.SafeHandles
 {
     [SecurityCritical]
-    internal sealed class SafeRsaHandle : SafeHandle
+    internal sealed class SafeRsaHandle : DebugSafeHandle
     {
         private SafeRsaHandle() :
             base(IntPtr.Zero, ownsHandle: true)

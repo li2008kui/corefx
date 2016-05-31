@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 namespace Microsoft.Win32.SafeHandles
 {
     [SecurityCritical]
-    internal sealed class SafeBioHandle : SafeHandle
+    internal sealed class SafeBioHandle : DebugSafeHandle
     {
         private SafeBioHandle() :
             base(IntPtr.Zero, ownsHandle: true)

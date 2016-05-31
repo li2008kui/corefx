@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    internal sealed class SafePkcs12Handle : SafeHandle
+    internal sealed class SafePkcs12Handle : DebugSafeHandle
     {
         private SafePkcs12Handle() :
             base(IntPtr.Zero, ownsHandle: true)

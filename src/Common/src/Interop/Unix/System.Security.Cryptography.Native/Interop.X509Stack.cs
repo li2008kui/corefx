@@ -40,7 +40,7 @@ internal static partial class Interop
 
 namespace Microsoft.Win32.SafeHandles
 {
-    internal sealed class SafeX509StackHandle : SafeHandle
+    internal sealed class SafeX509StackHandle : DebugSafeHandle
     {
         private SafeX509StackHandle() :
             base(IntPtr.Zero, ownsHandle: true)
