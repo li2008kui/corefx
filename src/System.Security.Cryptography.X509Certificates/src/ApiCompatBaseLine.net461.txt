@@ -1,0 +1,4 @@
+# Members that have been added to git but not yet to net463
+# Note that this should actually be a net463 suppression but the contract wasn't revved yet.
+MembersMustExist : Member 'System.Security.Cryptography.X509Certificates.X509KeyStorageFlags System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.EphemeralKeys' does not exist in the implementation but it does exist in the contract.
+

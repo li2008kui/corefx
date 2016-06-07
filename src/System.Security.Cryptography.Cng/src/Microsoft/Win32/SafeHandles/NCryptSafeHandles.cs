@@ -63,9 +63,16 @@ namespace Microsoft.Win32.SafeHandles
         /// </summary>
         private SafeNCryptHandle _holder;
 
+        private SafeHandle _parentHandle;
+
         protected SafeNCryptHandle() : base(IntPtr.Zero, true)
         {
             return;
+        }
+
+        protected SafeNCryptHandle(IntPtr handle, bool ownsHandle)
+            : base(handle, ownsHandle)
+        {
         }
 
         /// <summary>
@@ -110,7 +117,8 @@ namespace Microsoft.Win32.SafeHandles
                     case OwnershipState.Owner:
                         return Holder == null && !IsInvalid && !IsClosed;
 
-                    // Duplicate handles have valid open holders with the same raw handle value
+                    // Duplicate handles have valid open holders with the same raw handle value,
+                    // and should not be tracking a distinct parent.
                     case OwnershipState.Duplicate:
                         bool acquiredHolder = false;
 
@@ -129,7 +137,8 @@ namespace Microsoft.Win32.SafeHandles
                                                !Holder.IsInvalid &&
                                                !Holder.IsClosed &&
                                                holderRawHandle != IntPtr.Zero &&
-                                               holderRawHandle == handle;
+                                               holderRawHandle == handle &&
+                                               _parentHandle == null;
 
                             return holderValid && !IsInvalid && !IsClosed;
                         }
@@ -254,6 +263,13 @@ namespace Microsoft.Win32.SafeHandles
                 holder.SetHandle(DangerousGetHandle());
                 GC.SuppressFinalize(holder);
 
+                // Move the parent handle to the Holder.
+                if (_parentHandle != null)
+                {
+                    holder._parentHandle = _parentHandle;
+                    _parentHandle = null;
+                }
+
                 // Transition into the duplicate state, referencing the holder. The initial reference count
                 // on the holder will refer to the original handle so there is no need to AddRef here.
                 Holder = holder;        // Transitions to OwnershipState.Duplicate
@@ -273,6 +289,24 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         /// <summary>
+        /// Register a dependency for this SafeNCryptHandle to another SafeHandle, keeping
+        /// the parent handle from closing until this handle closes.
+        /// </summary>
+        /// <param name="parentHandle"></param>
+        public void SetParentHandle(SafeHandle parentHandle)
+        {
+            if (parentHandle == null)
+                throw new ArgumentNullException(nameof(parentHandle));
+            
+            if (_parentHandle != null || _ownershipState != OwnershipState.Owner)
+                throw new InvalidOperationException(SR.InvalidOperation_CalledTwice);
+
+            bool addedRef = false;
+            parentHandle.DangerousAddRef(ref addedRef);
+            _parentHandle = parentHandle;
+        }
+
+        /// <summary>
         ///     Release the handle
         /// </summary>
         /// <remarks>
@@ -289,6 +323,11 @@ namespace Microsoft.Win32.SafeHandles
             if (_ownershipState == OwnershipState.Duplicate)
             {
                 Holder.DangerousRelease();
+                return true;
+            }
+            else if (_parentHandle != null)
+            {
+                _parentHandle.DangerousRelease();
                 return true;
             }
             else
@@ -319,6 +358,15 @@ namespace Microsoft.Win32.SafeHandles
     /// </summary>
     public sealed class SafeNCryptKeyHandle : SafeNCryptHandle
     {
+        public SafeNCryptKeyHandle()
+        {
+        }
+
+        public SafeNCryptKeyHandle(IntPtr handle, bool ownsHandle)
+            : base(handle, ownsHandle)
+        {
+        }
+
         internal SafeNCryptKeyHandle Duplicate()
         {
             return Duplicate<SafeNCryptKeyHandle>();

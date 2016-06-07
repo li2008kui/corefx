@@ -63,7 +63,7 @@ namespace Internal.Cryptography.Pal.Native
             return pCertContext;
         }
 
-        public bool ContainsPrivateKey
+        public bool HasPersistedPrivateKey
         {
             get
             {
@@ -71,6 +71,44 @@ namespace Internal.Cryptography.Pal.Native
                 bool containsPrivateKey = Interop.crypt32.CertGetCertificateContextProperty(this, CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID, null, ref cb);
                 return containsPrivateKey;
             }
+        }
+
+        public bool HasEphemeralPrivateKey
+        {
+            get
+            {
+                int cb = 0;
+                bool containsPrivateKey = Interop.crypt32.CertGetCertificateContextProperty(this, CertContextPropId.CERT_KEY_CONTEXT_PROP_ID, null, ref cb);
+                return containsPrivateKey;
+            }
+        }
+
+        public bool ContainsPrivateKey
+        {
+            get { return HasPersistedPrivateKey || HasEphemeralPrivateKey; }
+            //get
+            //{
+            //    if (EphemeralKeyHandle != null)
+            //    {
+            //        Console.WriteLine("Loaded Ephemeral Key");
+            //        return true;
+            //    }
+
+            //    if (HasPersistedPrivateKey)
+            //    {
+            //        Console.WriteLine("Persisted Key");
+            //        return true;
+            //    }
+
+            //    if (HasEphemeralPrivateKey)
+            //    {
+            //        Console.WriteLine("Pending Ephemeral Key");
+            //        return true;
+            //    }
+
+            //    Console.WriteLine("No private key");
+            //    return false;
+            //}
         }
 
         public SafeCertContextHandle Duplicate()

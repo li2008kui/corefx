@@ -38,6 +38,11 @@ namespace System.Security.Cryptography.X509Certificates
             if ((keyStorageFlags & ~KeyStorageFlagsAll) != 0)
                 throw new ArgumentException(SR.Argument_InvalidFlag, nameof(keyStorageFlags));
 
+            var ephemeralPersist = X509KeyStorageFlags.EphemeralKeys | X509KeyStorageFlags.PersistKeySet;
+
+            if ((keyStorageFlags & ephemeralPersist) == ephemeralPersist)
+                throw new ArgumentException("Invalid combination of Ephemeral and Persist");
+
             Pal = CertificatePal.FromBlob(rawData, password, keyStorageFlags);
         }
 
@@ -380,6 +385,6 @@ namespace System.Security.Cryptography.X509Certificates
         private DateTime _lazyNotBefore = DateTime.MinValue;
         private DateTime _lazyNotAfter = DateTime.MinValue;
 
-        private const X509KeyStorageFlags KeyStorageFlagsAll = (X509KeyStorageFlags)0x1f;
+        private const X509KeyStorageFlags KeyStorageFlagsAll = (X509KeyStorageFlags)0x3f;
     }
 }

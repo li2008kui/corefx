@@ -169,7 +169,7 @@ namespace Internal.Cryptography.Pal
                 {
                     if (pEnumContext.ContainsPrivateKey)
                     {
-                        if ((!pCertContext.IsInvalid) && pCertContext.ContainsPrivateKey)
+                        if ((!pCertContext.IsInvalid) && pCertContext.ContainsPrivateKey && pEnumContext.HasPersistedPrivateKey)
                         {
                             // We already found our chosen one. Free up this one's key and move on.
                             SafeCertContextHandleWithKeyContainerDeletion.DeleteKeyContainer(pEnumContext);
@@ -205,7 +205,7 @@ namespace Internal.Cryptography.Pal
 
         private static PfxCertStoreFlags MapKeyStorageFlags(X509KeyStorageFlags keyStorageFlags)
         {
-            if ((keyStorageFlags & (X509KeyStorageFlags)~0x1F) != 0)
+            if ((keyStorageFlags & (X509KeyStorageFlags)~0x3F) != 0)
                 throw new ArgumentException(SR.Argument_InvalidFlag, nameof(keyStorageFlags));
 
             PfxCertStoreFlags pfxCertStoreFlags = 0;
@@ -218,6 +218,9 @@ namespace Internal.Cryptography.Pal
                 pfxCertStoreFlags |= PfxCertStoreFlags.CRYPT_EXPORTABLE;
             if ((keyStorageFlags & X509KeyStorageFlags.UserProtected) == X509KeyStorageFlags.UserProtected)
                 pfxCertStoreFlags |= PfxCertStoreFlags.CRYPT_USER_PROTECTED;
+
+            if ((keyStorageFlags & X509KeyStorageFlags.EphemeralKeys) == X509KeyStorageFlags.EphemeralKeys)
+                pfxCertStoreFlags |= PfxCertStoreFlags.PKCS12_NO_PERSIST_KEY | PfxCertStoreFlags.PKCS12_ALWAYS_CNG_KSP;
 
             // In the full .NET Framework loading a PFX then adding the key to the Windows Certificate Store would
             // enable a native application compiled against CAPI to find that private key and interoperate with it.

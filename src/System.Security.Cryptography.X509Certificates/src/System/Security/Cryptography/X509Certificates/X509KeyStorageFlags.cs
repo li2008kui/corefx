@@ -17,6 +17,7 @@ namespace System.Security.Cryptography.X509Certificates
         Exportable = 0x04,
         UserProtected = 0x08,
         PersistKeySet = 0x10,
+        EphemeralKeys = 0x20,
     }
 }
 

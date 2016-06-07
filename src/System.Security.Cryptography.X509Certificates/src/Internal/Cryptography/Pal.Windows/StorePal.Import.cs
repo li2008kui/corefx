@@ -4,18 +4,10 @@
 
 using System;
 using System.IO;
-using System.Text;
-using System.Diagnostics;
-using System.Globalization;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
-
-using Internal.Cryptography;
-using Internal.Cryptography.Pal.Native;
-
-
-using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+
+using Internal.Cryptography.Pal.Native;
 
 namespace Internal.Cryptography.Pal
 {
@@ -117,7 +109,7 @@ namespace Internal.Cryptography.Pal
                 null);
             if (certStore.IsInvalid)
                 throw Marshal.GetHRForLastWin32Error().ToCryptographicException();;
-            if (!Interop.crypt32.CertAddCertificateContextToStore(certStore, certificatePal.CertContext, CertStoreAddDisposition.CERT_STORE_ADD_ALWAYS, IntPtr.Zero))
+            if (!Interop.crypt32.CertAddCertificateLinkToStore(certStore, certificatePal.CertContext, CertStoreAddDisposition.CERT_STORE_ADD_ALWAYS, IntPtr.Zero))
                 throw Marshal.GetHRForLastWin32Error().ToCryptographicException();;
             return new StorePal(certStore);
         }
@@ -147,8 +139,7 @@ namespace Internal.Cryptography.Pal
 
             foreach (X509Certificate2 certificate in certificates)
             {
-                SafeCertContextHandle certContext = Interop.crypt32.CertDuplicateCertificateContext(certificate.Handle);
-                if (!Interop.crypt32.CertAddCertificateLinkToStore(certStore, certContext, CertStoreAddDisposition.CERT_STORE_ADD_ALWAYS, IntPtr.Zero))
+                if (!Interop.crypt32.CertAddCertificateLinkToStore(certStore, ((CertificatePal)(certificate.Pal)).CertContext, CertStoreAddDisposition.CERT_STORE_ADD_ALWAYS, IntPtr.Zero))
                     throw Marshal.GetLastWin32Error().ToCryptographicException();
             }
 
@@ -187,6 +178,9 @@ namespace Internal.Cryptography.Pal
                 dwFlags |= PfxCertStoreFlags.CRYPT_EXPORTABLE;
             if ((keyStorageFlags & X509KeyStorageFlags.UserProtected) == X509KeyStorageFlags.UserProtected)
                 dwFlags |= PfxCertStoreFlags.CRYPT_USER_PROTECTED;
+
+            if ((keyStorageFlags & X509KeyStorageFlags.EphemeralKeys) == X509KeyStorageFlags.EphemeralKeys)
+                dwFlags |= PfxCertStoreFlags.PKCS12_NO_PERSIST_KEY | PfxCertStoreFlags.PKCS12_ALWAYS_CNG_KSP;
 
             return dwFlags;
         }
