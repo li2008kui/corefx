@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    public sealed class SafeX509ChainHandle : DebugSafeHandle
+    public sealed class SafeX509ChainHandle : SafeHandle
     {
         private SafeX509ChainHandle()
             : base(IntPtr.Zero, true)

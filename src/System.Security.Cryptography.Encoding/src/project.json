@@ -12,6 +12,7 @@
         "System.Runtime": "4.0.20",
         "System.Runtime.InteropServices": "4.0.20",
         "System.Text.Encoding": "4.0.10",
+        "System.Threading": "4.0.0",
         "System.Security.Cryptography.Primitives": "4.0.0-rc4-24214-04"
       },
       "imports": [
