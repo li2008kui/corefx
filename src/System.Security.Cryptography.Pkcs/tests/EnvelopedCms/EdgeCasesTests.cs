@@ -148,7 +148,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             ecms = new EnvelopedCms();
             ecms.Decode(encodedMessage);
 
-            using (X509Certificate2 cert = Certificates.RSAKeyTransferCapi1.TryGetCertificateWithPrivateKey())
+            using (X509Certificate2 cert = Certificates.RSAKeyTransferCapi1.TryGetCertificateWithPrivateKey(loadEphemeral: false))
             {
                 if (cert == null)
                     return; // Sorry - CertLoader is not configured to load certs with private keys - we've tested as much as we can.

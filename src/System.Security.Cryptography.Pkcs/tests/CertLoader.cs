@@ -30,7 +30,7 @@ namespace Test.Cryptography
         /// If this method does return a certificate, the test must Dispose() it manually and as soon it no longer needs the certificate. 
         /// Due to the way PFX loading works on Windows, failure to dispose may leave an artifact on the test machine's disk. 
         /// </summary>
-        public X509Certificate2 TryGetCertificateWithPrivateKey()
+        public X509Certificate2 TryGetCertificateWithPrivateKey(bool loadEphemeral=true)
         {
             if (PfxData == null)
                 throw new Exception("Cannot call TryGetCertificateWithPrivateKey() on this CertLoader: No PfxData provided.");
@@ -52,7 +52,7 @@ namespace Test.Cryptography
                     return null;
 
                 case CertLoadMode.LoadFromPfx:
-                    return new X509Certificate2(PfxData, Password);
+                    return new X509Certificate2(PfxData, Password, loadEphemeral ? X509KeyStorageFlags.EphemeralKeys : 0);
 
                 case CertLoadMode.LoadFromStore:
                     {
