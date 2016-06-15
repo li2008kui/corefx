@@ -298,6 +298,9 @@ namespace Microsoft.Win32.SafeHandles
             if (parentHandle == null)
                 throw new ArgumentNullException(nameof(parentHandle));
             
+            if (IsInvalid || IsClosed)
+                throw new InvalidOperationException(SR.InvalidOperation_SafeHandleInvalidOrClosed);
+
             if (_parentHandle != null || _ownershipState != OwnershipState.Owner)
                 throw new InvalidOperationException(SR.InvalidOperation_CalledTwice);
 

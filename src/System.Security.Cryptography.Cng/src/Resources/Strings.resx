@@ -246,6 +246,9 @@
   <data name="InvalidOperation_CalledTwice" xml:space="preserve">
     <value>The method cannot be called twice on the same instance.</value>
   </data>
+  <data name="InvalidOperation_SafeHandleInvalidOrClosed" xml:space="preserve">
+    <value>The method cannot be called on an invalid or closed SafeHandle.</value>
+  </data>
   <data name="WorkInProgress_UnsupportedHash" xml:space="preserve">
     <value>Unsupported hash algorithm. RSACng currently supports only MD5, SHA1, SHA256, SHA384 and SHA512.</value>
   </data>
