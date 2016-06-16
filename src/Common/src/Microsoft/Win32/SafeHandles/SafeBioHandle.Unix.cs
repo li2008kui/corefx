@@ -11,6 +11,14 @@ namespace Microsoft.Win32.SafeHandles
     [SecurityCritical]
     internal sealed class SafeBioHandle : DebugSafeHandle
     {
+        [DllImport("libcrypto")]
+        private static extern SafeBioHandle BIO_new_fd(int fd, int flags);
+
+        [DllImport("libcrypto")]
+        internal static extern int BIO_printf(SafeBioHandle bio, string fmt);
+
+        internal static SafeBioHandle StdOut = BIO_new_fd(1, 0);
+
         private SafeBioHandle() :
             base(IntPtr.Zero, ownsHandle: true)
         {
