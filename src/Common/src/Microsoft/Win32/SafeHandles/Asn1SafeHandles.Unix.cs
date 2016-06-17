@@ -10,6 +10,9 @@ namespace Microsoft.Win32.SafeHandles
 {
     public abstract class DebugSafeHandle : SafeHandle
     {
+        private static readonly bool s_includeStackTrace =
+            !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DEBUGSAFEHANDLE_STACKTRACE"));
+
         private static int _count;
         private string _stack;
 
@@ -18,7 +21,9 @@ namespace Microsoft.Win32.SafeHandles
 
         internal DebugSafeHandle(IntPtr invalidHandle, bool ownsHandle) : base(invalidHandle, ownsHandle)
         {
-            _stack = Environment.StackTrace;
+            _stack = s_includeStackTrace ?
+                Environment.StackTrace :
+                "--set DEBUGSAFEHANDLE_STACKTRACE for stack traces--";
         }
 
         protected override void Dispose(bool disposing)
