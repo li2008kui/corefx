@@ -473,6 +473,9 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static String ReadLine()
         {
+            WriteLine("--ReadLine is waiting for finalizers--");
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
             return In.ReadLine();
         }
 
