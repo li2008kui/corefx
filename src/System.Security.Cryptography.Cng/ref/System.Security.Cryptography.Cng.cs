@@ -11,16 +11,15 @@ namespace Microsoft.Win32.SafeHandles
     public abstract partial class SafeNCryptHandle : System.Runtime.InteropServices.SafeHandle
     {
         protected SafeNCryptHandle() : base (default(System.IntPtr), default(bool)) { }
-        protected SafeNCryptHandle(System.IntPtr handle, bool ownsHandle) : base (default(System.IntPtr), default(bool)) { }
+        protected SafeNCryptHandle(System.IntPtr handle, System.Runtime.InteropServices.SafeHandle parentHandle) : base (default(System.IntPtr), default(bool)) { }
         public override bool IsInvalid { get { return default(bool); } }
         protected override bool ReleaseHandle() { return default(bool); }
         protected abstract bool ReleaseNativeHandle();
-        public void SetParentHandle(System.Runtime.InteropServices.SafeHandle parentHandle) { }
     }
     public sealed partial class SafeNCryptKeyHandle : Microsoft.Win32.SafeHandles.SafeNCryptHandle
     {
         public SafeNCryptKeyHandle() { }
-        public SafeNCryptKeyHandle(System.IntPtr handle, bool ownsHandle) { }
+        public SafeNCryptKeyHandle(System.IntPtr handle, System.Runtime.InteropServices.SafeHandle parentHandle) : base (default(System.IntPtr), default(System.Runtime.InteropServices.SafeHandle)) { }
         protected override bool ReleaseNativeHandle() { return default(bool); }
     }
     public sealed partial class SafeNCryptProviderHandle : Microsoft.Win32.SafeHandles.SafeNCryptHandle

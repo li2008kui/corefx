@@ -227,7 +227,6 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         // State 4: Called Decode() + Decrypt()
         //
         [Fact]
-        [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void PostDecrypt_Encode()
         {
             byte[] expectedContent = { 6, 3, 128, 33, 44 };
@@ -260,7 +259,6 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
-        [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void PostDecrypt_RecipientInfos()
         {
             byte[] expectedContent = { 6, 3, 128, 33, 44 };
@@ -299,7 +297,6 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
-        [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void PostDecrypt_Decrypt()
         {
             byte[] expectedContent = { 6, 3, 128, 33, 44 };

@@ -2,14 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.IO;
-using System.Linq;
-using System.Globalization;
-using System.Collections.Generic;
-using System.Security.Cryptography;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.Xml;
 using System.Security.Cryptography.X509Certificates;
 using Xunit;
@@ -22,7 +14,6 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
     public static partial class DecryptTests
     {
         [Fact]
-        [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void Decrypt_IssuerAndSerial()
         {
             byte[] content = { 5, 112, 233, 43 };
@@ -32,6 +23,14 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 
         [Fact]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
+        public static void Decrypt_IssuerAndSerial_NonEphemeralKey()
+        {
+            byte[] content = { 5, 112, 233, 43 };
+            ContentInfo contentInfo = new ContentInfo(content);
+            TestSimpleDecrypt_RoundTrip(Certificates.RSAKeyTransfer1, contentInfo, Oids.Aes256, SubjectIdentifierType.IssuerAndSerialNumber, loadEphemeral: false);
+        }
+
+        [Fact]
         public static void Decrypt_Ski()
         {
             byte[] content = { 6, 3, 128, 33, 44 };
@@ -40,7 +39,6 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
-        [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void Decrypt_Capi()
         {
             byte[] content = { 5, 77, 32, 33, 2, 34 };
@@ -49,7 +47,6 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
-        [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void Decrypt_256()
         {
             byte[] content = { 5, 77, 32, 33, 2, 34 };
@@ -58,7 +55,6 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
-        [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void Decrypt_384()
         {
             byte[] content = { 5, 77, 32, 33, 2, 34 };
@@ -67,7 +63,6 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
-        [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void Decrypt_512()
         {
             byte[] content = { 5, 77, 32, 33, 2, 34 };
@@ -76,7 +71,6 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
-        [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void Decrypt_SignedWithinEnveloped()
         {
             byte[] content =
@@ -103,7 +97,6 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
-        [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void Decrypt_EnvelopedWithinEnveloped()
         {
             byte[] content =
@@ -120,7 +113,6 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
-        [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void DecryptMultipleRecipients()
         {
             // Force Decrypt() to try multiple recipients. Ensure that a failure to find a matching cert in one doesn't cause it to quit early.
@@ -173,7 +165,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             Assert.Equal<byte>(content, contentInfo.Content);
         }
 
-        private static void TestSimpleDecrypt_RoundTrip(CertLoader certLoader, ContentInfo contentInfo, string algorithmOidValue, SubjectIdentifierType type)
+        private static void TestSimpleDecrypt_RoundTrip(CertLoader certLoader, ContentInfo contentInfo, string algorithmOidValue, SubjectIdentifierType type, bool loadEphemeral = true)
         {
             // Deep-copy the contentInfo since the real ContentInfo doesn't do this. This defends against a bad implementation changing
             // our "expectedContentInfo" to match what it produces.
@@ -193,15 +185,15 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 
             // We don't pass "certificate" down because it's expected that the certificate used for encrypting doesn't have a private key (part of the purpose of this test is
             // to ensure that you don't need the recipient's private key to encrypt.) The decrypt phase will have to locate the matching cert with the private key.
-            VerifySimpleDecrypt(encodedMessage, certLoader, expectedContentInfo);
+            VerifySimpleDecrypt(encodedMessage, certLoader, expectedContentInfo, loadEphemeral);
         }
 
-        private static void VerifySimpleDecrypt(byte[] encodedMessage, CertLoader certLoader, ContentInfo expectedContent)
+        private static void VerifySimpleDecrypt(byte[] encodedMessage, CertLoader certLoader, ContentInfo expectedContent, bool loadEphemeral = true)
         {
             EnvelopedCms ecms = new EnvelopedCms();
             ecms.Decode(encodedMessage);
 
-            using (X509Certificate2 cert = certLoader.TryGetCertificateWithPrivateKey())
+            using (X509Certificate2 cert = certLoader.TryGetCertificateWithPrivateKey(loadEphemeral))
             {
                 if (cert == null)
                     return; // Sorry - CertLoader is not configured to load certs with private keys - we've tested as much as we can.

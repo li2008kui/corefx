@@ -179,7 +179,7 @@ namespace Internal.Cryptography.Pal
             if ((keyStorageFlags & X509KeyStorageFlags.UserProtected) == X509KeyStorageFlags.UserProtected)
                 dwFlags |= PfxCertStoreFlags.CRYPT_USER_PROTECTED;
 
-            if ((keyStorageFlags & X509KeyStorageFlags.EphemeralKeys) == X509KeyStorageFlags.EphemeralKeys)
+            if ((keyStorageFlags & X509KeyStorageFlags.EphemeralKeySet) == X509KeyStorageFlags.EphemeralKeySet)
                 dwFlags |= PfxCertStoreFlags.PKCS12_NO_PERSIST_KEY | PfxCertStoreFlags.PKCS12_ALWAYS_CNG_KSP;
 
             return dwFlags;

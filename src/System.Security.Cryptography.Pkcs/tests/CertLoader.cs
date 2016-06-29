@@ -52,7 +52,7 @@ namespace Test.Cryptography
                     return null;
 
                 case CertLoadMode.LoadFromPfx:
-                    return new X509Certificate2(PfxData, Password, loadEphemeral ? X509KeyStorageFlags.EphemeralKeys : 0);
+                    return new X509Certificate2(PfxData, Password, loadEphemeral ? X509KeyStorageFlags.EphemeralKeySet : 0);
 
                 case CertLoadMode.LoadFromStore:
                     {

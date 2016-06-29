@@ -105,50 +105,68 @@ namespace Internal.Cryptography.Pal
             Debug.Assert(!certificateContext.IsClosed && !certificateContext.IsInvalid,
                          "!certificateContext.IsClosed && !certificateContext.IsInvalid");
 
-            SafeNCryptKeyHandle privateKey = null;
+            IntPtr privateKeyPtr;
 
             {
                 int cbData = IntPtr.Size;
                 if (Interop.crypt32.CertGetCertificateContextProperty(
                     certificateContext,
                     CertContextPropId.CERT_NCRYPT_KEY_HANDLE_PROP_ID,
-                    out privateKey,
+                    out privateKeyPtr,
                     ref cbData))
                 {
                     handleOptions = CngKeyHandleOpenOptions.EphemeralKey;
-                    privateKey.SetParentHandle(certificateContext);
-                    return privateKey;
+                    return new SafeNCryptKeyHandle(privateKeyPtr, certificateContext);
                 }
             }
 
+            SafeNCryptKeyHandle privateKey = null;
             handleOptions = CngKeyHandleOpenOptions.None;
             bool freeKey = true;
+
             try
             {
                 int keySpec = 0;
                 if (!Interop.crypt32.CryptAcquireCertificatePrivateKey(
-                        certificateContext,
-                        CryptAcquireFlags.CRYPT_ACQUIRE_ONLY_NCRYPT_KEY_FLAG,
-                        IntPtr.Zero,
-                        out privateKey,
-                        out keySpec,
-                        out freeKey))
+                    certificateContext,
+                    CryptAcquireFlags.CRYPT_ACQUIRE_ONLY_NCRYPT_KEY_FLAG,
+                    IntPtr.Zero,
+                    out privateKey,
+                    out keySpec,
+                    out freeKey))
                 {
+                    // The documentation for CryptAcquireCertificatePrivateKey says that freeKey
+                    // should already be false if "key acquisition fails", and it can be presumed
+                    // that privateKey was set to 0.  But, just in case:
+                    freeKey = false;
+                    privateKey?.SetHandleAsInvalid();
                     return null;
+                }
+
+                // It is very unlikely that Windows will tell us !freeKey other than when reporting failure,
+                // because we set neither CRYPT_ACQUIRE_CACHE_FLAG nor CRYPT_ACQUIRE_USE_PROV_INFO_FLAG, which are
+                // currently the only two success situations documented. However, any !freeKey response means the
+                // key's lifetime is tied to that of the certificate, so re-register the handle as a child handle
+                // of the certificate.
+                if (!freeKey && privateKey != null && !privateKey.IsInvalid)
+                {
+                    var newKeyHandle = new SafeNCryptKeyHandle(privateKey.DangerousGetHandle(), certificateContext);
+                    privateKey.SetHandleAsInvalid();
+                    privateKey = newKeyHandle;
+                    freeKey = true;
                 }
 
                 return privateKey;
             }
-            finally
+            catch
             {
-                // If we're not supposed to release the key handle, then we need to bump the reference count
-                // on the certificate which owns the handle. This prevents the key being freed with the handle free
-                // and stops the cert from being freed (releasing the key), until both frees are complete.
-                if (privateKey != null && !freeKey)
+                if (!freeKey)
                 {
-                    privateKey.SetParentHandle(certificateContext);
+                    privateKey?.SetHandleAsInvalid();
                 }
             }
+
+            return privateKey;
         }
 
         //

@@ -2,14 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.IO;
-using System.Linq;
-using System.Globalization;
-using System.Collections.Generic;
-using System.Security.Cryptography;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.Xml;
 using System.Security.Cryptography.X509Certificates;
 using Xunit;
@@ -85,13 +77,13 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             byte[] pfxData = certLoader.PfxData;
             string password = certLoader.Password;
             X509Certificate2Collection collection = new X509Certificate2Collection();
+            // Note: This does not use ephemeral imports, because that's part of what's being tested.
             collection.Import(pfxData, password, X509KeyStorageFlags.DefaultKeySet);
             Assert.Equal(1, collection.Count);
             return collection[0];
         }
 
         [Fact]
-        [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void ZeroLengthContent_RoundTrip()
         {
             ContentInfo contentInfo = new ContentInfo(Array.Empty<byte>());
@@ -113,7 +105,6 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
-        [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void ZeroLengthContent_FixedValue()
         {
             byte[] encodedMessage =
@@ -148,6 +139,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             ecms = new EnvelopedCms();
             ecms.Decode(encodedMessage);
 
+            // Don't load ephemeral since that forces CNG.
             using (X509Certificate2 cert = Certificates.RSAKeyTransferCapi1.TryGetCertificateWithPrivateKey(loadEphemeral: false))
             {
                 if (cert == null)
@@ -347,7 +339,6 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
-        [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void EnvelopedCmsDecryptWithoutMatchingCert()
         {
             // You don't have the private key? No message for you.
@@ -375,7 +366,6 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
-        [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void EnvelopedCmsDecryptWithoutMatchingCertSki()
         {
             // You don't have the private key? No message for you.

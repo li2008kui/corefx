@@ -70,9 +70,21 @@ namespace Microsoft.Win32.SafeHandles
             return;
         }
 
-        protected SafeNCryptHandle(IntPtr handle, bool ownsHandle)
-            : base(handle, ownsHandle)
+        protected SafeNCryptHandle(IntPtr handle, SafeHandle parentHandle)
+            : base(IntPtr.Zero, true)
         {
+            if (parentHandle == null)
+                throw new ArgumentNullException(nameof(parentHandle));
+            if (parentHandle.IsClosed || parentHandle.IsInvalid)
+                throw new ArgumentException(SR.Argument_Invalid_SafeHandleInvalidOrClosed, nameof(parentHandle));
+
+            bool success = false;
+            parentHandle.DangerousAddRef(ref success);
+            _parentHandle = parentHandle;
+
+            // Don't set the handle until after the parentHandle has been validated and persisted to a field,
+            // otherwise Dispose will try to call the underlying Free function.
+            SetHandle(handle);
         }
 
         /// <summary>
@@ -289,27 +301,6 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         /// <summary>
-        /// Register a dependency for this SafeNCryptHandle to another SafeHandle, keeping
-        /// the parent handle from closing until this handle closes.
-        /// </summary>
-        /// <param name="parentHandle"></param>
-        public void SetParentHandle(SafeHandle parentHandle)
-        {
-            if (parentHandle == null)
-                throw new ArgumentNullException(nameof(parentHandle));
-            
-            if (IsInvalid || IsClosed)
-                throw new InvalidOperationException(SR.InvalidOperation_SafeHandleInvalidOrClosed);
-
-            if (_parentHandle != null || _ownershipState != OwnershipState.Owner)
-                throw new InvalidOperationException(SR.InvalidOperation_CalledTwice);
-
-            bool addedRef = false;
-            parentHandle.DangerousAddRef(ref addedRef);
-            _parentHandle = parentHandle;
-        }
-
-        /// <summary>
         ///     Release the handle
         /// </summary>
         /// <remarks>
@@ -365,8 +356,8 @@ namespace Microsoft.Win32.SafeHandles
         {
         }
 
-        public SafeNCryptKeyHandle(IntPtr handle, bool ownsHandle)
-            : base(handle, ownsHandle)
+        public SafeNCryptKeyHandle(IntPtr handle, SafeHandle parentHandle)
+            : base(handle, parentHandle)
         {
         }
 

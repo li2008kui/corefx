@@ -219,7 +219,7 @@ namespace Internal.Cryptography.Pal
             if ((keyStorageFlags & X509KeyStorageFlags.UserProtected) == X509KeyStorageFlags.UserProtected)
                 pfxCertStoreFlags |= PfxCertStoreFlags.CRYPT_USER_PROTECTED;
 
-            if ((keyStorageFlags & X509KeyStorageFlags.EphemeralKeys) == X509KeyStorageFlags.EphemeralKeys)
+            if ((keyStorageFlags & X509KeyStorageFlags.EphemeralKeySet) == X509KeyStorageFlags.EphemeralKeySet)
                 pfxCertStoreFlags |= PfxCertStoreFlags.PKCS12_NO_PERSIST_KEY | PfxCertStoreFlags.PKCS12_ALWAYS_CNG_KSP;
 
             // In the full .NET Framework loading a PFX then adding the key to the Windows Certificate Store would

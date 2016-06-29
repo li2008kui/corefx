@@ -38,7 +38,7 @@ namespace System.Security.Cryptography.X509Certificates
             if ((keyStorageFlags & ~KeyStorageFlagsAll) != 0)
                 throw new ArgumentException(SR.Argument_InvalidFlag, nameof(keyStorageFlags));
 
-            var ephemeralPersist = X509KeyStorageFlags.EphemeralKeys | X509KeyStorageFlags.PersistKeySet;
+            var ephemeralPersist = X509KeyStorageFlags.EphemeralKeySet | X509KeyStorageFlags.PersistKeySet;
 
             if ((keyStorageFlags & ephemeralPersist) == ephemeralPersist)
                 throw new ArgumentException("Invalid combination of Ephemeral and Persist");

@@ -374,7 +374,7 @@ namespace System.Security.Cryptography.X509Certificates
     public enum X509KeyStorageFlags
     {
         DefaultKeySet = 0,
-        EphemeralKeys = 32,
+        EphemeralKeySet = 32,
         Exportable = 4,
         MachineKeySet = 2,
         PersistKeySet = 16,

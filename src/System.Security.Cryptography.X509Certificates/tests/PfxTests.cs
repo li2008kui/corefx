@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             byte[] expectedThumbprint = "71cb4e2b02738ad44f8b382c93bd17ba665f9914".HexToByteArray();
 
-            using (var c = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.EphemeralKeys))
+            using (var c = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.EphemeralKeySet))
             {
                 string subject = c.Subject;
                 Assert.Equal("CN=MyName", subject);
@@ -28,7 +28,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Theory]
         [InlineData(X509KeyStorageFlags.DefaultKeySet)]
-        [InlineData(X509KeyStorageFlags.EphemeralKeys)]
+        [InlineData(X509KeyStorageFlags.EphemeralKeySet)]
         public static void EnsurePrivateKeyPreferred(X509KeyStorageFlags openFlags)
         {
             using (var cert = new X509Certificate2(TestData.ChainPfxBytes, TestData.ChainPfxPassword, openFlags))
@@ -66,7 +66,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 "fc24de6b2bd9a26b192b957304b89531e902ffc91b54b237" +
                 "bb228be8afcda26476").HexToByteArray();
 
-            using (var c = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.EphemeralKeys))
+            using (var c = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.EphemeralKeySet))
             {
                 byte[] rawData = c.RawData;
                 Assert.Equal(expectedRawData, rawData);
@@ -75,7 +75,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Theory]
         [InlineData(X509KeyStorageFlags.DefaultKeySet)]
-        [InlineData(X509KeyStorageFlags.EphemeralKeys)]
+        [InlineData(X509KeyStorageFlags.EphemeralKeySet)]
         public static void GetRSAPrivateKey(X509KeyStorageFlags openFlags)
         {
             using (var c = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, openFlags))
@@ -99,7 +99,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Theory]
         [InlineData(X509KeyStorageFlags.DefaultKeySet)]
-        [InlineData(X509KeyStorageFlags.EphemeralKeys)]
+        [InlineData(X509KeyStorageFlags.EphemeralKeySet)]
         public static void GetRSAPrivateKey_MultipleCalls(X509KeyStorageFlags openFlags)
         {
             using (var c = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, openFlags))
@@ -123,7 +123,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Theory]
         [InlineData(X509KeyStorageFlags.Exportable)]
-        [InlineData(X509KeyStorageFlags.EphemeralKeys | X509KeyStorageFlags.Exportable)]
+        [InlineData(X509KeyStorageFlags.EphemeralKeySet | X509KeyStorageFlags.Exportable)]
         public static void ExportWithPrivateKey(X509KeyStorageFlags openFlags)
         {
             using (var cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, openFlags))
@@ -132,7 +132,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 byte[] pkcs12 = cert.Export(X509ContentType.Pkcs12, password);
 
-                using (var certFromPfx = new X509Certificate2(pkcs12, password, X509KeyStorageFlags.EphemeralKeys))
+                using (var certFromPfx = new X509Certificate2(pkcs12, password, X509KeyStorageFlags.EphemeralKeySet))
                 {
                     Assert.True(certFromPfx.HasPrivateKey);
                     Assert.Equal(cert, certFromPfx);
@@ -142,7 +142,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Theory]
         [InlineData(X509KeyStorageFlags.DefaultKeySet)]
-        [InlineData(X509KeyStorageFlags.EphemeralKeys)]
+        [InlineData(X509KeyStorageFlags.EphemeralKeySet)]
         public static void ReadECDsaPrivateKey_WindowsPfx(X509KeyStorageFlags openFlags)
         {
             using (var cert = new X509Certificate2(TestData.ECDsaP256_DigitalSignature_Pfx_Windows, "Test", openFlags))
@@ -163,7 +163,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Theory]
         [InlineData(X509KeyStorageFlags.DefaultKeySet)]
-        [InlineData(X509KeyStorageFlags.EphemeralKeys)]
+        [InlineData(X509KeyStorageFlags.EphemeralKeySet)]
         public static void ReadECDsaPrivateKey_OpenSslPfx(X509KeyStorageFlags openFlags)
         {
             using (var cert = new X509Certificate2(TestData.ECDsaP256_DigitalSignature_Pfx_OpenSsl, "Test", openFlags))
@@ -196,7 +196,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Theory]
         [OuterLoop(/* The test sleeps */)]
         [InlineData(X509KeyStorageFlags.DefaultKeySet)]
-        [InlineData(X509KeyStorageFlags.EphemeralKeys)]
+        [InlineData(X509KeyStorageFlags.EphemeralKeySet)]
         public static void UseRSAKeyAfterCertDispose(X509KeyStorageFlags openFlags)
         {
             RSA rsaPrivate = null;
@@ -234,7 +234,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [ActiveIssue(2745, PlatformID.AnyUnix)]
         [OuterLoop(/* The test sleeps */)]
         [InlineData(X509KeyStorageFlags.DefaultKeySet)]
-        [InlineData(X509KeyStorageFlags.EphemeralKeys)]
+        [InlineData(X509KeyStorageFlags.EphemeralKeySet)]
         public static void UseRSAKeyAfterCertDispose_MultiCertPfx(X509KeyStorageFlags openFlags)
         {
             // Perphemeral (adj) - Portmonteau of Persisted/Permanent and Ephemeral, indicating that
@@ -314,7 +314,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData(true)]
         public static void VerifyEphemeralKeyState(bool isEphemeral)
         {
-            X509KeyStorageFlags openFlags = isEphemeral ? X509KeyStorageFlags.EphemeralKeys : 0;
+            X509KeyStorageFlags openFlags = isEphemeral ? X509KeyStorageFlags.EphemeralKeySet : 0;
 
             using (var cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, openFlags))
             using (RSA rsaPrivate = cert.GetRSAPrivateKey())
