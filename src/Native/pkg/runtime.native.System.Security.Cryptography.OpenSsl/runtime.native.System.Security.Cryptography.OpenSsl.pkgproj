@@ -11,25 +11,25 @@
     <File Include="$(PlaceHolderFile)">
       <TargetPath>lib/netstandard1.0</TargetPath>
     </File>
-    <ProjectReference Include="rhel\runtime.native.System.Security.Cryptography.pkgproj">
+    <ProjectReference Include="rhel\runtime.native.System.Security.Cryptography.OpenSsl.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
-    <ProjectReference Include="debian\runtime.native.System.Security.Cryptography.pkgproj">
+    <ProjectReference Include="debian\runtime.native.System.Security.Cryptography.OpenSsl.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
-    <ProjectReference Include="fedora\23\runtime.native.System.Security.Cryptography.pkgproj">
+    <ProjectReference Include="fedora\23\runtime.native.System.Security.Cryptography.OpenSsl.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
-    <ProjectReference Include="osx\runtime.native.System.Security.Cryptography.pkgproj">
+    <ProjectReference Include="osx\runtime.native.System.Security.Cryptography.OpenSsl.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
-    <ProjectReference Include="opensuse\13.2\runtime.native.System.Security.Cryptography.pkgproj">
+    <ProjectReference Include="opensuse\13.2\runtime.native.System.Security.Cryptography.OpenSsl.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
-    <ProjectReference Include="ubuntu\14.04\runtime.native.System.Security.Cryptography.pkgproj">
+    <ProjectReference Include="ubuntu\14.04\runtime.native.System.Security.Cryptography.OpenSsl.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
-    <ProjectReference Include="ubuntu\16.04\runtime.native.System.Security.Cryptography.pkgproj">
+    <ProjectReference Include="ubuntu\16.04\runtime.native.System.Security.Cryptography.OpenSsl.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
   </ItemGroup>

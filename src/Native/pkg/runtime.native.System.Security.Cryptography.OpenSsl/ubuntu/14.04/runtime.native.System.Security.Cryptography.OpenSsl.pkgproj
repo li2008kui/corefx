@@ -8,7 +8,7 @@
     <PackagePlatforms>x64;</PackagePlatforms>
   </PropertyGroup>
   <ItemGroup>
-    <NativeFile Include="$(Ubuntu1404NativePath)System.Security.Cryptography.Native.so">
+    <NativeFile Include="$(Ubuntu1404NativePath)System.Security.Cryptography.Native.OpenSsl.so">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
     </NativeFile>
   </ItemGroup>

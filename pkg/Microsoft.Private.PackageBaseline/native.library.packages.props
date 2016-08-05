@@ -31,9 +31,9 @@
       <Package>runtime.native.System.Net.Security</Package>
     </NativeLibrary>
 
-    <!-- runtime.native.System.Security.Cryptography -->
-    <NativeLibrary Include="System.Security.Cryptography.Native">
-      <Package>runtime.native.System.Security.Cryptography</Package>
+    <!-- runtime.native.System.Security.Cryptography.OpenSsl -->
+    <NativeLibrary Include="System.Security.Cryptography.Native.OpenSsl">
+      <Package>runtime.native.System.Security.Cryptography.OpenSsl</Package>
     </NativeLibrary>
   </ItemGroup>
 </Project>
