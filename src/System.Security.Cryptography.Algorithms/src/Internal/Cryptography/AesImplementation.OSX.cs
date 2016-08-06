@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Security.Cryptography;
 
 namespace Internal.Cryptography
@@ -17,7 +16,15 @@ namespace Internal.Cryptography
             int blockSize,
             bool encrypting)
         {
-            throw new NotImplementedException();
+            BasicSymmetricCipher cipher = new AppleCCCryptor(
+                Interop.AppleCrypto.PAL_SymmetricAlgorithm.AES,
+                cipherMode,
+                blockSize,
+                key,
+                iv,
+                encrypting);
+
+            return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
         }
 
         // -----------------------------
