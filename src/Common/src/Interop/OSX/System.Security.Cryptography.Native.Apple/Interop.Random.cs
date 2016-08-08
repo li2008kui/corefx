@@ -22,8 +22,7 @@ internal static partial class Interop
 
                 if (ret == 0)
                 {
-                    // throw AppleCryptographicException
-                    throw new CryptographicException();
+                    throw CreateExceptionForCCError(errorCode, CCRNGStatus);
                 }
 
                 if (ret != 1)
