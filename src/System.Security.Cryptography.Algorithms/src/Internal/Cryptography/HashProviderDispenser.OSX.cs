@@ -34,15 +34,15 @@ namespace Internal.Cryptography
             switch (hashAlgorithmId)
             {
                 case HashAlgorithmNames.SHA1:
-                    return new AppleHmacProvider(Interop.AppleCrypto.PalHmacAlgorithm.HmacSha1, key);
+                    return new AppleHmacProvider(Interop.AppleCrypto.PAL_HmacAlgorithm.HmacSha1, key);
                 case HashAlgorithmNames.SHA256:
-                    return new AppleHmacProvider(Interop.AppleCrypto.PalHmacAlgorithm.HmacSha256, key);
+                    return new AppleHmacProvider(Interop.AppleCrypto.PAL_HmacAlgorithm.HmacSha256, key);
                 case HashAlgorithmNames.SHA384:
-                    return new AppleHmacProvider(Interop.AppleCrypto.PalHmacAlgorithm.HmacSha384, key);
+                    return new AppleHmacProvider(Interop.AppleCrypto.PAL_HmacAlgorithm.HmacSha384, key);
                 case HashAlgorithmNames.SHA512:
-                    return new AppleHmacProvider(Interop.AppleCrypto.PalHmacAlgorithm.HmacSha512, key);
+                    return new AppleHmacProvider(Interop.AppleCrypto.PAL_HmacAlgorithm.HmacSha512, key);
                 case HashAlgorithmNames.MD5:
-                    return new AppleHmacProvider(Interop.AppleCrypto.PalHmacAlgorithm.HmacMd5, key);
+                    return new AppleHmacProvider(Interop.AppleCrypto.PAL_HmacAlgorithm.HmacMd5, key);
             }
 
             throw new PlatformNotSupportedException();
@@ -54,7 +54,7 @@ namespace Internal.Cryptography
 
         private class AppleHmacProvider : HashProvider
         {
-            private readonly Interop.AppleCrypto.PalHmacAlgorithm _algorithm;
+            private readonly Interop.AppleCrypto.PAL_HmacAlgorithm _algorithm;
             private readonly byte[] _key;
             private readonly SafeHmacHandle _ctx;
 
@@ -62,7 +62,7 @@ namespace Internal.Cryptography
 
             public override int HashSizeInBytes { get; }
 
-            internal AppleHmacProvider(Interop.AppleCrypto.PalHmacAlgorithm algorithm, byte[] key)
+            internal AppleHmacProvider(Interop.AppleCrypto.PAL_HmacAlgorithm algorithm, byte[] key)
             {
                 _algorithm = algorithm;
                 _key = key.CloneByteArray();
@@ -75,7 +75,7 @@ namespace Internal.Cryptography
                     throw new PlatformNotSupportedException(
                         SR.Format(
                             SR.Cryptography_UnknownHashAlgorithm,
-                            Enum.GetName(typeof(Interop.AppleCrypto.PalHmacAlgorithm), algorithm)));
+                            Enum.GetName(typeof(Interop.AppleCrypto.PAL_HmacAlgorithm), algorithm)));
                 }
 
                 if (_ctx.IsInvalid)
