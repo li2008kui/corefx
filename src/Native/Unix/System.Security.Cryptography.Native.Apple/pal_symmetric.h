@@ -49,9 +49,21 @@ enum
 };
 typedef uint32_t PAL_SymmetricOptions;
 
-
+/*
+Free a CCCryptor created by AppleCryptoNative_CryptorCreate.
+*/
 extern "C" void AppleCryptoNative_CryptorFree(CCCryptorRef cryptor);
 
+/*
+Create a CCCryptor for the described symmetric algorithm with a chosen operation, chainingMode,
+paddingMode, key, iv, and options. The CCCryptorRef, if created, is assigned to *ppCryptorOut,
+and in the event of a system error *pkCCStatus is updated.
+
+Note that there is no validation on the length of pbIv. cbIv is calculated based upon the chosen
+algorithm and assumed valid. pbIv is only allowed to be NULL for PAL_ChainingModeECB.
+
+Returns 1 on success, 0 on system error, -1 on input error.
+*/
 extern "C" int AppleCryptoNative_CryptorCreate(
 	PAL_SymmetricOperation operation,
 	PAL_SymmetricAlgorithm algorithm,
@@ -64,6 +76,11 @@ extern "C" int AppleCryptoNative_CryptorCreate(
 	CCCryptorRef* ppCryptorOut,
 	int32_t* pkCCStatus);
 
+/*
+Shims CCCryptorUpdate, updating *pkCCStatus as its output.
+
+Returns 1 on success, 0 on system error, -1 on input error.
+*/
 extern "C" int AppleCryptoNative_CryptorUpdate(
 	CCCryptorRef cryptor,
 	const uint8_t* pbData,
@@ -73,6 +90,11 @@ extern "C" int AppleCryptoNative_CryptorUpdate(
 	int32_t* pcbWritten,
 	int32_t* pkCCStatus);
 
+/*
+Shims CCCryptorFinal, updating *pkCCStatus as its output.
+
+Returns 1 on success, 0 on system error, -1 on input error.
+*/
 extern "C" int AppleCryptoNative_CryptorFinal(
 	CCCryptorRef cryptor,
 	uint8_t* pbOutput,
@@ -80,6 +102,11 @@ extern "C" int AppleCryptoNative_CryptorFinal(
 	int32_t* pcbWritten,
 	int32_t* pkCCStatus);
 
+/*
+Shims CCCryptorReset, updating *pkCCStatus as its output.
+
+Returns 1 on success, 0 on system error, -1 on input error.
+*/
 extern "C" int AppleCryptoNative_CryptorReset(
 	CCCryptorRef cryptor,
 	const uint8_t* pbIv,

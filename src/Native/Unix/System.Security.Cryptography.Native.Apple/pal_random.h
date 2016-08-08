@@ -6,4 +6,9 @@
 
 #include "pal_types.h"
 
+/*
+Shims CCRandomGenerateBytes, putting the resulting CCRNGStatus value in pkCCStatus.
+
+Returns 1 on success, 0 on system error (see pkCCStatus), -1 on input error.
+*/
 extern "C" int AppleCryptoNative_GetRandomBytes(uint8_t* pBuf, uint32_t cbBuf, int32_t* pkCCStatus);
