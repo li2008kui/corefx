@@ -69,16 +69,17 @@ namespace Internal.Cryptography
                 int hashSizeInBytes = 0;
                 _ctx = Interop.AppleCrypto.HmacCreate(algorithm, ref hashSizeInBytes);
 
+                if (hashSizeInBytes < 0)
+                {
+                    _ctx.Dispose();
+                    throw new PlatformNotSupportedException(
+                        SR.Format(
+                            SR.Cryptography_UnknownHashAlgorithm,
+                            Enum.GetName(typeof(Interop.AppleCrypto.PalHmacAlgorithm), algorithm)));
+                }
+
                 if (_ctx.IsInvalid)
                 {
-                    if (hashSizeInBytes < 0)
-                    {
-                        throw new PlatformNotSupportedException(
-                            SR.Format(
-                                SR.Cryptography_UnknownHashAlgorithm,
-                                Enum.GetName(typeof(Interop.AppleCrypto.PalHmacAlgorithm), algorithm)));
-                    }
-
                     throw new CryptographicException();
                 }
 
