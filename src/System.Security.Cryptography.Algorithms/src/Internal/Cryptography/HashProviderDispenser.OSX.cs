@@ -170,7 +170,9 @@ namespace Internal.Cryptography
                 _ctx = Create(out hashSizeInBytes);
 
                 if (_ctx.IsInvalid)
+                {
                     throw new CryptographicException();
+                }
 
                 HashSizeInBytes = hashSizeInBytes;
             }
