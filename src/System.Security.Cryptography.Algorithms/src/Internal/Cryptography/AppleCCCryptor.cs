@@ -34,7 +34,7 @@ namespace Internal.Cryptography
             base.Dispose(disposing);
         }
 
-        public override unsafe int Transform(byte[] input, int inputOffset, int count, byte[] output, int outputOffset)
+        public override int Transform(byte[] input, int inputOffset, int count, byte[] output, int outputOffset)
         {
             Debug.Assert(input != null);
             Debug.Assert(inputOffset >= 0);
