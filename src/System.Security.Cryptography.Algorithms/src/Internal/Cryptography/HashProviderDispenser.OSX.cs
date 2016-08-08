@@ -73,7 +73,10 @@ namespace Internal.Cryptography
                 {
                     if (hashSizeInBytes < 0)
                     {
-                        throw new PlatformNotSupportedException();
+                        throw new PlatformNotSupportedException(
+                            SR.Format(
+                                SR.Cryptography_UnknownHashAlgorithm,
+                                Enum.GetName(typeof(Interop.AppleCrypto.PalHmacAlgorithm), algorithm)));
                     }
 
                     throw new CryptographicException();
@@ -114,7 +117,7 @@ namespace Internal.Cryptography
 
                 if (ret != 1)
                 {
-                    throw new CryptographicException($"ret={ret}");
+                    throw new CryptographicException();
                 }
 
                 _running = true;
@@ -188,7 +191,7 @@ namespace Internal.Cryptography
 
                 if (ret != 1)
                 {
-                    throw new CryptographicException($"ret={ret}");
+                    throw new CryptographicException();
                 }
             }
 
@@ -204,7 +207,7 @@ namespace Internal.Cryptography
 
                 if (ret != 1)
                 {
-                    throw new CryptographicException($"ret={ret}");
+                    throw new CryptographicException();
                 }
 
                 return hash;

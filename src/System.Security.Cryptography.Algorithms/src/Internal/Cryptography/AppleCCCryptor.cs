@@ -88,15 +88,11 @@ namespace Internal.Cryptography
                 outputBytes += bytesWritten;
             }
 
-            if (ret == 0)
-            {
-                // throw new AppeCryptoException
-                throw new CryptographicException($"errorCode is {errorCode}");
-            }
+            Exception exception = ProcessInteropError(ret, errorCode);
 
-            if (ret != 1)
+            if (exception != null)
             {
-                throw new CryptographicException($"ret={ret}");
+                throw exception;
             }
 
             if (outputBytes == output.Length)
@@ -141,15 +137,11 @@ namespace Internal.Cryptography
                     out errorCode);
             }
 
-            if (ret == 0)
-            {
-                // throw new AppeCryptoException
-                throw new CryptographicException($"errorCode is {errorCode}");
-            }
+            Exception exception = ProcessInteropError(ret, errorCode);
 
-            if (ret != 1)
+            if (exception != null)
             {
-                throw new CryptographicException($"ret={ret}");
+                throw exception;
             }
 
             return bytesWritten;
@@ -180,15 +172,11 @@ namespace Internal.Cryptography
                     out errorCode);
             }
 
-            if (ret == 0)
-            {
-                // throw new AppeCryptoException
-                throw new CryptographicException($"errorCode is {errorCode}");
-            }
+            Exception exception = ProcessInteropError(ret, errorCode);
 
-            if (ret != 1)
+            if (exception != null)
             {
-                throw new CryptographicException($"ret={ret}");
+                throw exception;
             }
         }
 
@@ -223,16 +211,34 @@ namespace Internal.Cryptography
                     out errorCode);
             }
 
-            if (ret == 0)
+            Exception exception = ProcessInteropError(ret, errorCode);
+
+            if (exception != null)
             {
-                // throw new AppeCryptoException
-                throw new CryptographicException($"errorCode is {errorCode}");
+                throw exception;
+            }
+        }
+
+        private static Exception ProcessInteropError(int functionReturnCode, int emittedErrorCode)
+        {
+            // Success
+            if (functionReturnCode == 1)
+            {
+                return null;
             }
 
-            if (ret != 1)
+            // Platform error
+            if (functionReturnCode == 0)
             {
-                throw new CryptographicException($"ret={ret}");
+                Debug.Assert(emittedErrorCode != 0, "Interop function returned 0 but a system code of success");
+                return Interop.AppleCrypto.CreateExceptionForCCError(
+                    emittedErrorCode,
+                    Interop.AppleCrypto.CCCryptorStatus);
             }
+
+            // Usually this will be -1, a general indication of bad inputs.
+            Debug.Fail($"Interop boundary returned unexpected value {functionReturnCode}");
+            return new CryptographicException();
         }
     }
 }
