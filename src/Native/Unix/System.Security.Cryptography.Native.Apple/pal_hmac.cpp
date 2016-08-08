@@ -37,12 +37,12 @@ static int GetHmacOutputSize(PAL_HmacAlgorithm algorithm)
     }
 }
 
-extern "C" CCHmacContext* AppleCryptoNative_HmacCreate(PAL_HmacAlgorithm algorithm, int32_t* pbHmac)
+extern "C" CCHmacContext* AppleCryptoNative_HmacCreate(PAL_HmacAlgorithm algorithm, int32_t* pcbHmac)
 {
-    if (pbHmac == nullptr)
+    if (pcbHmac == nullptr)
         return nullptr;
 
-    *pbHmac = GetHmacOutputSize(algorithm);
+    *pcbHmac = GetHmacOutputSize(algorithm);
     return reinterpret_cast<CCHmacContext*>(malloc(sizeof(CCHmacContext)));
 }
 
