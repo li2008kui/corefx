@@ -120,14 +120,6 @@ extern "C" int AppleCryptoNative_CryptorFinal(
 	int32_t* pcbWritten,
 	int32_t* pkCCStatus)
 {
-	if (pbOutput == nullptr)
-		return -2;
-	if (cbOutput < 0)
-		return -3;
-	if (pcbWritten == nullptr)
-		return -4;
-	if (pkCCStatus == nullptr)
-		return -5;
 	if (pbOutput == nullptr || cbOutput < 0 || pcbWritten == nullptr || pkCCStatus == nullptr)
 		return -1;
 
