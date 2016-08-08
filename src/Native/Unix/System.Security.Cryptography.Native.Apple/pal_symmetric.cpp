@@ -4,6 +4,20 @@
 
 #include "pal_symmetric.h"
 
+static_assert(PAL_OperationEncrypt == kCCEncrypt, "");
+static_assert(PAL_OperationDecrypt == kCCDecrypt, "");
+
+static_assert(PAL_AlgorithmAES == kCCAlgorithmAES128, "");
+static_assert(PAL_Algorithm3DES == kCCAlgorithm3DES, "");
+
+static_assert(PAL_ChainingModeECB == kCCModeECB, "");
+static_assert(PAL_ChainingModeCBC == kCCModeCBC, "");
+
+static_assert(PAL_PaddingModeNone == ccNoPadding, "");
+static_assert(PAL_PaddingModePkcs7 == ccPKCS7Padding, "");
+
+// No PAL_SymmetricOptions are currently mapped, so no asserts required.
+
 extern "C" void AppleCryptoNative_CryptorFree(CCCryptorRef cryptor)
 {
 	if (cryptor != nullptr)
