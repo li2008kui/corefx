@@ -32,6 +32,10 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 // Friendly name required for windows
                 return NativeOidFriendlyNameExists(oid.FriendlyName);
             }
+            if (PlatformDetection.IsOSX)
+            {
+                return false;
+            }
             if (!string.IsNullOrEmpty(oid.Value))
             {
                 // Value is passed before FriendlyName
