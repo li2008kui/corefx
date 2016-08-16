@@ -123,7 +123,14 @@ namespace System.Security.Cryptography
 
             public override bool VerifyHash(byte[] hash, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
             {
-                throw new NotImplementedException();
+                if (padding != RSASignaturePadding.Pkcs1)
+                    throw new CryptographicException(SR.Cryptography_InvalidPaddingMode);
+
+                return Interop.AppleCrypto.RsaVerify(
+                    _publicKey,
+                    hash,
+                    signature,
+                    PalAlgorithmFromAlgorithmName(hashAlgorithm));
             }
 
             protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
@@ -147,6 +154,33 @@ namespace System.Security.Cryptography
                 }
 
                 base.Dispose(disposing);
+            }
+
+            private static Interop.AppleCrypto.PAL_HashAlgorithm PalAlgorithmFromAlgorithmName(
+                HashAlgorithmName hashAlgorithmName)
+            {
+                if (hashAlgorithmName == HashAlgorithmName.MD5)
+                {
+                    return Interop.AppleCrypto.PAL_HashAlgorithm.Md5;
+                }
+                else if (hashAlgorithmName == HashAlgorithmName.SHA1)
+                {
+                    return Interop.AppleCrypto.PAL_HashAlgorithm.Sha1;
+                }
+                else if (hashAlgorithmName == HashAlgorithmName.SHA256)
+                {
+                    return Interop.AppleCrypto.PAL_HashAlgorithm.Sha256;
+                }
+                else if (hashAlgorithmName == HashAlgorithmName.SHA384)
+                {
+                    return Interop.AppleCrypto.PAL_HashAlgorithm.Sha384;
+                }
+                else if (hashAlgorithmName == HashAlgorithmName.SHA512)
+                {
+                    return Interop.AppleCrypto.PAL_HashAlgorithm.Sha512;
+                }
+
+                throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmName.Name);
             }
         }
     }
