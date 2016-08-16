@@ -4,13 +4,13 @@
 
 #include "pal_hmac.h"
 
-static_assert(PAL_HmacSha1 == kCCHmacAlgSHA1, "");
-static_assert(PAL_HmacMd5 == kCCHmacAlgMD5, "");
-static_assert(PAL_HmacSha256 == kCCHmacAlgSHA256, "");
-static_assert(PAL_HmacSha384 == kCCHmacAlgSHA384, "");
-static_assert(PAL_HmacSha512 == kCCHmacAlgSHA512, "");
+struct hmac_ctx_st
+{
+    CCHmacAlgorithm appleAlgId;
+    CCHmacContext hmac;
+};
 
-extern "C" void AppleCryptoNative_HmacFree(void* pHmac)
+extern "C" void AppleCryptoNative_HmacFree(HmacCtx* pHmac)
 {
     if (pHmac != nullptr)
     {
@@ -18,36 +18,66 @@ extern "C" void AppleCryptoNative_HmacFree(void* pHmac)
     }
 }
 
-static int GetHmacOutputSize(PAL_HmacAlgorithm algorithm)
+static CCHmacAlgorithm PalAlgorithmToAppleAlgorithm(PAL_HashAlgorithm algorithm)
 {
     switch (algorithm)
     {
-        case PAL_HmacSha1:
-            return CC_SHA1_DIGEST_LENGTH;
-        case PAL_HmacMd5:
+        case PAL_MD5:
+            return kCCHmacAlgMD5;
+        case PAL_SHA1:
+            return kCCHmacAlgSHA1;
+        case PAL_SHA256:
+            return kCCHmacAlgSHA256;
+        case PAL_SHA384:
+            return kCCHmacAlgSHA384;
+        case PAL_SHA512:
+            return kCCHmacAlgSHA512;
+        default:
+            // 0 is a defined value (SHA1) so "unknown" has to be something else
+            return UINT_MAX;
+    }
+}
+
+static int GetHmacOutputSize(PAL_HashAlgorithm algorithm)
+{
+    switch (algorithm)
+    {
+        case PAL_MD5:
             return CC_MD5_DIGEST_LENGTH;
-        case PAL_HmacSha256:
+        case PAL_SHA1:
+            return CC_SHA1_DIGEST_LENGTH;
+        case PAL_SHA256:
             return CC_SHA256_DIGEST_LENGTH;
-        case PAL_HmacSha384:
+        case PAL_SHA384:
             return CC_SHA384_DIGEST_LENGTH;
-        case PAL_HmacSha512:
+        case PAL_SHA512:
             return CC_SHA512_DIGEST_LENGTH;
         default:
             return -1;
     }
 }
 
-extern "C" CCHmacContext* AppleCryptoNative_HmacCreate(PAL_HmacAlgorithm algorithm, int32_t* pcbHmac)
+extern "C" HmacCtx* AppleCryptoNative_HmacCreate(PAL_HashAlgorithm algorithm, int32_t* pcbHmac)
 {
     if (pcbHmac == nullptr)
         return nullptr;
 
+    CCHmacAlgorithm appleAlgId = PalAlgorithmToAppleAlgorithm(algorithm);
+
+    if (appleAlgId == UINT_MAX)
+    {
+        *pcbHmac = -1;
+        return nullptr;
+    }
+
+    HmacCtx* hmacCtx = reinterpret_cast<HmacCtx*>(malloc(sizeof(HmacCtx)));
+    hmacCtx->appleAlgId = appleAlgId;
     *pcbHmac = GetHmacOutputSize(algorithm);
-    return reinterpret_cast<CCHmacContext*>(malloc(sizeof(CCHmacContext)));
+    return hmacCtx;
 }
 
 extern "C" int
-AppleCryptoNative_HmacInit(CCHmacContext* ctx, PAL_HmacAlgorithm algorithm, uint8_t* pbKey, int32_t cbKey)
+AppleCryptoNative_HmacInit(HmacCtx* ctx, uint8_t* pbKey, int32_t cbKey)
 {
     if (ctx == nullptr || cbKey < 0)
         return 0;
@@ -55,11 +85,11 @@ AppleCryptoNative_HmacInit(CCHmacContext* ctx, PAL_HmacAlgorithm algorithm, uint
         return 0;
 
     // No return value
-    CCHmacInit(ctx, algorithm, pbKey, static_cast<size_t>(cbKey));
+    CCHmacInit(&ctx->hmac, ctx->appleAlgId, pbKey, static_cast<size_t>(cbKey));
     return 1;
 }
 
-extern "C" int AppleCryptoNative_HmacUpdate(CCHmacContext* ctx, uint8_t* pbData, int32_t cbData)
+extern "C" int AppleCryptoNative_HmacUpdate(HmacCtx* ctx, uint8_t* pbData, int32_t cbData)
 {
     if (cbData == 0)
         return 1;
@@ -67,16 +97,16 @@ extern "C" int AppleCryptoNative_HmacUpdate(CCHmacContext* ctx, uint8_t* pbData,
         return 0;
 
     // No return value
-    CCHmacUpdate(ctx, pbData, static_cast<size_t>(cbData));
+    CCHmacUpdate(&ctx->hmac, pbData, static_cast<size_t>(cbData));
     return 1;
 }
 
-extern "C" int AppleCryptoNative_HmacFinal(CCHmacContext* ctx, uint8_t* pbOutput)
+extern "C" int AppleCryptoNative_HmacFinal(HmacCtx* ctx, uint8_t* pbOutput)
 {
     if (ctx == nullptr || pbOutput == nullptr)
         return 0;
 
     // No return value
-    CCHmacFinal(ctx, pbOutput);
+    CCHmacFinal(&ctx->hmac, pbOutput);
     return 1;
 }

@@ -2,12 +2,29 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#include "pal_types.h"
+#include "pal_digest.h"
 
+#include <assert.h>
 #include <CommonCrypto/CommonCrypto.h>
 #include <CommonCrypto/CommonDigest.h>
 
-extern "C" void AppleCryptoNative_DigestFree(void* pDigest)
+struct digest_ctx_st
+{
+    PAL_HashAlgorithm algorithm;
+    // This 32-bit field is required for alignment,
+    // but it's also handy for remembering how big the final buffer is.
+    int32_t cbDigest;
+    union
+    {
+        CC_MD5_CTX md5;
+        CC_SHA1_CTX sha1;
+        CC_SHA256_CTX sha256;
+        CC_SHA512_CTX sha384;
+        CC_SHA512_CTX sha512;
+    } d;
+};
+
+extern "C" void AppleCryptoNative_DigestFree(DigestCtx* pDigest)
 {
     if (pDigest != nullptr)
     {
@@ -15,192 +32,120 @@ extern "C" void AppleCryptoNative_DigestFree(void* pDigest)
     }
 }
 
-extern "C" CC_SHA1_CTX* AppleCryptoNative_Sha1Create(int32_t* pcbDigest)
+extern "C" DigestCtx* AppleCryptoNative_DigestCreate(PAL_HashAlgorithm algorithm, int32_t* pcbDigest)
 {
     if (pcbDigest == nullptr)
-    {
         return nullptr;
+
+    DigestCtx* digestCtx = reinterpret_cast<DigestCtx*>(malloc(sizeof(DigestCtx)));
+    digestCtx->algorithm = algorithm;
+
+    switch (algorithm)
+    {
+        case PAL_MD5:
+            *pcbDigest = CC_MD5_DIGEST_LENGTH;
+            CC_MD5_Init(&digestCtx->d.md5);
+            break;
+        case PAL_SHA1:
+            *pcbDigest = CC_SHA1_DIGEST_LENGTH;
+            CC_SHA1_Init(&digestCtx->d.sha1);
+            break;
+        case PAL_SHA256:
+            *pcbDigest = CC_SHA256_DIGEST_LENGTH;
+            CC_SHA256_Init(&digestCtx->d.sha256);
+            break;
+        case PAL_SHA384:
+            *pcbDigest = CC_SHA384_DIGEST_LENGTH;
+            CC_SHA384_Init(&digestCtx->d.sha384);
+            break;
+        case PAL_SHA512:
+            *pcbDigest = CC_SHA512_DIGEST_LENGTH;
+            CC_SHA512_Init(&digestCtx->d.sha512);
+            break;
+        default:
+            *pcbDigest = 0;
+            free(digestCtx);
+            return nullptr;
     }
 
-    *pcbDigest = CC_SHA1_DIGEST_LENGTH;
-    CC_SHA1_CTX* ctx = reinterpret_cast<CC_SHA1_CTX*>(malloc(sizeof(CC_SHA1_CTX)));
-    CC_SHA1_Init(ctx);
-    return ctx;
+    digestCtx->cbDigest = *pcbDigest;
+    return digestCtx;
 }
 
-extern "C" int AppleCryptoNative_Sha1Update(CC_SHA1_CTX* ctx, uint8_t* pBuf, int32_t cbBuf)
+extern "C" int AppleCryptoNative_DigestUpdate(DigestCtx* ctx, uint8_t* pBuf, int32_t cbBuf)
 {
     if (cbBuf == 0)
         return 1;
     if (ctx == nullptr || pBuf == nullptr)
-        return 0;
+        return -1;
 
-    return CC_SHA1_Update(ctx, pBuf, static_cast<CC_LONG>(cbBuf));
+    CC_LONG bufSize = static_cast<CC_LONG>(cbBuf);
+
+    switch (ctx->algorithm)
+    {
+        case PAL_MD5:
+            return CC_MD5_Update(&ctx->d.md5, pBuf, bufSize);
+        case PAL_SHA1:
+            return CC_SHA1_Update(&ctx->d.sha1, pBuf, bufSize);
+        case PAL_SHA256:
+            return CC_SHA256_Update(&ctx->d.sha256, pBuf, bufSize);
+        case PAL_SHA384:
+            return CC_SHA384_Update(&ctx->d.sha384, pBuf, bufSize);
+        case PAL_SHA512:
+            return CC_SHA512_Update(&ctx->d.sha512, pBuf, bufSize);
+        default:
+            return -1;
+    }
 }
 
-extern "C" int AppleCryptoNative_Sha1Final(CC_SHA1_CTX* ctx, uint8_t* pOutput, int32_t cbOutput)
+extern "C" int AppleCryptoNative_DigestFinal(DigestCtx* ctx, uint8_t* pOutput, int32_t cbOutput)
 {
-    if (ctx == nullptr || pOutput == nullptr || cbOutput < CC_SHA1_DIGEST_LENGTH)
-        return 0;
+    if (ctx == nullptr || pOutput == nullptr || cbOutput < ctx->cbDigest)
+        return -1;
 
-    int ret = CC_SHA1_Final(pOutput, ctx);
+    int ret = 0;
 
-    if (!ret)
+    switch (ctx->algorithm)
+    {
+        case PAL_MD5:
+            ret = CC_MD5_Final(pOutput, &ctx->d.md5);
+            break;
+        case PAL_SHA1:
+            ret = CC_SHA1_Final(pOutput, &ctx->d.sha1);
+            break;
+        case PAL_SHA256:
+            ret = CC_SHA256_Final(pOutput, &ctx->d.sha256);
+            break;
+        case PAL_SHA384:
+            ret = CC_SHA384_Final(pOutput, &ctx->d.sha384);
+            break;
+        case PAL_SHA512:
+            ret = CC_SHA512_Final(pOutput, &ctx->d.sha512);
+            break;
+        default:
+            ret = -1;
+            break;
+    }
+
+    if (ret != 1)
     {
         return ret;
     }
 
-    return CC_SHA1_Init(ctx);
-}
-
-extern "C" CC_SHA256_CTX* AppleCryptoNative_Sha256Create(int32_t* pcbDigest)
-{
-    if (pcbDigest == nullptr)
+    switch (ctx->algorithm)
     {
-        return nullptr;
+        case PAL_MD5:
+            return CC_MD5_Init(&ctx->d.md5);
+        case PAL_SHA1:
+            return CC_SHA1_Init(&ctx->d.sha1);
+        case PAL_SHA256:
+            return CC_SHA256_Init(&ctx->d.sha256);
+        case PAL_SHA384:
+            return CC_SHA384_Init(&ctx->d.sha384);
+        case PAL_SHA512:
+            return CC_SHA512_Init(&ctx->d.sha512);
+        default:
+            assert(false);
+            return -2;
     }
-
-    *pcbDigest = CC_SHA256_DIGEST_LENGTH;
-    CC_SHA256_CTX* ctx = reinterpret_cast<CC_SHA256_CTX*>(malloc(sizeof(CC_SHA256_CTX)));
-    CC_SHA256_Init(ctx);
-    return ctx;
-}
-
-extern "C" int AppleCryptoNative_Sha256Update(CC_SHA256_CTX* ctx, uint8_t* pBuf, int32_t cbBuf)
-{
-    if (cbBuf == 0)
-        return 1;
-    if (ctx == nullptr || pBuf == nullptr)
-        return 0;
-
-    return CC_SHA256_Update(ctx, pBuf, static_cast<CC_LONG>(cbBuf));
-}
-
-extern "C" int AppleCryptoNative_Sha256Final(CC_SHA256_CTX* ctx, uint8_t* pOutput, int32_t cbOutput)
-{
-    if (ctx == nullptr || pOutput == nullptr || cbOutput < CC_SHA256_DIGEST_LENGTH)
-        return 0;
-
-    int ret = CC_SHA256_Final(pOutput, ctx);
-
-    if (!ret)
-    {
-        return ret;
-    }
-
-    return CC_SHA256_Init(ctx);
-}
-
-extern "C" CC_SHA512_CTX* AppleCryptoNative_Sha384Create(int32_t* pcbDigest)
-{
-    if (pcbDigest == nullptr)
-    {
-        return nullptr;
-    }
-
-    *pcbDigest = CC_SHA384_DIGEST_LENGTH;
-    CC_SHA512_CTX* ctx = reinterpret_cast<CC_SHA512_CTX*>(malloc(sizeof(CC_SHA512_CTX)));
-    CC_SHA384_Init(ctx);
-    return ctx;
-}
-
-extern "C" int AppleCryptoNative_Sha384Update(CC_SHA512_CTX* ctx, uint8_t* pBuf, int32_t cbBuf)
-{
-    if (cbBuf == 0)
-        return 1;
-    if (ctx == nullptr || pBuf == nullptr)
-        return 0;
-
-    return CC_SHA384_Update(ctx, pBuf, static_cast<CC_LONG>(cbBuf));
-}
-
-extern "C" int AppleCryptoNative_Sha384Final(CC_SHA512_CTX* ctx, uint8_t* pOutput, int32_t cbOutput)
-{
-    if (ctx == nullptr || pOutput == nullptr || cbOutput < CC_SHA384_DIGEST_LENGTH)
-        return 0;
-
-    int ret = CC_SHA384_Final(pOutput, ctx);
-
-    if (!ret)
-    {
-        return ret;
-    }
-
-    return CC_SHA384_Init(ctx);
-}
-
-extern "C" CC_SHA512_CTX* AppleCryptoNative_Sha512Create(int32_t* pcbDigest)
-{
-    if (pcbDigest == nullptr)
-    {
-        return nullptr;
-    }
-
-    *pcbDigest = CC_SHA512_DIGEST_LENGTH;
-    CC_SHA512_CTX* ctx = reinterpret_cast<CC_SHA512_CTX*>(malloc(sizeof(CC_SHA512_CTX)));
-    CC_SHA512_Init(ctx);
-    return ctx;
-}
-
-extern "C" int AppleCryptoNative_Sha512Update(CC_SHA512_CTX* ctx, uint8_t* pBuf, int32_t cbBuf)
-{
-    if (cbBuf == 0)
-        return 1;
-    if (ctx == nullptr || pBuf == nullptr)
-        return 0;
-
-    return CC_SHA512_Update(ctx, pBuf, static_cast<CC_LONG>(cbBuf));
-}
-
-extern "C" int AppleCryptoNative_Sha512Final(CC_SHA512_CTX* ctx, uint8_t* pOutput, int32_t cbOutput)
-{
-    if (ctx == nullptr || pOutput == nullptr || cbOutput < CC_SHA512_DIGEST_LENGTH)
-        return 0;
-
-    int ret = CC_SHA512_Final(pOutput, ctx);
-
-    if (!ret)
-    {
-        return ret;
-    }
-
-    return CC_SHA512_Init(ctx);
-}
-
-extern "C" CC_MD5_CTX* AppleCryptoNative_Md5Create(int32_t* pcbDigest)
-{
-    if (pcbDigest == nullptr)
-    {
-        return nullptr;
-    }
-
-    *pcbDigest = CC_MD5_DIGEST_LENGTH;
-    CC_MD5_CTX* ctx = reinterpret_cast<CC_MD5_CTX*>(malloc(sizeof(CC_MD5_CTX)));
-    CC_MD5_Init(ctx);
-    return ctx;
-}
-
-extern "C" int AppleCryptoNative_Md5Update(CC_MD5_CTX* ctx, uint8_t* pBuf, int32_t cbBuf)
-{
-    if (cbBuf == 0)
-        return 1;
-    if (ctx == nullptr || pBuf == nullptr)
-        return 0;
-
-    return CC_MD5_Update(ctx, pBuf, static_cast<CC_LONG>(cbBuf));
-}
-
-extern "C" int AppleCryptoNative_Md5Final(CC_MD5_CTX* ctx, uint8_t* pOutput, int32_t cbOutput)
-{
-    if (ctx == nullptr || pOutput == nullptr || cbOutput < CC_MD5_DIGEST_LENGTH)
-        return 0;
-
-    int ret = CC_MD5_Final(pOutput, ctx);
-
-    if (!ret)
-    {
-        return ret;
-    }
-
-    return CC_MD5_Init(ctx);
 }

@@ -9,115 +9,43 @@
 #include <CommonCrypto/CommonCrypto.h>
 #include <CommonCrypto/CommonHMAC.h>
 
+enum
+{
+    PAL_Unknown = 0,
+    PAL_MD5,
+    PAL_SHA1,
+    PAL_SHA256,
+    PAL_SHA384,
+    PAL_SHA512,
+};
+typedef uint32_t PAL_HashAlgorithm;
+
+typedef struct digest_ctx_st DigestCtx;
+
 /*
 Free a CC_[Algorithm]_CTX*
 */
-extern "C" void AppleCryptoNative_DigestFree(void* pDigest);
+extern "C" void AppleCryptoNative_DigestFree(DigestCtx* pDigest);
 
 /*
-Create a CC_SHA1_CTX for performing SHA-1 hashes
+Create a digest handle for the specified algorithm.
 
-Returns NULL on error, otherwise returns a ready-to-go CC_SHA1_CTX and outputs the hash size in pcbDigest.
+Returns NULL when the algorithm is unknown, or pcbDigest is NULL; otherwise returns a pointer
+to a digest context suitable for calling DigestUpdate and DigestFinal on and sets pcbDigest to
+the size of the digest output.
 */
-extern "C" CC_SHA1_CTX* AppleCryptoNative_Sha1Create(int32_t* pcbDigest);
+extern "C" DigestCtx* AppleCryptoNative_DigestCreate(PAL_HashAlgorithm algorithm, int32_t* pcbDigest);
 
 /*
-Shims CC_SHA1_Update
+Apply cbBuf bytes of data from pBuf to the ongoing digest represented in ctx.
 
-Returns 1 on success, 0 on error.
+Returns 1 on success, 0 on failure, any other value on invalid inputs/state.
 */
-extern "C" int AppleCryptoNative_Sha1Update(CC_SHA1_CTX* ctx, uint8_t* pBuf, int32_t cbBuf);
+extern "C" int AppleCryptoNative_DigestUpdate(DigestCtx* ctx, uint8_t* pBuf, int32_t cbBuf);
 
 /*
-Copies the hash output into pBuf and resets the hash state.
+Complete the digest in ctx, copying the results to pOutput, and reset ctx for a new digest.
 
-Returns 1 on success, 0 on error.
+Returns 1 on success, 0 on failure, any other value on invalid inputs/state.
 */
-extern "C" int AppleCryptoNative_Sha1Final(CC_SHA1_CTX* ctx, uint8_t* pOutput, int32_t cbOutput);
-
-/*
-Create a CC_SHA256_CTX for performing SHA-2-256 hashes
-
-Returns NULL on error, otherwise returns a ready-to-go CC_SHA256_CTX and outputs the hash size in pcbDigest.
-*/
-extern "C" CC_SHA256_CTX* AppleCryptoNative_Sha256Create(int32_t* pcbDigest);
-
-/*
-Shims CC_SHA256_Update
-
-Returns 1 on success, 0 on error.
-*/
-extern "C" int AppleCryptoNative_Sha256Update(CC_SHA256_CTX* ctx, uint8_t* pBuf, int32_t cbBuf);
-
-/*
-Copies the hash output into pBuf and resets the hash state.
-
-Returns 1 on success, 0 on error.
-*/
-extern "C" int AppleCryptoNative_Sha256Final(CC_SHA256_CTX* ctx, uint8_t* pOutput, int32_t cbOutput);
-
-/*
-Create a CC_SHA512_CTX for performing SHA-2-384 hashes.
-
-A CC_SHA512_CTX is used for SHA384 because SHA384 is a truncated form of SHA512 with a different start state;
-but since the space requirement is the same as for SHA512 the structure is reused between them.
-
-Returns NULL on error, otherwise returns a ready-to-go CC_SHA512_CTX and outputs the hash size in pcbDigest.
-*/
-extern "C" CC_SHA512_CTX* AppleCryptoNative_Sha384Create(int32_t* pcbDigest);
-
-/*
-Shims CC_SHA384_Update
-
-Returns 1 on success, 0 on error.
-*/
-extern "C" int AppleCryptoNative_Sha384Update(CC_SHA512_CTX* ctx, uint8_t* pBuf, int32_t cbBuf);
-
-/*
-Copies the hash output into pBuf and resets the hash state.
-
-Returns 1 on success, 0 on error.
-*/
-extern "C" int AppleCryptoNative_Sha384Final(CC_SHA512_CTX* ctx, uint8_t* pOutput, int32_t cbOutput);
-
-/*
-Create a CC_SHA512_CTX for performing SHA-2-512 hashes
-
-Returns NULL on error, otherwise returns a ready-to-go CC_SHA512_CTX and outputs the hash size in pcbDigest.
-*/
-extern "C" CC_SHA512_CTX* AppleCryptoNative_Sha512Create(int32_t* pcbDigest);
-
-/*
-Shims CC_SHA512_Update
-
-Returns 1 on success, 0 on error.
-*/
-extern "C" int AppleCryptoNative_Sha512Update(CC_SHA512_CTX* ctx, uint8_t* pBuf, int32_t cbBuf);
-
-/*
-Copies the hash output into pBuf and resets the hash state.
-
-Returns 1 on success, 0 on error.
-*/
-extern "C" int AppleCryptoNative_Sha512Final(CC_SHA512_CTX* ctx, uint8_t* pOutput, int32_t cbOutput);
-
-/*
-Create a CC_MD5_CTX for performing MD5 hashes
-
-Returns NULL on error, otherwise returns a ready-to-go CC_MD5_CTX and outputs the hash size in pcbDigest.
-*/
-extern "C" CC_MD5_CTX* AppleCryptoNative_Md5Create(int32_t* pcbDigest);
-
-/*
-Shims CC_MD5_Update
-
-Returns 1 on success, 0 on error.
-*/
-extern "C" int AppleCryptoNative_Md5Update(CC_MD5_CTX* ctx, uint8_t* pBuf, int32_t cbBuf);
-
-/*
-Copies the hash output into pBuf and resets the hash state.
-
-Returns 1 on success, 0 on error.
-*/
-extern "C" int AppleCryptoNative_Md5Final(CC_MD5_CTX* ctx, uint8_t* pOutput, int32_t cbOutput);
+extern "C" int AppleCryptoNative_DigestFinal(DigestCtx* ctx, uint8_t* pOutput, int32_t cbOutput);
