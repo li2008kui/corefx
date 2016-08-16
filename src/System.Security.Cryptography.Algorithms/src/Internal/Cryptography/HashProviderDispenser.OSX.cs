@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Apple;
 
@@ -14,16 +15,16 @@ namespace Internal.Cryptography
         {
             switch (hashAlgorithmId)
             {
-                case HashAlgorithmNames.SHA1:
-                    return new Sha1Provider();
-                case HashAlgorithmNames.SHA256:
-                    return new Sha256Provider();
-                case HashAlgorithmNames.SHA384:
-                    return new Sha384Provider();
-                case HashAlgorithmNames.SHA512:
-                    return new Sha512Provider();
                 case HashAlgorithmNames.MD5:
-                    return new Md5Provider();
+                    return new AppleDigestProvider(Interop.AppleCrypto.PAL_HashAlgorithm.Md5);
+                case HashAlgorithmNames.SHA1:
+                    return new AppleDigestProvider(Interop.AppleCrypto.PAL_HashAlgorithm.Sha1);
+                case HashAlgorithmNames.SHA256:
+                    return new AppleDigestProvider(Interop.AppleCrypto.PAL_HashAlgorithm.Sha256);
+                case HashAlgorithmNames.SHA384:
+                    return new AppleDigestProvider(Interop.AppleCrypto.PAL_HashAlgorithm.Sha384);
+                case HashAlgorithmNames.SHA512:
+                    return new AppleDigestProvider(Interop.AppleCrypto.PAL_HashAlgorithm.Sha512);
             }
 
             throw new PlatformNotSupportedException();
@@ -33,16 +34,16 @@ namespace Internal.Cryptography
         {
             switch (hashAlgorithmId)
             {
-                case HashAlgorithmNames.SHA1:
-                    return new AppleHmacProvider(Interop.AppleCrypto.PAL_HmacAlgorithm.HmacSha1, key);
-                case HashAlgorithmNames.SHA256:
-                    return new AppleHmacProvider(Interop.AppleCrypto.PAL_HmacAlgorithm.HmacSha256, key);
-                case HashAlgorithmNames.SHA384:
-                    return new AppleHmacProvider(Interop.AppleCrypto.PAL_HmacAlgorithm.HmacSha384, key);
-                case HashAlgorithmNames.SHA512:
-                    return new AppleHmacProvider(Interop.AppleCrypto.PAL_HmacAlgorithm.HmacSha512, key);
                 case HashAlgorithmNames.MD5:
-                    return new AppleHmacProvider(Interop.AppleCrypto.PAL_HmacAlgorithm.HmacMd5, key);
+                    return new AppleHmacProvider(Interop.AppleCrypto.PAL_HashAlgorithm.Md5, key);
+                case HashAlgorithmNames.SHA1:
+                    return new AppleHmacProvider(Interop.AppleCrypto.PAL_HashAlgorithm.Sha1, key);
+                case HashAlgorithmNames.SHA256:
+                    return new AppleHmacProvider(Interop.AppleCrypto.PAL_HashAlgorithm.Sha256, key);
+                case HashAlgorithmNames.SHA384:
+                    return new AppleHmacProvider(Interop.AppleCrypto.PAL_HashAlgorithm.Sha384, key);
+                case HashAlgorithmNames.SHA512:
+                    return new AppleHmacProvider(Interop.AppleCrypto.PAL_HashAlgorithm.Sha512, key);
             }
 
             throw new PlatformNotSupportedException();
@@ -54,7 +55,6 @@ namespace Internal.Cryptography
 
         private class AppleHmacProvider : HashProvider
         {
-            private readonly Interop.AppleCrypto.PAL_HmacAlgorithm _algorithm;
             private readonly byte[] _key;
             private readonly SafeHmacHandle _ctx;
 
@@ -62,9 +62,8 @@ namespace Internal.Cryptography
 
             public override int HashSizeInBytes { get; }
 
-            internal AppleHmacProvider(Interop.AppleCrypto.PAL_HmacAlgorithm algorithm, byte[] key)
+            internal AppleHmacProvider(Interop.AppleCrypto.PAL_HashAlgorithm algorithm, byte[] key)
             {
-                _algorithm = algorithm;
                 _key = key.CloneByteArray();
                 int hashSizeInBytes = 0;
                 _ctx = Interop.AppleCrypto.HmacCreate(algorithm, ref hashSizeInBytes);
@@ -75,7 +74,7 @@ namespace Internal.Cryptography
                     throw new PlatformNotSupportedException(
                         SR.Format(
                             SR.Cryptography_UnknownHashAlgorithm,
-                            Enum.GetName(typeof(Interop.AppleCrypto.PAL_HmacAlgorithm), algorithm)));
+                            Enum.GetName(typeof(Interop.AppleCrypto.PAL_HashAlgorithm), algorithm)));
                 }
 
                 if (_ctx.IsInvalid)
@@ -113,7 +112,7 @@ namespace Internal.Cryptography
 
                 fixed (byte* pbKey = _key)
                 {
-                    ret = Interop.AppleCrypto.HmacInit(_ctx, _algorithm, pbKey, _key.Length);
+                    ret = Interop.AppleCrypto.HmacInit(_ctx, pbKey, _key.Length);
                 }
 
                 if (ret != 1)
@@ -158,17 +157,16 @@ namespace Internal.Cryptography
             }
         }
 
-        private abstract class AppleDigestProvider<THandle> : HashProvider
-            where THandle : SafeDigestHandle
+        private sealed class AppleDigestProvider: HashProvider
         {
-            protected readonly THandle _ctx;
+            private readonly SafeDigestCtxHandle _ctx;
 
             public override int HashSizeInBytes { get; }
 
-            protected AppleDigestProvider()
+            internal AppleDigestProvider(Interop.AppleCrypto.PAL_HashAlgorithm algorithm)
             {
                 int hashSizeInBytes;
-                _ctx = Create(out hashSizeInBytes);
+                _ctx = Interop.AppleCrypto.DigestCreate(algorithm, out hashSizeInBytes);
 
                 if (_ctx.IsInvalid)
                 {
@@ -178,10 +176,6 @@ namespace Internal.Cryptography
                 HashSizeInBytes = hashSizeInBytes;
             }
 
-            protected abstract THandle Create(out int hashSizeInBytes);
-            protected abstract unsafe int AppendData(byte* pbData, int cbData);
-            protected abstract unsafe int Final(byte* pbOutput, int cbOutput);
-
             public override unsafe void AppendHashDataCore(byte[] data, int offset, int count)
             {
                 int ret;
@@ -189,11 +183,12 @@ namespace Internal.Cryptography
                 fixed (byte* pData = data)
                 {
                     byte* pbData = pData + offset;
-                    ret = AppendData(pbData, count);
+                    ret = Interop.AppleCrypto.DigestUpdate(_ctx, pbData, count);
                 }
 
                 if (ret != 1)
                 {
+                    Debug.Assert(ret == 0, $"DigestUpdate return value {ret} was not 0 or 1");
                     throw new CryptographicException();
                 }
             }
@@ -205,11 +200,12 @@ namespace Internal.Cryptography
 
                 fixed (byte* pHash = hash)
                 {
-                    ret = Final(pHash, hash.Length);
+                    ret = Interop.AppleCrypto.DigestFinal(_ctx, pHash, hash.Length);
                 }
 
                 if (ret != 1)
                 {
+                    Debug.Assert(ret == 0, $"DigestFinal return value {ret} was not 0 or 1");
                     throw new CryptographicException();
                 }
 
@@ -222,96 +218,6 @@ namespace Internal.Cryptography
                 {
                     _ctx?.Dispose();
                 }
-            }
-        }
-
-        private class Sha1Provider : AppleDigestProvider<SafeSha1DigestHandle>
-        {
-            protected override SafeSha1DigestHandle Create(out int hashSizeInBytes)
-            {
-                return Interop.AppleCrypto.Sha1Create(out hashSizeInBytes);
-            }
-
-            protected override unsafe int AppendData(byte* pbData, int cbData)
-            {
-                return Interop.AppleCrypto.Sha1Update(_ctx, pbData, cbData);
-            }
-
-            protected override unsafe int Final(byte* pbOutput, int cbOutput)
-            {
-                return Interop.AppleCrypto.Sha1Final(_ctx, pbOutput, cbOutput);
-            }
-        }
-
-        private class Sha256Provider : AppleDigestProvider<SafeSha256DigestHandle>
-        {
-            protected override SafeSha256DigestHandle Create(out int hashSizeInBytes)
-            {
-                return Interop.AppleCrypto.Sha256Create(out hashSizeInBytes);
-            }
-
-            protected override unsafe int AppendData(byte* pbData, int cbData)
-            {
-                return Interop.AppleCrypto.Sha256Update(_ctx, pbData, cbData);
-            }
-
-            protected override unsafe int Final(byte* pbOutput, int cbOutput)
-            {
-                return Interop.AppleCrypto.Sha256Final(_ctx, pbOutput, cbOutput);
-            }
-        }
-
-        private class Sha384Provider : AppleDigestProvider<SafeSha384DigestHandle>
-        {
-            protected override SafeSha384DigestHandle Create(out int hashSizeInBytes)
-            {
-                return Interop.AppleCrypto.Sha384Create(out hashSizeInBytes);
-            }
-
-            protected override unsafe int AppendData(byte* pbData, int cbData)
-            {
-                return Interop.AppleCrypto.Sha384Update(_ctx, pbData, cbData);
-            }
-
-            protected override unsafe int Final(byte* pbOutput, int cbOutput)
-            {
-                return Interop.AppleCrypto.Sha384Final(_ctx, pbOutput, cbOutput);
-            }
-        }
-
-        private class Sha512Provider : AppleDigestProvider<SafeSha512DigestHandle>
-        {
-            protected override SafeSha512DigestHandle Create(out int hashSizeInBytes)
-            {
-                return Interop.AppleCrypto.Sha512Create(out hashSizeInBytes);
-            }
-
-            protected override unsafe int AppendData(byte* pbData, int cbData)
-            {
-                return Interop.AppleCrypto.Sha512Update(_ctx, pbData, cbData);
-            }
-
-            protected override unsafe int Final(byte* pbOutput, int cbOutput)
-            {
-                return Interop.AppleCrypto.Sha512Final(_ctx, pbOutput, cbOutput);
-            }
-        }
-
-        private class Md5Provider : AppleDigestProvider<SafeMd5DigestHandle>
-        {
-            protected override SafeMd5DigestHandle Create(out int hashSizeInBytes)
-            {
-                return Interop.AppleCrypto.Md5Create(out hashSizeInBytes);
-            }
-
-            protected override unsafe int AppendData(byte* pbData, int cbData)
-            {
-                return Interop.AppleCrypto.Md5Update(_ctx, pbData, cbData);
-            }
-
-            protected override unsafe int Final(byte* pbOutput, int cbOutput)
-            {
-                return Interop.AppleCrypto.Md5Final(_ctx, pbOutput, cbOutput);
             }
         }
     }

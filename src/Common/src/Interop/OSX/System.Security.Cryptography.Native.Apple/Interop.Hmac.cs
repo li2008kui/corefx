@@ -10,23 +10,14 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
-        internal enum PAL_HmacAlgorithm : uint
-        {
-            HmacSha1,
-            HmacMd5,
-            HmacSha256,
-            HmacSha384,
-            HmacSha512,
-        }
-
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_HmacFree")]
         internal static extern void HmacFree(IntPtr handle);
 
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_HmacCreate")]
-        internal static extern SafeHmacHandle HmacCreate(PAL_HmacAlgorithm algorithm, ref int cbDigest);
+        internal static extern SafeHmacHandle HmacCreate(PAL_HashAlgorithm algorithm, ref int cbDigest);
 
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_HmacInit")]
-        internal static extern unsafe int HmacInit(SafeHmacHandle ctx, PAL_HmacAlgorithm algorithm, byte* pbKey, int cbKey);
+        internal static extern unsafe int HmacInit(SafeHmacHandle ctx, byte* pbKey, int cbKey);
 
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_HmacUpdate")]
         internal static extern unsafe int HmacUpdate(SafeHmacHandle ctx, byte* pbData, int cbData);
