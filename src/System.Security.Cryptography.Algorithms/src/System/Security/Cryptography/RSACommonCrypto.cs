@@ -26,10 +26,43 @@ namespace System.Security.Cryptography
             private SafeSecKeyRefHandle _privateKey;
             private SafeSecKeyRefHandle _publicKey;
 
+            public RSASecurityTransforms()
+                : this(2048)
+            {
+            }
+
+            public RSASecurityTransforms(int keySize)
+            {
+                KeySize = keySize;
+            }
+
+            public override KeySizes[] LegalKeySizes
+            {
+                get
+                {
+                    // See https://msdn.microsoft.com/en-us/library/windows/desktop/bb931354(v=vs.85).aspx
+                    return new KeySizes[]
+                    {
+                        // All values are in bits.
+                        new KeySizes(minSize: 512, maxSize: 16384, skipSize: 64),
+                    };
+                }
+            }
+
             public override RSAParameters ExportParameters(bool includePrivateParameters)
             {
                 SafeCFDataHandle cfData;
                 int osStatus;
+
+                if (_privateKey == null && _publicKey == null)
+                {
+                    int gen = Interop.AppleCrypto.RsaGenerateKey(KeySize, out _publicKey, out _privateKey, out osStatus);
+
+                    if (gen != 1)
+                    {
+                        throw new CryptographicException($"RsaGenerateKey returned {gen} | {osStatus}");
+                    }
+                }
 
                 SafeSecKeyRefHandle keyHandle = includePrivateParameters ? _privateKey : _publicKey;
 
@@ -40,6 +73,7 @@ namespace System.Security.Cryptography
 
                 int ret = Interop.AppleCrypto.RsaExportKey(
                     keyHandle,
+                    includePrivateParameters ? 1 : 0,
                     out cfData,
                     out osStatus);
 
@@ -55,9 +89,17 @@ namespace System.Security.Cryptography
                     throw new CryptographicException();
                 }
 
-                byte[] encryptedPrivateKey = Interop.CoreFoundation.CFGetData(cfData);
                 RSAParameters parameters = new RSAParameters();
-                encryptedPrivateKey.ConvertPkcs8Blob(ref parameters);
+                byte[] exportedData = Interop.CoreFoundation.CFGetData(cfData);
+
+                if (includePrivateParameters)
+                {
+                    exportedData.ConvertPkcs8Blob(ref parameters);
+                }
+                else
+                {
+                    exportedData.ConvertSubjectPublicKeyInfo(ref parameters);
+                }
                 return parameters;
             }
 
@@ -391,7 +433,7 @@ namespace System.Security.Cryptography
 
                 if (algorithmOid != "1.2.840.113549.1.1.1")
                 {
-                    throw new CryptographicException(algorithmOid);
+                    throw new CryptographicException();
                 }
             }
 
@@ -400,6 +442,32 @@ namespace System.Security.Cryptography
             ReadPkcs1Blob(privateKeyBytes, ref parameters);
 
             // We don't care about the rest of the blob here, but it's expected to not exist.
+        }
+
+        internal static void ConvertSubjectPublicKeyInfo(this byte[] keyBytes, ref RSAParameters parameters)
+        {
+            // SubjectPublicKeyInfo::= SEQUENCE  {
+            //    algorithm AlgorithmIdentifier,
+            //    subjectPublicKey     BIT STRING  }
+
+            DerSequenceReader keyInfo = new DerSequenceReader(keyBytes);
+            DerSequenceReader algorithm = keyInfo.ReadSequence();
+            string algorithmOid = algorithm.ReadOidAsString();
+
+            if (algorithmOid != "1.2.840.113549.1.1.1")
+            {
+                throw new CryptographicException();
+            }
+
+            byte[] subjectPublicKeyBytes = keyInfo.ReadBitString();
+
+            DerSequenceReader subjectPublicKey = new DerSequenceReader(subjectPublicKeyBytes);
+
+            parameters.Modulus = TrimPaddingByte(subjectPublicKey.ReadIntegerBytes());
+            parameters.Exponent = TrimPaddingByte(subjectPublicKey.ReadIntegerBytes());
+
+            if (subjectPublicKey.HasData)
+                throw new CryptographicException();
         }
 
         private static void ReadPkcs1Blob(byte[] privateKeyBytes, ref RSAParameters parameters)
