@@ -23,8 +23,7 @@ namespace System.Security.Cryptography
         // TODO: Name this for real.
         public sealed partial class RSASecurityTransforms : RSA
         {
-            private SafeSecKeyRefHandle _privateKey;
-            private SafeSecKeyRefHandle _publicKey;
+            private KeyPair _keys;
 
             public RSASecurityTransforms()
                 : this(2048)
@@ -54,17 +53,9 @@ namespace System.Security.Cryptography
                 SafeCFDataHandle cfData;
                 int osStatus;
 
-                if (_privateKey == null && _publicKey == null)
-                {
-                    int gen = Interop.AppleCrypto.RsaGenerateKey(KeySize, out _publicKey, out _privateKey, out osStatus);
+                KeyPair keys = GetKeys();
 
-                    if (gen != 1)
-                    {
-                        throw new CryptographicException($"RsaGenerateKey returned {gen} | {osStatus}");
-                    }
-                }
-
-                SafeSecKeyRefHandle keyHandle = includePrivateParameters ? _privateKey : _publicKey;
+                SafeSecKeyRefHandle keyHandle = includePrivateParameters ? keys.PrivateKey : keys.PublicKey;
 
                 if (keyHandle == null)
                 {
@@ -105,51 +96,40 @@ namespace System.Security.Cryptography
 
             public override void ImportParameters(RSAParameters parameters)
             {
-                byte[] pkcs1Blob = parameters.ToPkcs1Blob();
-                SafeSecKeyRefHandle keyHandle;
-                int osStatus;
                 bool isPrivateKey = parameters.D != null;
 
-                int ret = Interop.AppleCrypto.RsaImportEphemeralKey(
-                    pkcs1Blob,
-                    pkcs1Blob.Length,
-                    isPrivateKey,
-                    out keyHandle,
-                    out osStatus);
-
-                if (ret == 1 && !keyHandle.IsInvalid)
+                if (isPrivateKey)
                 {
-                    if (isPrivateKey)
+                    // Start with the private key, in case some of the private key fields
+                    // don't match the public key fields.
+                    //
+                    // Public import should go off without a hitch.
+                    SafeSecKeyRefHandle privateKey = ImportKey(parameters);
+
+                    RSAParameters publicOnly = new RSAParameters
                     {
-                        _privateKey = keyHandle;
-                        _publicKey = keyHandle;
-                    }
-                    else
+                        Modulus = parameters.Modulus,
+                        Exponent = parameters.Exponent,
+                    };
+
+                    SafeSecKeyRefHandle publicKey;
+                    try
                     {
-                        _publicKey = keyHandle;
-                        _privateKey = keyHandle;
+                        publicKey = ImportKey(publicOnly);
+                    }
+                    catch
+                    {
+                        privateKey.Dispose();
+                        throw;
                     }
 
-                    return;
+                    SetKey(KeyPair.PublicPrivatePair(publicKey, privateKey));
                 }
-
-                keyHandle.Dispose();
-
-                if (ret == 0)
+                else
                 {
-                    // TODO: Is there a better OSStatus lookup?
-                    throw Interop.AppleCrypto.CreateExceptionForCCError(osStatus, "OSStatus");
+                    SafeSecKeyRefHandle publicKey = ImportKey(parameters);
+                    SetKey(KeyPair.PublicOnly(publicKey));
                 }
-
-                if (ret != 1)
-                {
-                    Debug.Assert(ret != -1, "Shim indicates invalid inputs");
-#if DEBUG
-                    throw new CryptographicException($"RsaImportEphemeralKey returned {ret}");
-#endif
-                }
-
-                throw new CryptographicException();
             }
 
             public override byte[] Encrypt(byte[] data, RSAEncryptionPadding padding)
@@ -164,16 +144,33 @@ namespace System.Security.Cryptography
 
             public override byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
             {
-                throw new NotImplementedException();
+                if (padding != RSASignaturePadding.Pkcs1)
+                    throw new CryptographicException(SR.Cryptography_InvalidPaddingMode);
+
+                KeyPair keys = GetKeys();
+
+                if (keys.PrivateKey == null)
+                {
+                    throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
+                }
+
+                return Interop.AppleCrypto.RsaSign(
+                    keys.PrivateKey,
+                    hash,
+                    PalAlgorithmFromAlgorithmName(hashAlgorithm));
             }
 
-            public override bool VerifyHash(byte[] hash, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
+            public override bool VerifyHash(
+                byte[] hash,
+                byte[] signature,
+                HashAlgorithmName hashAlgorithm,
+                RSASignaturePadding padding)
             {
                 if (padding != RSASignaturePadding.Pkcs1)
                     throw new CryptographicException(SR.Cryptography_InvalidPaddingMode);
 
                 return Interop.AppleCrypto.RsaVerify(
-                    _publicKey,
+                    GetKeys().PublicKey,
                     hash,
                     signature,
                     PalAlgorithmFromAlgorithmName(hashAlgorithm));
@@ -193,10 +190,8 @@ namespace System.Security.Cryptography
             {
                 if (disposing)
                 {
-                    _privateKey?.Dispose();
-                    _publicKey?.Dispose();
-                    _privateKey = null;
-                    _publicKey = null;
+                    _keys?.Dispose();
+                    _keys = null;
                 }
 
                 base.Dispose(disposing);
@@ -227,6 +222,110 @@ namespace System.Security.Cryptography
                 }
 
                 throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmName.Name);
+            }
+
+            private KeyPair GetKeys()
+            {
+                KeyPair current = _keys;
+
+                if (current != null)
+                {
+                    return current;
+                }
+
+                SafeSecKeyRefHandle publicKey;
+                SafeSecKeyRefHandle privateKey;
+                int osStatus;
+
+                int gen = Interop.AppleCrypto.RsaGenerateKey(KeySizeValue, out publicKey, out privateKey, out osStatus);
+
+                if (gen != 1)
+                {
+                    throw new CryptographicException($"RsaGenerateKey returned {gen} | {osStatus}");
+                }
+
+                current = KeyPair.PublicPrivatePair(publicKey, privateKey);
+                _keys = current;
+                return current;
+            }
+
+            private void SetKey(KeyPair newKeyPair)
+            {
+                KeyPair current = _keys;
+                _keys = newKeyPair;
+                current?.Dispose();
+
+                if (newKeyPair != null)
+                {
+                    KeySizeValue = Interop.AppleCrypto.RsaGetKeySizeInBits(newKeyPair.PublicKey);
+                }
+            }
+
+            private static SafeSecKeyRefHandle ImportKey(RSAParameters parameters)
+            {
+                SafeSecKeyRefHandle keyHandle;
+                int osStatus;
+                bool isPrivateKey = parameters.D != null;
+                byte[] pkcs1Blob = parameters.ToPkcs1Blob();
+
+                int ret = Interop.AppleCrypto.RsaImportEphemeralKey(
+                    pkcs1Blob,
+                    pkcs1Blob.Length,
+                    isPrivateKey,
+                    out keyHandle,
+                    out osStatus);
+
+                if (ret == 1 && !keyHandle.IsInvalid)
+                {
+                    return keyHandle;
+                }
+
+                if (ret == 0)
+                {
+                    // TODO: Is there a better OSStatus lookup?
+                    throw Interop.AppleCrypto.CreateExceptionForCCError(osStatus, "OSStatus");
+                }
+
+                Debug.Fail($"RsaImportEphemeralKey returned {ret}");
+                throw new CryptographicException();
+            }
+
+            private sealed class KeyPair : IDisposable
+            {
+                internal SafeSecKeyRefHandle PublicKey { get; private set; }
+                internal SafeSecKeyRefHandle PrivateKey { get; private set; }
+
+                private KeyPair(SafeSecKeyRefHandle publicKey, SafeSecKeyRefHandle privateKey)
+                {
+                    PublicKey = publicKey;
+                    PrivateKey = privateKey;
+                }
+
+                public void Dispose()
+                {
+                    PrivateKey?.Dispose();
+                    PrivateKey = null;
+                    PublicKey?.Dispose();
+                    PublicKey = null;
+                }
+
+                internal static KeyPair PublicPrivatePair(SafeSecKeyRefHandle publicKey, SafeSecKeyRefHandle privateKey)
+                {
+                    if (publicKey == null || publicKey.IsInvalid)
+                        throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(publicKey));
+                    if (privateKey == null || privateKey.IsInvalid)
+                        throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(privateKey));
+
+                    return new KeyPair(publicKey, privateKey);
+                }
+
+                internal static KeyPair PublicOnly(SafeSecKeyRefHandle publicKey)
+                {
+                    if (publicKey == null || publicKey.IsInvalid)
+                        throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(publicKey));
+
+                    return new KeyPair(publicKey, null);
+                }
             }
         }
     }

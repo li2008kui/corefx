@@ -34,6 +34,15 @@ internal static partial class Interop
             out SafeCFDataHandle cfDataOut,
             out int pOSStatus);
 
+        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaSign")]
+        private static extern int RsaSign(
+            SafeSecKeyRefHandle key,
+            byte[] pbDataHash,
+            int cbDataHash,
+            PAL_HashAlgorithm algorithm,
+            out SafeCFDataHandle pSignatureOut,
+            out SafeCreateHandle pErrorOut);
+
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaVerify")]
         private static extern int RsaVerify(
             SafeSecKeyRefHandle key,
@@ -43,6 +52,45 @@ internal static partial class Interop
             int cbSignature,
             PAL_HashAlgorithm algorithm,
             out SafeCreateHandle pErrorOut);
+
+        [DllImport(Libraries.AppleCryptoNative)]
+        private static extern ulong AppleCryptoNative_RsaGetKeySizeInBytes(SafeSecKeyRefHandle publicKey);
+
+        internal static int RsaGetKeySizeInBits(SafeSecKeyRefHandle publicKey)
+        {
+            ulong keySizeInBytes = AppleCryptoNative_RsaGetKeySizeInBytes(publicKey);
+
+            checked
+            {
+                return (int)(keySizeInBytes * 8);
+            }
+        }
+
+        internal static byte[] RsaSign(SafeSecKeyRefHandle key, byte[] hash, PAL_HashAlgorithm hashAlgorithm)
+        {
+            SafeCFDataHandle signature;
+            SafeCreateHandle error;
+            int ret = RsaSign(key, hash, hash.Length, hashAlgorithm, out signature, out error);
+
+            using (error)
+            using (signature)
+            {
+                if (ret == 1)
+                {
+                    return CoreFoundation.CFGetData(signature);
+                }
+
+                if (ret == -2)
+                {
+                    Debug.Assert(!error.IsInvalid, "Native layer indicated error object was populated");
+                    // TODO: Throw a CFErrorRef-based exception
+                    throw new CryptographicException("A CFError was produced");
+                }
+
+                Debug.Fail("RsaVerify returned {ret}");
+                throw new CryptographicException();
+            }
+        }
 
         internal static bool RsaVerify(
             SafeSecKeyRefHandle key,
