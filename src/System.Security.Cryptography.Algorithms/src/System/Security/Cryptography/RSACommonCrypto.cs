@@ -134,12 +134,19 @@ namespace System.Security.Cryptography
 
             public override byte[] Encrypt(byte[] data, RSAEncryptionPadding padding)
             {
-                throw new NotImplementedException();
+                return Interop.AppleCrypto.RsaEncrypt(GetKeys().PublicKey, data, padding);
             }
 
             public override byte[] Decrypt(byte[] data, RSAEncryptionPadding padding)
             {
-                throw new NotImplementedException();
+                KeyPair keys = GetKeys();
+
+                if (keys.PrivateKey == null)
+                {
+                    throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
+                }
+
+                return Interop.AppleCrypto.RsaDecrypt(keys.PrivateKey, data, padding);
             }
 
             public override byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
