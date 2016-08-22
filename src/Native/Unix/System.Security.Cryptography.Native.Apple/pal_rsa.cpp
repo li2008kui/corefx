@@ -5,6 +5,13 @@
 #include "pal_rsa.h"
 #include <stdio.h>
 
+int32_t ExecuteCFDataTransform(SecTransformRef xform, uint8_t* pbData, int32_t cbData, CFDataRef* pDataOut, CFErrorRef* pErrorOut);
+
+static const int kErrorBadInput = -1;
+static const int kErrorSeeError= -2;
+static const int kErrorUnknownAlgorithm = -3;
+static const int kErrorUnknownState = -4;
+
 static int ConfigureSignVerifyTransform(
     SecTransformRef xform,
     CFDataRef cfDataHash,
@@ -47,7 +54,7 @@ extern "C" int
 AppleCryptoNative_RsaGenerateKey(int32_t keySizeBits, SecKeyRef* pPublicKey, SecKeyRef* pPrivateKey, int32_t* pOSStatus)
 {
     if (pPublicKey == nullptr || pPrivateKey == nullptr || pOSStatus == nullptr)
-        return -1;
+        return kErrorBadInput;
     if (keySizeBits < 384 || keySizeBits > 16384)
         return -2;
 
@@ -76,12 +83,11 @@ extern "C" int32_t AppleCryptoNative_RsaImportEphemeralKey(uint8_t* pbPkcs1Key, 
         ppKeyOut == nullptr ||
         pOSStatus == nullptr)
     {
-        return -1;
+        return kErrorBadInput;
     }
 
     int32_t ret = 0;
     CFDataRef cfData = CFDataCreateWithBytesNoCopy(nullptr, pbPkcs1Key, cbPkcs1Key, kCFAllocatorNull);
-    //CFDataRef cfData = CFDataCreate(nullptr, pbPkcs1Key, cbPkcs1Key);
 
     // RSA PKCS#1 blobs
     SecExternalFormat dataFormat = isPrivateKey ? kSecFormatOpenSSL : kSecFormatBSAFE;
@@ -181,7 +187,7 @@ extern "C" int32_t AppleCryptoNative_RsaExportKey(SecKeyRef pKey, int32_t export
         ppDataOut == nullptr ||
         pOSStatus == nullptr)
     {
-        return -1;
+        return kErrorBadInput;
     }
 
     SecExternalFormat dataFormat = kSecFormatOpenSSL;
@@ -208,11 +214,6 @@ extern "C" int32_t AppleCryptoNative_RsaExportKey(SecKeyRef pKey, int32_t export
 
 extern "C" int AppleCryptoNative_RsaSign(SecKeyRef privateKey, uint8_t* pbDataHash, int32_t cbDataHash, PAL_HashAlgorithm hashAlgorithm, CFDataRef* pSignatureOut, CFErrorRef* pErrorOut)
 {
-    const int kErrorBadInput = -1;
-    const int kErrorSeeError= -2;
-    const int kErrorUnknownAlgorithm = -3;
-    const int kErrorUnknownState = -4;
-
     if (privateKey == nullptr ||
         pbDataHash == nullptr ||
         cbDataHash < 0 ||
@@ -316,10 +317,6 @@ cleanup:
 
 extern "C" int AppleCryptoNative_RsaVerify(SecKeyRef publicKey, uint8_t* pbDataHash, int32_t cbDataHash, uint8_t* pbSignature, int32_t cbSignature, PAL_HashAlgorithm hashAlgorithm, CFErrorRef* pErrorOut)
 {
-    const int kErrorBadInput = -1;
-    const int kErrorSeeError= -2;
-    const int kErrorUnknownAlgorithm = -3;
-
     if (publicKey == nullptr ||
         pbDataHash == nullptr ||
         cbDataHash < 0 ||
@@ -398,6 +395,170 @@ cleanup:
 
     CFRelease(dataHash);
     CFRelease(signature);
+
+    return ret;
+}
+
+int32_t ExecuteOaepTransform(SecTransformRef xform, uint8_t* pbData, int32_t cbData, PAL_HashAlgorithm algorithm, CFDataRef* pDataOut, CFErrorRef* pErrorOut)
+{
+    int ret = INT_MIN;
+
+    if (!SecTransformSetAttribute(xform, kSecPaddingKey, kSecPaddingOAEPKey, pErrorOut))
+    {
+        ret = kErrorSeeError;
+        goto cleanup;
+    }
+
+    // TODO: set kSecOAEPMGF1DigestAlgorithmAttributeName as appropriate.
+    // TODO: How does it do OAEP-SHA256?
+    if (algorithm != PAL_SHA1)
+    {
+        ret = kErrorUnknownAlgorithm;
+        goto cleanup;
+    }
+
+    ret = ExecuteCFDataTransform(xform, pbData, cbData, pDataOut, pErrorOut);
+
+cleanup:
+    return ret;
+}
+
+extern "C" int32_t AppleCryptoNative_RsaDecryptOaep(SecKeyRef privateKey, uint8_t* pbData, int32_t cbData, PAL_HashAlgorithm mfgAlgorithm, CFDataRef* pDecryptedOut, CFErrorRef* pErrorOut)
+{
+    if (privateKey == nullptr ||
+        pbData == nullptr ||
+        cbData < 0 ||
+        pDecryptedOut == nullptr ||
+        pErrorOut == nullptr)
+    {
+        return kErrorBadInput;
+    }
+
+    *pDecryptedOut = nullptr;
+    *pErrorOut = nullptr;
+
+    int ret = INT_MIN;
+    SecTransformRef decryptor = SecDecryptTransformCreate(privateKey, pErrorOut);
+
+    if (decryptor == nullptr || *pErrorOut != nullptr)
+    {
+        ret = kErrorSeeError;
+        goto cleanup;
+    }
+
+    ret = ExecuteOaepTransform(decryptor, pbData, cbData, mfgAlgorithm, pDecryptedOut, pErrorOut);
+
+cleanup:
+
+    if (decryptor != nullptr)
+    {
+        CFRelease(decryptor);
+    }
+
+    return ret;
+}
+
+extern "C" int32_t AppleCryptoNative_RsaDecryptPkcs(SecKeyRef privateKey, uint8_t* pbData, int32_t cbData, CFDataRef* pDecryptedOut, CFErrorRef* pErrorOut)
+{
+    if (privateKey == nullptr ||
+        pbData == nullptr ||
+        cbData < 0 ||
+        pDecryptedOut == nullptr ||
+        pErrorOut == nullptr)
+    {
+        return kErrorBadInput;
+    }
+
+    *pDecryptedOut = nullptr;
+    *pErrorOut = nullptr;
+
+    int ret = INT_MIN;
+    SecTransformRef decryptor = SecDecryptTransformCreate(privateKey, pErrorOut);
+
+    if (decryptor == nullptr || *pErrorOut != nullptr)
+    {
+        ret = kErrorSeeError;
+        goto cleanup;
+    }
+
+    ret = ExecuteCFDataTransform(decryptor, pbData, cbData, pDecryptedOut, pErrorOut);
+
+cleanup:
+
+    if (decryptor != nullptr)
+    {
+        CFRelease(decryptor);
+    }
+
+    return ret;
+}
+
+extern "C" int32_t AppleCryptoNative_RsaEncryptOaep(SecKeyRef publicKey, uint8_t* pbData, int32_t cbData, PAL_HashAlgorithm mgfAlgorithm, CFDataRef* pEncryptedOut, CFErrorRef* pErrorOut)
+{
+    if (publicKey == nullptr ||
+        pbData == nullptr ||
+        cbData < 0 ||
+        pEncryptedOut == nullptr ||
+        pErrorOut == nullptr)
+    {
+        return kErrorBadInput;
+    }
+
+    *pEncryptedOut = nullptr;
+    *pErrorOut = nullptr;
+
+    int ret = INT_MIN;
+    SecTransformRef encryptor = SecEncryptTransformCreate(publicKey, pErrorOut);
+
+    if (encryptor == nullptr || *pErrorOut != nullptr)
+    {
+        ret = kErrorSeeError;
+        goto cleanup;
+    }
+
+    ret = ExecuteOaepTransform(encryptor, pbData, cbData, mgfAlgorithm, pEncryptedOut, pErrorOut);
+
+cleanup:
+
+    if (encryptor != nullptr)
+    {
+        CFRelease(encryptor);
+    }
+
+    return ret;
+}
+
+extern "C" int32_t AppleCryptoNative_RsaEncryptPkcs(SecKeyRef publicKey, uint8_t* pbData, int32_t cbData, CFDataRef* pEncryptedOut, CFErrorRef* pErrorOut)
+{
+    if (publicKey == nullptr ||
+        pbData == nullptr ||
+        cbData < 0 ||
+        pEncryptedOut == nullptr ||
+        pErrorOut == nullptr)
+    {
+        return kErrorBadInput;
+    }
+
+    *pEncryptedOut = nullptr;
+    *pErrorOut = nullptr;
+
+    int ret = INT_MIN;
+    SecTransformRef encryptor = SecEncryptTransformCreate(publicKey, pErrorOut);
+
+    if (encryptor == nullptr || *pErrorOut != nullptr)
+    {
+        ret = kErrorSeeError;
+        goto cleanup;
+    }
+
+    ret = ExecuteCFDataTransform(encryptor, pbData, cbData, pEncryptedOut, pErrorOut);
+
+cleanup:
+
+    if (encryptor != nullptr)
+    {
+        CFRelease(encryptor);
+    }
 
     return ret;
 }
