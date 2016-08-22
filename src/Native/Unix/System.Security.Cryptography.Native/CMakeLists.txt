@@ -3,9 +3,6 @@ project(System.Security.Cryptography.Native)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-# Issue 2546 - Many deprecation warnings in System.Security.Cryptography.Native on Mac OS X
-add_compile_options(-Wno-deprecated-declarations)
-
 # These are happening inside of OpenSSL-defined macros out of our control
 add_compile_options(-Wno-cast-align)
 
@@ -15,7 +12,39 @@ if(CMAKE_STATIC_LIB_LINK)
    set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
 endif(CMAKE_STATIC_LIB_LINK)
 
-find_package(OpenSSL REQUIRED)
+if(APPLE)
+  if(NOT OPENSSL_ROOT_DIR)
+    set(OPENSSL_ROOT_DIR "/usr/local/opt/openssl")
+  endif()
+
+  # The OpenSSL headers aren't up-to-snuff with how we compile, so turn off warnings that
+  # they violate. These options must get turned off by find_package; since we used to not
+  # get them.
+  add_compile_options(-Wno-documentation)
+  add_compile_options(-Wno-reserved-id-macro)
+  add_compile_options(-Wno-padded)
+  add_compile_options(-Wno-old-style-cast)
+
+  set(OPENSSL_CRYPTO_LIBRARY "${OPENSSL_ROOT_DIR}/lib/libcrypto.1.0.0.dylib")
+  set(OPENSSL_SSL_LIBRARY "${OPENSSL_ROOT_DIR}/lib/libssl.1.0.0.dylib")
+
+  if (NOT EXISTS "${OPENSSL_CRYPTO_LIBRARY}" OR NOT EXISTS "${OPENSSL_SSL_LIBRARY}")
+    message(SEND_ERROR "Cannot find OpenSSL libraries with 1.0.0 ABI, try setting OPENSSL_ROOT_DIR.")
+  endif()
+
+  set(OPENSSL_INCLUDE_DIR "${OPENSSL_ROOT_DIR}/include")
+
+  if (NOT EXISTS "${OPENSSL_INCLUDE_DIR}/openssl/asn1.h")
+    message(SEND_ERROR "Cannot find OpenSSL header files, try setting OPENSSL_ROOT_DIR.")
+  endif()
+
+  set(OPENSSL_LIBRARIES ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
+  set(OPENSSL_INCLUDE_DIRS ${OPENSSL_INCLUDE_DIR})
+else()
+  find_package(OpenSSL REQUIRED)
+endif()
+
+include_directories(${OPENSSL_INCLUDE_DIRS})
 
 set(NATIVECRYPTO_SOURCES
     openssl.c
