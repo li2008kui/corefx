@@ -43,6 +43,12 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        public static void DecryptSavedAnswer_OaepSHA384()
+        {
+            Assert.True(false, "Has test been written yet?");
+        }
+
+        [Fact]
         public static void DecryptSavedAnswerUnusualExponent()
         {
             byte[] cipherBytes =

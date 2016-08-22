@@ -94,6 +94,22 @@ namespace System.Security.Cryptography
             return ReadContentAsBytes();
         }
 
+        internal byte[] ReadBitString()
+        {
+            EatTag(DerTag.BitString);
+
+            int contentLength = EatLength();
+            // skip the "unused bits" byte
+            contentLength--;
+            _position++;
+
+            byte[] octets = new byte[contentLength];
+            Buffer.BlockCopy(_data, _position, octets, 0, contentLength);
+
+            _position += contentLength;
+            return octets;
+        }
+
         internal byte[] ReadOctetString()
         {
             EatTag(DerTag.OctetString);
