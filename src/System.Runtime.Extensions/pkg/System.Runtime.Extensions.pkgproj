@@ -16,6 +16,7 @@
     </ProjectReference>
     <ProjectReference Include="win\System.Runtime.Extensions.pkgproj" />
     <ProjectReference Include="unix\System.Runtime.Extensions.pkgproj" />
+    <ProjectReference Include="osx\System.Runtime.Extensions.pkgproj" />
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
     <InboxOnTargetFramework Include="net45">

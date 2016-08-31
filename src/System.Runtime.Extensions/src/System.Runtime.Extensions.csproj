@@ -141,14 +141,28 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.PathConf.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.PathConf.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\IO\PathInternal.Unix.cs">
+      <Link>Common\System\IO\PathInternal.Unix.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <!-- UNIX (non-OSX): CoreCLR -->
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' AND '$(TargetsOSX)' != 'true' ">
+    <Compile Include="System\IO\Path.Unix.GetCryptoRandomBytes.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.RAND.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.RAND.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\IO\PathInternal.Unix.cs">
-      <Link>Common\System\IO\PathInternal.Unix.cs</Link>
+  </ItemGroup>
+  <!-- OSX: CoreCLR -->
+  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
+    <Compile Include="System\IO\Path.OSX.GetCryptoRandomBytes.cs" />
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.Libraries.cs">
+      <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Random.cs">
+      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Random.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- WINDOWS: .NET Native -->

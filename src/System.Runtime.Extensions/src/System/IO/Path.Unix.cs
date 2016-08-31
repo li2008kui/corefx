@@ -203,16 +203,5 @@ namespace System.IO
             if (path == null) return null;
             return IsPathRooted(path) ? DirectorySeparatorCharAsString : String.Empty;
         }
-
-        private static unsafe void GetCryptoRandomBytes(byte* bytes, int byteCount)
-        {
-            Debug.Assert(bytes != null);
-            Debug.Assert(byteCount >= 0);
-
-            if (!Interop.Crypto.GetRandomBytes(bytes, byteCount))
-            {
-                throw new InvalidOperationException(SR.InvalidOperation_Cryptography);
-            }
-        }
     }
 }

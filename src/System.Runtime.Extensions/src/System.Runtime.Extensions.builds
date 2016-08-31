@@ -6,6 +6,9 @@
       <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="System.Runtime.Extensions.csproj">
+      <OSGroup>OSX</OSGroup>
+    </Project>
+    <Project Include="System.Runtime.Extensions.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="System.Runtime.Extensions.csproj">
@@ -30,6 +33,10 @@
     </Project>
     <Project Include="System.Runtime.Extensions.csproj">
       <OSGroup>Unix</OSGroup>
+      <TargetGroup>netstandard15aot</TargetGroup>
+    </Project>
+    <Project Include="System.Runtime.Extensions.csproj">
+      <OSGroup>OSX</OSGroup>
       <TargetGroup>netstandard15aot</TargetGroup>
     </Project>
   </ItemGroup>

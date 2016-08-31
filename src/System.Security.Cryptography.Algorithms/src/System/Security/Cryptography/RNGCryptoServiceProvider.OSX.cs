@@ -11,7 +11,26 @@ namespace System.Security.Cryptography
             ValidateGetBytesArgs(data);
             if (data.Length > 0)
             {
-                Interop.AppleCrypto.GetRandomBytes(data, data.Length);
+                unsafe
+                {
+                    fixed (byte* pBuf = data)
+                    {
+                        int errorCode;
+                        int ret = Interop.AppleCrypto.GetRandomBytes(pBuf, data.Length, out errorCode);
+
+                        if (ret == 0)
+                        {
+                            throw Interop.AppleCrypto.CreateExceptionForCCError(
+                                errorCode,
+                                Interop.AppleCrypto.CCRNGStatus);
+                        }
+
+                        if (ret != 1)
+                        {
+                            throw new CryptographicException();
+                        }
+                    }
+                }
             }
         }
     }
