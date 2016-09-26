@@ -10,7 +10,7 @@ namespace System.IO.Tests
 {
     public class Directory_Delete_Tests : FileSystemWatcherTest
     {
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/216
         public void FileSystemWatcher_Directory_Delete()
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
@@ -27,7 +27,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/216
         public void FileSystemWatcher_Directory_Delete_InNestedDirectory()
         {
             using (var dir = new TempDirectory(GetTestFilePath()))
@@ -47,8 +47,8 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
-        [OuterLoop]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/216
+        [OuterLoop("This test has a longer than average timeout and may fail intermittently")]
         public void FileSystemWatcher_Directory_Delete_DeepDirectoryStructure()
         {
             using (var dir = new TempDirectory(GetTestFilePath()))
@@ -64,11 +64,11 @@ namespace System.IO.Tests
                 Action cleanup = () => Directory.CreateDirectory(dirPath);
                 cleanup();
 
-                ExpectEvent(watcher, WatcherChangeTypes.Deleted, action, cleanup, dirPath, timeout: 10000);
+                ExpectEvent(watcher, WatcherChangeTypes.Deleted, action, cleanup, dirPath, LongWaitTimeout);
             }
         }
 
-        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        [ConditionalFact(nameof(CanCreateSymbolicLinks), nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/216
         public void FileSystemWatcher_Directory_Delete_SymLink()
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
