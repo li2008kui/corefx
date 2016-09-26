@@ -942,7 +942,7 @@
       "BaselineVersion": "4.0.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
-        "4.0.1.0": "4.3.0"
+        "4.1.0.0": "4.3.0"
       }
     },
     "System.Dynamic.Runtime": {
@@ -1238,7 +1238,7 @@
       "BaselineVersion": "4.0.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
-        "4.0.1.0": "4.3.0"
+        "4.1.0.0": "4.3.0"
       }
     },
     "System.Net.NetworkInformation": {
@@ -1250,7 +1250,7 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.1.0.0": "4.1.0",
-        "4.1.1.0": "4.3.0"
+        "4.2.0.0": "4.3.0"
       }
     },
     "System.Net.Ping": {
@@ -1290,7 +1290,8 @@
         "3.9.0.0": "3.9.0",
         "4.0.0.0": "4.0.0",
         "4.0.10.0": "4.0.10",
-        "4.0.11.0": "4.0.11"
+        "4.0.11.0": "4.0.11",
+        "4.1.0.0": "4.3.0"
       }
     },
     "System.Net.Security": {
@@ -1330,6 +1331,11 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1"
+      }
+    },
+    "System.Net.WebProxy": {
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.3.0"
       }
     },
     "System.Net.WebSockets": {
@@ -1594,7 +1600,7 @@
       "BaselineVersion": "4.0.0",
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
-        "4.0.1.0": "4.3.0"
+        "4.1.0.0": "4.3.0"
       }
     },
     "System.Runtime.Extensions": {

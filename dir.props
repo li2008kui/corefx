@@ -48,6 +48,9 @@
     <ToolsDir Condition="'$(UseToolRuntimeForToolsDir)'=='true'">$(ToolRuntimePath)</ToolsDir>
     <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir>
     <ToolRuntimePath Condition="'$(ToolRuntimePath)'==''">$(ToolsDir)</ToolRuntimePath>
+
+    <!-- needs to be defined all the time to avoid indexing every file from the root -->
+    <GeneratedProjectJsonDir>$(ObjDir)generated</GeneratedProjectJsonDir>
   </PropertyGroup>
 
   <Import Project="$(ToolRuntimePath)BuildVersion.targets" Condition="Exists('$(ToolRuntimePath)BuildVersion.targets')" />
@@ -93,7 +96,6 @@
 
   <!-- This is the directory where we dynamically generate project.json's for our test build package dependencies -->
   <PropertyGroup Condition="'$(BuildTestsAgainstPackages)' == 'true'">
-    <GeneratedProjectJsonDir>$(ObjDir)generated</GeneratedProjectJsonDir>
     <BuildTestsAgainstPackagesIdentityRegex>$(CoreFxVersionsIdentityRegex)</BuildTestsAgainstPackagesIdentityRegex>
     <SkipVerifyPackageVersions>true</SkipVerifyPackageVersions>
   </PropertyGroup>
@@ -455,6 +457,28 @@
         <PackageTargetFramework>uap10.1</PackageTargetFramework>
         <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
       </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetGroup)'=='portable-net45+win8+sl5'">
+      <PropertyGroup>
+        <PackageTargetFramework>portable-net45+win8+sl5</PackageTargetFramework>
+        <NuGetTargetMoniker>.NETPortable,Version=v0.0,Profile=Profile47</NuGetTargetMoniker>
+      </PropertyGroup>
+      <ItemGroup>
+        <Compile Include="$(CommonPath)\System\Reflection\AssemblyMetadataAttribute.cs">
+          <Link>System\Reflection\AssemblyMetadataAttribute.cs</Link>
+        </Compile>
+      </ItemGroup>
+    </When>
+    <When Condition="'$(TargetGroup)'=='portable-net40+sl4+win8+wp8'">
+      <PropertyGroup>
+        <PackageTargetFramework>portable-net40+sl4+win8+wp8</PackageTargetFramework>
+        <NuGetTargetMoniker>.NETPortable,Version=v0.0,Profile=Profile36</NuGetTargetMoniker>
+      </PropertyGroup>
+      <ItemGroup>
+        <Compile Include="$(CommonPath)\System\Reflection\AssemblyMetadataAttribute.cs">
+          <Link>System\Reflection\AssemblyMetadataAttribute.cs</Link>
+        </Compile>
+      </ItemGroup>
     </When>
     <Otherwise>
       <PropertyGroup>

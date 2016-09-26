@@ -545,6 +545,7 @@
         "Name": "System.Drawing.Primitives",
         "Description": "Provides basic drawing primitive structures, that exposes the corresponding System.Drawing.dll types in .NET Core.",
         "CommonTypes": [
+            "System.Drawing.Color",
             "System.Drawing.Point",
             "System.Drawing.PointF",
             "System.Drawing.Size",
@@ -959,6 +960,13 @@
             "System.Net.HttpRequestHeader",
             "System.Net.HttpResponseHeader",
             "System.Net.WebHeaderCollection"
+        ]
+    },
+    {
+        "Name": "System.Net.WebProxy",
+        "Description": "Provides the System.Net.WebProxy class, which supports sending data to and receiving data from a resource identified by a URI.",
+        "CommonTypes": [
+            "System.Net.WebProxy"
         ]
     },
     {
