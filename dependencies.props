@@ -1,21 +1,21 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!-- Source of truth for dependency tooling: the commit hash of the dotnet/versions master branch as of the last auto-upgrade. -->
   <PropertyGroup>
-    <CoreFxCurrentRef>d3eb34b2b768408cab859a9bf2bef9233e5e0176</CoreFxCurrentRef>
-    <CoreClrCurrentRef>c46101d17dfca07c64d81de3d7fe3fba3c5b1005</CoreClrCurrentRef>
-    <ExternalCurrentRef>e39a63f68adeb45d0ef1a7a157cbf13c89ce3d2d</ExternalCurrentRef>
+    <CoreFxCurrentRef>b8f44743e8afcd64687aa13b222efb6b88bea2a5</CoreFxCurrentRef>
+    <CoreClrCurrentRef>b8f44743e8afcd64687aa13b222efb6b88bea2a5</CoreClrCurrentRef>
+    <ExternalCurrentRef>501d3c5dbab8df0b001cec26dd1c0a358ea84c56</ExternalCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>beta-24422-01</CoreFxExpectedPrerelease>
-    <CoreClrExpectedPrerelease>beta-24419-04</CoreClrExpectedPrerelease>
-    <ExternalExpectedPrerelease>beta-24418-00</ExternalExpectedPrerelease>
+    <CoreFxExpectedPrerelease>beta-24509-01</CoreFxExpectedPrerelease>
+    <CoreClrExpectedPrerelease>beta-24509-03</CoreClrExpectedPrerelease>
+    <ExternalExpectedPrerelease>beta-24507-00</ExternalExpectedPrerelease>
   </PropertyGroup>
 
   <!-- Full package version strings that are used in other parts of the build. -->
   <PropertyGroup>
-    <AppXRunnerVersion>1.0.3-prerelease-00614-01</AppXRunnerVersion>
+    <AppXRunnerVersion>1.0.3-prerelease-00808-02</AppXRunnerVersion>
   </PropertyGroup>
 
   <!-- Package dependency verification/auto-upgrade configuration. -->
@@ -81,7 +81,15 @@
     </StaticDependency>
 
     <StaticDependency Include="Microsoft.xunit.netcore.extensions;Microsoft.DotNet.BuildTools.TestSuite">
-      <Version>1.0.0-prerelease-00704-03</Version>
+      <Version>1.0.0-prerelease-00807-03</Version>
+    </StaticDependency>
+
+    <!--
+      The NETNative targeting pack is in the projectn-tfs build-info, but auto-upgrade isn't wanted.
+      Verify it at a static version rather than referencing the build-info.
+    -->
+    <StaticDependency Include="Microsoft.TargetingPack.Private.NETNative">
+      <Version>1.0.1-beta-24430-00</Version>
     </StaticDependency>
 
     <DependencyBuildInfo Include="@(StaticDependency)">

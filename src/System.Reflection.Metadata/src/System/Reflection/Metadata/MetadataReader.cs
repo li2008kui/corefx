@@ -16,7 +16,6 @@ namespace System.Reflection.Metadata
     /// </summary>
     public sealed partial class MetadataReader
     {
-        internal readonly MetadataStringDecoder Utf8Decoder;
         internal readonly NamespaceCache NamespaceCache;
         internal readonly MemoryBlock Block;
 
@@ -96,7 +95,7 @@ namespace System.Reflection.Metadata
             this.Block = new MemoryBlock(metadata, length);
 
             _options = options;
-            this.Utf8Decoder = utf8Decoder;
+            this.UTF8Decoder = utf8Decoder;
 
             var headerReader = new BlobReader(this.Block);
             this.ReadMetadataHeader(ref headerReader, out _versionString);
@@ -156,10 +155,10 @@ namespace System.Reflection.Metadata
         private readonly MetadataStreamKind _metadataStreamKind;
         private readonly DebugMetadataHeader _debugMetadataHeader;
 
-        internal StringStreamReader StringStream;
-        internal BlobStreamReader BlobStream;
-        internal GuidStreamReader GuidStream;
-        internal UserStringStreamReader UserStringStream;
+        internal StringHeap StringHeap;
+        internal BlobHeap BlobHeap;
+        internal GuidHeap GuidHeap;
+        internal UserStringHeap UserStringHeap;
 
         /// <summary>
         /// True if the metadata stream has minimal delta format. Used for EnC.
@@ -206,7 +205,7 @@ namespace System.Reflection.Metadata
             }
 
             int numberOfBytesRead;
-            versionString = memReader.GetMemoryBlockAt(0, versionStringSize).PeekUtf8NullTerminated(0, null, Utf8Decoder, out numberOfBytesRead, '\0');
+            versionString = memReader.GetMemoryBlockAt(0, versionStringSize).PeekUtf8NullTerminated(0, null, UTF8Decoder, out numberOfBytesRead, '\0');
             memReader.SkipBytes(versionStringSize);
         }
 
@@ -284,7 +283,7 @@ namespace System.Reflection.Metadata
                             throw new BadImageFormatException(SR.NotEnoughSpaceForStringStream);
                         }
 
-                        this.StringStream = new StringStreamReader(metadataRoot.GetMemoryBlockAt((int)streamHeader.Offset, streamHeader.Size), _metadataKind);
+                        this.StringHeap = new StringHeap(metadataRoot.GetMemoryBlockAt((int)streamHeader.Offset, streamHeader.Size), _metadataKind);
                         break;
 
                     case COR20Constants.BlobStreamName:
@@ -293,7 +292,7 @@ namespace System.Reflection.Metadata
                             throw new BadImageFormatException(SR.NotEnoughSpaceForBlobStream);
                         }
 
-                        this.BlobStream = new BlobStreamReader(metadataRoot.GetMemoryBlockAt((int)streamHeader.Offset, streamHeader.Size), _metadataKind);
+                        this.BlobHeap = new BlobHeap(metadataRoot.GetMemoryBlockAt((int)streamHeader.Offset, streamHeader.Size), _metadataKind);
                         break;
 
                     case COR20Constants.GUIDStreamName:
@@ -302,7 +301,7 @@ namespace System.Reflection.Metadata
                             throw new BadImageFormatException(SR.NotEnoughSpaceForGUIDStream);
                         }
 
-                        this.GuidStream = new GuidStreamReader(metadataRoot.GetMemoryBlockAt((int)streamHeader.Offset, streamHeader.Size));
+                        this.GuidHeap = new GuidHeap(metadataRoot.GetMemoryBlockAt((int)streamHeader.Offset, streamHeader.Size));
                         break;
 
                     case COR20Constants.UserStringStreamName:
@@ -311,7 +310,7 @@ namespace System.Reflection.Metadata
                             throw new BadImageFormatException(SR.NotEnoughSpaceForBlobStream);
                         }
 
-                        this.UserStringStream = new UserStringStreamReader(metadataRoot.GetMemoryBlockAt((int)streamHeader.Offset, streamHeader.Size));
+                        this.UserStringHeap = new UserStringHeap(metadataRoot.GetMemoryBlockAt((int)streamHeader.Offset, streamHeader.Size));
                         break;
 
                     case COR20Constants.CompressedMetadataTableStreamName:
@@ -1020,6 +1019,11 @@ namespace System.Reflection.Metadata
         public MetadataStringComparer StringComparer => new MetadataStringComparer(this);
 
         /// <summary>
+        /// The decoder used by the reader to produce <see cref="string"/> instances from UTF8 encoded byte sequences.
+        /// </summary>
+        public MetadataStringDecoder UTF8Decoder { get; }
+
+        /// <summary>
         /// Returns true if the metadata represent an assembly.
         /// </summary>
         public bool IsAssembly => AssemblyTable.NumberOfRows == 1;
@@ -1057,14 +1061,14 @@ namespace System.Reflection.Metadata
 
         public string GetString(StringHandle handle)
         {
-            return StringStream.GetString(handle, Utf8Decoder);
+            return StringHeap.GetString(handle, UTF8Decoder);
         }
 
         public string GetString(NamespaceDefinitionHandle handle)
         {
             if (handle.HasFullName)
             {
-                return StringStream.GetString(handle.GetFullName(), Utf8Decoder);
+                return StringHeap.GetString(handle.GetFullName(), UTF8Decoder);
             }
 
             return NamespaceCache.GetFullName(handle);
@@ -1072,7 +1076,7 @@ namespace System.Reflection.Metadata
 
         public byte[] GetBlobBytes(BlobHandle handle)
         {
-            return BlobStream.GetBytes(handle);
+            return BlobHeap.GetBytes(handle);
         }
 
         public ImmutableArray<byte> GetBlobContent(BlobHandle handle)
@@ -1084,17 +1088,22 @@ namespace System.Reflection.Metadata
 
         public BlobReader GetBlobReader(BlobHandle handle)
         {
-            return BlobStream.GetBlobReader(handle);
+            return BlobHeap.GetBlobReader(handle);
+        }
+
+        public BlobReader GetBlobReader(StringHandle handle)
+        {
+            return StringHeap.GetBlobReader(handle);
         }
 
         public string GetUserString(UserStringHandle handle)
         {
-            return UserStringStream.GetString(handle);
+            return UserStringHeap.GetString(handle);
         }
 
         public Guid GetGuid(GuidHandle handle)
         {
-            return GuidStream.GetGuid(handle);
+            return GuidHeap.GetGuid(handle);
         }
 
         public ModuleDefinition GetModuleDefinition()
@@ -1346,7 +1355,7 @@ namespace System.Reflection.Metadata
 
         public string GetString(DocumentNameBlobHandle handle)
         {
-            return BlobStream.GetDocumentName(handle);
+            return BlobHeap.GetDocumentName(handle);
         }
 
         public Document GetDocument(DocumentHandle handle)

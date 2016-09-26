@@ -445,7 +445,7 @@ def osShortName = ['Windows 10': 'win10',
             // Set up triggers
             if (isPR) {
                 if (osName == 'LinuxARMEmulator') {
-                    Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop Linux ARM Emulator ${configurationGroup} Cross Build", "(?i).*test\\W+Innerloop\\W+Linux\\W+ARM\\W+Emulator\\W+${configurationGroup}\\W+Cross\\W+Build.*")
+                    Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop Linux ARM Emulator ${configurationGroup} Cross Build")
                 }
             }
             else {
@@ -457,3 +457,8 @@ def osShortName = ['Windows 10': 'win10',
 }
 
 JobReport.Report.generateJobReport(out)
+
+// Make the call to generate the help job
+Utilities.createHelperJob(this, project, branch,
+    "Welcome to the ${project} Repository",  // This is prepended to the help message
+    "Have a nice day!")  // This is appended to the help message.  You might put known issues here.
