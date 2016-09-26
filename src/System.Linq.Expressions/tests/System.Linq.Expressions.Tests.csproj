@@ -60,7 +60,6 @@
     <Compile Include="BinaryOperators\Bitwise\BinaryNullableOrTests.cs" />
     <Compile Include="BinaryOperators\Bitwise\BinaryOrTests.cs" />
     <Compile Include="BinaryOperators\Coalesce\BinaryCoalesceTests.cs" />
-    <Compile Include="BinaryOperators\Coalesce\BinaryNullableCoalesceTests.cs" />
     <Compile Include="BinaryOperators\Comparison\BinaryEqualTests.cs" />
     <Compile Include="BinaryOperators\Comparison\BinaryGreaterThanOrEqualTests.cs" />
     <Compile Include="BinaryOperators\Comparison\BinaryGreaterThanTests.cs" />
@@ -85,6 +84,7 @@
     <Compile Include="Block\ParameterBlockTests.cs" />
     <Compile Include="Block\SharedBlockTests.cs" />
     <Compile Include="Call\CallFactoryTests.cs" />
+    <Compile Include="Call\CallTests.cs" />
     <Compile Include="Cast\AsNullable.cs" />
     <Compile Include="Cast\AsTests.cs" />
     <Compile Include="Cast\CastNullableTests.cs" />
