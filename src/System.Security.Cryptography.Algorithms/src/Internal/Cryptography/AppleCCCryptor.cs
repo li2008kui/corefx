@@ -15,7 +15,11 @@ namespace Internal.Cryptography
 
         public AppleCCCryptor(
             Interop.AppleCrypto.PAL_SymmetricAlgorithm algorithm,
-            CipherMode cipherMode, int blockSizeInBytes, byte[] key, byte[] iv, bool encrypting)
+            CipherMode cipherMode,
+            int blockSizeInBytes,
+            byte[] key,
+            byte[] iv,
+            bool encrypting)
             : base(cipherMode.GetCipherIv(iv), blockSizeInBytes)
         {
             _encrypting = encrypting;
@@ -36,25 +40,25 @@ namespace Internal.Cryptography
 
         public override int Transform(byte[] input, int inputOffset, int count, byte[] output, int outputOffset)
         {
-            Debug.Assert(input != null);
-            Debug.Assert(inputOffset >= 0);
-            Debug.Assert(count > 0);
-            Debug.Assert((count % BlockSizeInBytes) == 0);
-            Debug.Assert(input.Length - inputOffset >= count);
-            Debug.Assert(output != null);
-            Debug.Assert(outputOffset >= 0);
-            Debug.Assert(output.Length - outputOffset >= count);
+            Debug.Assert(input != null, "Expected valid input, got null");
+            Debug.Assert(inputOffset >= 0, $"Expected non-negative inputOffset, got {inputOffset}");
+            Debug.Assert(count > 0, $"Expected positive count, got {count}");
+            Debug.Assert((count % BlockSizeInBytes) == 0, $"Expected count aligned to block size {BlockSizeInBytes}, got {count}");
+            Debug.Assert(input.Length - inputOffset >= count, $"Expected valid input length/offset/count triplet, got {input.Length}/{inputOffset}/{count}");
+            Debug.Assert(output != null, "Expected valid output, got null");
+            Debug.Assert(outputOffset >= 0, $"Expected non-negative outputOffset, got {outputOffset}");
+            Debug.Assert(output.Length - outputOffset >= count, $"Expected valid output length/offset/count triplet, got {output.Length}/{outputOffset}/{count}");
 
             return CipherUpdate(input, inputOffset, count, output, outputOffset);
         }
 
         public override byte[] TransformFinal(byte[] input, int inputOffset, int count)
         {
-            Debug.Assert(input != null);
-            Debug.Assert(inputOffset >= 0);
-            Debug.Assert(count >= 0);
-            Debug.Assert((count % BlockSizeInBytes) == 0);
-            Debug.Assert(input.Length - inputOffset >= count);
+            Debug.Assert(input != null, "Expected valid input, got null");
+            Debug.Assert(inputOffset >= 0, $"Expected non-negative inputOffset, got {inputOffset}");
+            Debug.Assert(count > 0, $"Expected positive count, got {count}");
+            Debug.Assert((count % BlockSizeInBytes) == 0, $"Expected count aligned to block size {BlockSizeInBytes}, got {count}");
+            Debug.Assert(input.Length - inputOffset >= count, $"Expected valid input length/offset/count triplet, got {input.Length}/{inputOffset}/{count}");
 
             byte[] output = ProcessFinalBlock(input, inputOffset, count);
             Reset();
@@ -88,12 +92,7 @@ namespace Internal.Cryptography
                 outputBytes += bytesWritten;
             }
 
-            Exception exception = ProcessInteropError(ret, errorCode);
-
-            if (exception != null)
-            {
-                throw exception;
-            }
+            ProcessInteropError(ret, errorCode);
 
             if (outputBytes == output.Length)
             {
@@ -113,7 +112,7 @@ namespace Internal.Cryptography
         private unsafe int CipherUpdate(byte[] input, int inputOffset, int count, byte[] output, int outputOffset)
         {
             int ret;
-            int errorCode;
+            int ccStatus;
             int bytesWritten;
 
             if (count == 0)
@@ -134,23 +133,21 @@ namespace Internal.Cryptography
                     outputCurrent,
                     output.Length - outputOffset,
                     out bytesWritten,
-                    out errorCode);
+                    out ccStatus);
             }
 
-            Exception exception = ProcessInteropError(ret, errorCode);
-
-            if (exception != null)
-            {
-                throw exception;
-            }
+            ProcessInteropError(ret, ccStatus);
 
             return bytesWritten;
         }
 
-        private unsafe void OpenCryptor(Interop.AppleCrypto.PAL_SymmetricAlgorithm algorithm, CipherMode cipherMode, byte[] key)
+        private unsafe void OpenCryptor(
+            Interop.AppleCrypto.PAL_SymmetricAlgorithm algorithm,
+            CipherMode cipherMode,
+            byte[] key)
         {
             int ret;
-            int errorCode;
+            int ccStatus;
 
             byte[] iv = IV;
 
@@ -169,15 +166,10 @@ namespace Internal.Cryptography
                     pbIv,
                     Interop.AppleCrypto.PAL_SymmetricOptions.None,
                     out _cryptor,
-                    out errorCode);
+                    out ccStatus);
             }
 
-            Exception exception = ProcessInteropError(ret, errorCode);
-
-            if (exception != null)
-            {
-                throw exception;
-            }
+            ProcessInteropError(ret, ccStatus);
         }
 
         private Interop.AppleCrypto.PAL_ChainingMode GetPalChainMode(CipherMode cipherMode)
@@ -188,57 +180,46 @@ namespace Internal.Cryptography
                     return Interop.AppleCrypto.PAL_ChainingMode.CBC;
                 case CipherMode.ECB:
                     return Interop.AppleCrypto.PAL_ChainingMode.ECB;
-                case CipherMode.CTS:
-                    throw new PlatformNotSupportedException("CTS mode is not supported");
                 default:
-                    Debug.Fail("Unknown cipher mode");
-                    throw new CryptographicException();
+                    throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CipherModeNotSupported, cipherMode));
             }
         }
 
         private unsafe void Reset()
         {
             int ret;
-            int errorCode;
+            int ccStatus;
 
             byte[] iv = IV;
 
             fixed (byte* pbIv = iv)
             {
-                ret = Interop.AppleCrypto.CryptorReset(
-                    _cryptor,
-                    pbIv,
-                    out errorCode);
+                ret = Interop.AppleCrypto.CryptorReset(_cryptor, pbIv, out ccStatus);
             }
 
-            Exception exception = ProcessInteropError(ret, errorCode);
-
-            if (exception != null)
-            {
-                throw exception;
-            }
+            ProcessInteropError(ret, ccStatus);
         }
 
-        private static Exception ProcessInteropError(int functionReturnCode, int emittedErrorCode)
+        private static void ProcessInteropError(int functionReturnCode, int ccStatus)
         {
             // Success
             if (functionReturnCode == 1)
             {
-                return null;
+                return;
             }
 
             // Platform error
             if (functionReturnCode == 0)
             {
-                Debug.Assert(emittedErrorCode != 0, "Interop function returned 0 but a system code of success");
-                return Interop.AppleCrypto.CreateExceptionForCCError(
-                    emittedErrorCode,
+                Debug.Assert(ccStatus != 0, "Interop function returned 0 but a system code of success");
+                throw Interop.AppleCrypto.CreateExceptionForCCError(
+                    ccStatus,
                     Interop.AppleCrypto.CCCryptorStatus);
             }
 
             // Usually this will be -1, a general indication of bad inputs.
             Debug.Fail($"Interop boundary returned unexpected value {functionReturnCode}");
-            return new CryptographicException();
+            throw new CryptographicException();
         }
     }
 }

@@ -4,6 +4,8 @@
 
 #include "pal_symmetric.h"
 
+#include <assert.h>
+
 static_assert(PAL_OperationEncrypt == kCCEncrypt, "");
 static_assert(PAL_OperationDecrypt == kCCDecrypt, "");
 
@@ -35,54 +37,24 @@ extern "C" int AppleCryptoNative_CryptorCreate(PAL_SymmetricOperation operation,
                                                const uint8_t* pbIv,
                                                PAL_SymmetricOptions options,
                                                CCCryptorRef* ppCryptorOut,
-                                               int32_t* pkCCStatus)
+                                               int32_t* pccStatus)
 {
+    if (pccStatus == nullptr)
+        return -1;
+
+    *pccStatus = 0;
+
     if (pbKey == nullptr || cbKey < 1 || ppCryptorOut == nullptr)
         return -1;
     if (pbIv == nullptr && chainingMode != PAL_ChainingModeECB)
         return -1;
 
-// Ensure we aren't passing through things we don't understand
-#if DEBUG
-    switch (operation)
-    {
-        case PAL_OperationEncrypt:
-        case PAL_OperationDecrypt:
-            break;
-        default:
-            return -1;
-    }
-
-    switch (algorithm)
-    {
-        case PAL_AlgorithmAES:
-        case PAL_Algorithm3DES:
-            break;
-        default:
-            return -1;
-    }
-
-    switch (chainingMode)
-    {
-        case PAL_ChainingModeECB:
-        case PAL_ChainingModeCBC:
-            break;
-        default:
-            return -1;
-    }
-
-    switch (paddingMode)
-    {
-        case PAL_PaddingModeNone:
-        case PAL_PaddingModePkcs7:
-            break;
-        default:
-            return -1;
-    }
-
-    if (options != 0)
-        return -1;
-#endif
+    // Ensure we aren't passing through things we don't understand
+    assert(operation == PAL_OperationEncrypt || operation == PAL_OperationDecrypt);
+    assert(algorithm == PAL_AlgorithmAES || operation == PAL_Algorithm3DES);
+    assert(chainingMode == PAL_ChainingModeECB || chainingMode == PAL_ChainingModeCBC);
+    assert(paddingMode == PAL_PaddingModeNone || paddingMode == PAL_PaddingModePkcs7);
+    assert(options == 0);
 
     CCStatus status = CCCryptorCreateWithMode(operation,
                                               chainingMode,
@@ -97,7 +69,7 @@ extern "C" int AppleCryptoNative_CryptorCreate(PAL_SymmetricOperation operation,
                                               options,
                                               ppCryptorOut);
 
-    *pkCCStatus = status;
+    *pccStatus = status;
     return status == kCCSuccess;
 }
 
@@ -107,10 +79,14 @@ extern "C" int AppleCryptoNative_CryptorUpdate(CCCryptorRef cryptor,
                                                uint32_t* pbOutput,
                                                int32_t cbOutput,
                                                int32_t* pcbWritten,
-                                               int32_t* pkCCStatus)
+                                               int32_t* pccStatus)
 {
-    if (pbData == nullptr || cbData < 0 || pbOutput == nullptr || cbOutput < cbData || pcbWritten == nullptr ||
-        pkCCStatus == nullptr)
+    if (pccStatus == nullptr)
+        return -1;
+
+    *pccStatus = 0;
+
+    if (pbData == nullptr || cbData < 0 || pbOutput == nullptr || cbOutput < cbData || pcbWritten == nullptr)
         return -1;
 
     CCStatus status = CCCryptorUpdate(cryptor,
@@ -120,29 +96,39 @@ extern "C" int AppleCryptoNative_CryptorUpdate(CCCryptorRef cryptor,
                                       static_cast<size_t>(cbOutput),
                                       reinterpret_cast<size_t*>(pcbWritten));
 
-    *pkCCStatus = status;
+    *pccStatus = status;
     return status == kCCSuccess;
 }
 
 extern "C" int AppleCryptoNative_CryptorFinal(
-    CCCryptorRef cryptor, uint8_t* pbOutput, int32_t cbOutput, int32_t* pcbWritten, int32_t* pkCCStatus)
+    CCCryptorRef cryptor, uint8_t* pbOutput, int32_t cbOutput, int32_t* pcbWritten, int32_t* pccStatus)
 {
-    if (pbOutput == nullptr || cbOutput < 0 || pcbWritten == nullptr || pkCCStatus == nullptr)
+    if (pccStatus == nullptr)
+        return -1;
+
+    *pccStatus = 0;
+
+    if (pbOutput == nullptr || cbOutput < 0 || pcbWritten == nullptr)
         return -1;
 
     CCStatus status =
         CCCryptorFinal(cryptor, pbOutput, static_cast<size_t>(cbOutput), reinterpret_cast<size_t*>(pcbWritten));
 
-    *pkCCStatus = status;
+    *pccStatus = status;
     return status == kCCSuccess;
 }
 
-extern "C" int AppleCryptoNative_CryptorReset(CCCryptorRef cryptor, const uint8_t* pbIv, int32_t* pkCCStatus)
+extern "C" int AppleCryptoNative_CryptorReset(CCCryptorRef cryptor, const uint8_t* pbIv, int32_t* pccStatus)
 {
-    if (cryptor == nullptr || pkCCStatus == nullptr)
+    if (pccStatus == nullptr)
+        return -1;
+
+    *pccStatus = 0;
+
+    if (cryptor == nullptr)
         return -1;
 
     CCStatus status = CCCryptorReset(cryptor, pbIv);
-    *pkCCStatus = status;
+    *pccStatus = status;
     return status == kCCSuccess;
 }
