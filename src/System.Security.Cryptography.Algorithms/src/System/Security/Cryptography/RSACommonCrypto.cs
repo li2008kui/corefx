@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography.Apple;
 using Internal.Cryptography;
-using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
 {
@@ -48,11 +47,27 @@ namespace System.Security.Cryptography
                 }
             }
 
+            public override int KeySize
+            {
+                get
+                {
+                    return base.KeySize;
+                }
+                set
+                {
+                    if (KeySize == value)
+                        return;
+
+                    // Set the KeySize before freeing the key so that an invalid value doesn't throw away the key
+                    base.KeySize = value;
+
+                    _keys?.Dispose();
+                    _keys = null;
+                }
+            }
+
             public override RSAParameters ExportParameters(bool includePrivateParameters)
             {
-                SafeCFDataHandle cfData;
-                int osStatus;
-
                 KeyPair keys = GetKeys();
 
                 SafeSecKeyRefHandle keyHandle = includePrivateParameters ? keys.PrivateKey : keys.PublicKey;
@@ -62,35 +77,18 @@ namespace System.Security.Cryptography
                     throw new CryptographicException("No key handle allocated");
                 }
 
-                int ret = Interop.AppleCrypto.RsaExportKey(
-                    keyHandle,
-                    includePrivateParameters ? 1 : 0,
-                    out cfData,
-                    out osStatus);
-
-                if (ret == 0)
-                {
-                    // TODO: Is there a better OSStatus lookup?
-                    throw Interop.AppleCrypto.CreateExceptionForCCError(osStatus, "OSStatus");
-                }
-
-                if (ret != 1)
-                {
-                    Debug.Assert(ret == 0, $"RsaExportKey returned {ret}");
-                    throw new CryptographicException();
-                }
-
+                DerSequenceReader keyReader = Interop.AppleCrypto.SecKeyExport(keyHandle, includePrivateParameters);
                 RSAParameters parameters = new RSAParameters();
-                byte[] exportedData = Interop.CoreFoundation.CFGetData(cfData);
 
                 if (includePrivateParameters)
                 {
-                    exportedData.ConvertPkcs8Blob(ref parameters);
+                    keyReader.ReadPkcs8Blob(ref parameters);
                 }
                 else
                 {
-                    exportedData.ConvertSubjectPublicKeyInfo(ref parameters);
+                    keyReader.ReadSubjectPublicKeyInfo(ref parameters);
                 }
+
                 return parameters;
             }
 
@@ -296,44 +294,44 @@ namespace System.Security.Cryptography
                 Debug.Fail($"RsaImportEphemeralKey returned {ret}");
                 throw new CryptographicException();
             }
+        }
+    }
 
-            private sealed class KeyPair : IDisposable
-            {
-                internal SafeSecKeyRefHandle PublicKey { get; private set; }
-                internal SafeSecKeyRefHandle PrivateKey { get; private set; }
+    internal sealed class KeyPair : IDisposable
+    {
+        internal SafeSecKeyRefHandle PublicKey { get; private set; }
+        internal SafeSecKeyRefHandle PrivateKey { get; private set; }
 
-                private KeyPair(SafeSecKeyRefHandle publicKey, SafeSecKeyRefHandle privateKey)
-                {
-                    PublicKey = publicKey;
-                    PrivateKey = privateKey;
-                }
+        private KeyPair(SafeSecKeyRefHandle publicKey, SafeSecKeyRefHandle privateKey)
+        {
+            PublicKey = publicKey;
+            PrivateKey = privateKey;
+        }
 
-                public void Dispose()
-                {
-                    PrivateKey?.Dispose();
-                    PrivateKey = null;
-                    PublicKey?.Dispose();
-                    PublicKey = null;
-                }
+        public void Dispose()
+        {
+            PrivateKey?.Dispose();
+            PrivateKey = null;
+            PublicKey?.Dispose();
+            PublicKey = null;
+        }
 
-                internal static KeyPair PublicPrivatePair(SafeSecKeyRefHandle publicKey, SafeSecKeyRefHandle privateKey)
-                {
-                    if (publicKey == null || publicKey.IsInvalid)
-                        throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(publicKey));
-                    if (privateKey == null || privateKey.IsInvalid)
-                        throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(privateKey));
+        internal static KeyPair PublicPrivatePair(SafeSecKeyRefHandle publicKey, SafeSecKeyRefHandle privateKey)
+        {
+            if (publicKey == null || publicKey.IsInvalid)
+                throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(publicKey));
+            if (privateKey == null || privateKey.IsInvalid)
+                throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(privateKey));
 
-                    return new KeyPair(publicKey, privateKey);
-                }
+            return new KeyPair(publicKey, privateKey);
+        }
 
-                internal static KeyPair PublicOnly(SafeSecKeyRefHandle publicKey)
-                {
-                    if (publicKey == null || publicKey.IsInvalid)
-                        throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(publicKey));
+        internal static KeyPair PublicOnly(SafeSecKeyRefHandle publicKey)
+        {
+            if (publicKey == null || publicKey.IsInvalid)
+                throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(publicKey));
 
-                    return new KeyPair(publicKey, null);
-                }
-            }
+            return new KeyPair(publicKey, null);
         }
     }
 
@@ -384,129 +382,7 @@ namespace System.Security.Cryptography
                 DerEncoder.SegmentedEncodeUnsignedInteger(parameters.InverseQ));
         }
 
-        internal static void ConvertPkcs8Blob(this byte[] blob, ref RSAParameters parameters)
-        {
-            Debug.Assert(blob != null);
-
-            DerSequenceReader reader = new DerSequenceReader(blob);
-            byte tag = reader.PeekTag();
-
-            // PKCS#8 defines two structures, PrivateKeyInfo, which starts with an integer,
-            // and EncryptedPrivateKey, which starts with an encryption algorithm (DER sequence).
-
-            if (tag == (byte)DerSequenceReader.DerTag.Integer)
-            {
-                ReadPkcs8Blob(reader, ref parameters);
-                return;
-            }
-
-            if (tag == 0x30)
-            {
-                ReadEncryptedPkcs8Blob(reader, ref parameters);
-                return;
-            }
-
-            Debug.Fail($"Data was neither PrivateKey or EncryptedPrivateKey: {tag}");
-            throw new CryptographicException($"Data was neither PrivateKey or EncryptedPrivateKey: {tag:X2}");
-        }
-
-        private static void ReadEncryptedPkcs8Blob(DerSequenceReader reader, ref RSAParameters parameters)
-        {
-            // EncryptedPrivateKeyInfo::= SEQUENCE {
-            //    encryptionAlgorithm EncryptionAlgorithmIdentifier,
-            //    encryptedData        EncryptedData }
-            //
-            // EncryptionAlgorithmIdentifier ::= AlgorithmIdentifier
-            //
-            // EncryptedData ::= OCTET STRING
-            DerSequenceReader algorithmIdentifier = reader.ReadSequence();
-            string algorithmOid = algorithmIdentifier.ReadOidAsString();
-
-            if (algorithmOid != "1.2.840.113549.1.5.13")
-            {
-                throw new CryptographicException();
-            }
-
-            // PBES2-params ::= SEQUENCE {
-            //    keyDerivationFunc AlgorithmIdentifier { { PBES2 - KDFs} },
-            //    encryptionScheme AlgorithmIdentifier { { PBES2 - Encs} }
-            // }
-
-            DerSequenceReader pbes2Params = algorithmIdentifier.ReadSequence();
-            algorithmIdentifier = pbes2Params.ReadSequence();
-
-            string kdfOid = algorithmIdentifier.ReadOidAsString();
-
-            if (kdfOid != "1.2.840.113549.1.5.12")
-            {
-                throw new CryptographicException();
-            }
-
-            // PBKDF2-params ::= SEQUENCE {
-            //   salt CHOICE {
-            //     specified OCTET STRING,
-            //     otherSource AlgorithmIdentifier { { PBKDF2 - SaltSources} }
-            //   },
-            //   iterationCount INTEGER (1..MAX),
-            //   keyLength INTEGER(1..MAX) OPTIONAL,
-            //   prf AlgorithmIdentifier { { PBKDF2 - PRFs} }  DEFAULT algid - hmacWithSHA1
-            // }
-            DerSequenceReader pbkdf2Params = algorithmIdentifier.ReadSequence();
-
-            byte[] salt = pbkdf2Params.ReadOctetString();
-            int iterCount = pbkdf2Params.ReadInteger();
-            int keySize = -1;
-
-            if (pbkdf2Params.HasData && pbkdf2Params.PeekTag() == (byte)DerSequenceReader.DerTag.Integer)
-            {
-                keySize = pbkdf2Params.ReadInteger();
-            }
-
-            if (pbkdf2Params.HasData)
-            {
-                string prfOid = pbkdf2Params.ReadOidAsString();
-
-                if (prfOid != "1.2.840.10040.4.3")
-                {
-                    throw new CryptographicException(prfOid);
-                }
-            }
-
-            DerSequenceReader encryptionScheme = pbes2Params.ReadSequence();
-            string cipherOid = encryptionScheme.ReadOidAsString();
-
-            if (cipherOid != "1.2.840.113549.3.7")
-            {
-                throw new CryptographicException();
-            }
-
-            byte[] decrypted;
-
-            using (TripleDES des3 = TripleDES.Create())
-            {
-                if (keySize == -1)
-                {
-                    foreach (KeySizes keySizes in des3.LegalKeySizes)
-                    {
-                        keySize = Math.Max(keySize, keySizes.MaxSize);
-                    }
-                }
-
-                byte[] iv = encryptionScheme.ReadOctetString();
-
-                using (Rfc2898DeriveBytes pbkdf2 = new Rfc2898DeriveBytes("passphrase", salt, iterCount))
-                using (ICryptoTransform decryptor = des3.CreateDecryptor(pbkdf2.GetBytes(keySize / 8), iv))
-                {
-                    byte[] encrypted = reader.ReadOctetString();
-                    decrypted = decryptor.TransformFinalBlock(encrypted, 0, encrypted.Length);
-                }
-            }
-
-            DerSequenceReader pkcs8Reader = new DerSequenceReader(decrypted);
-            ReadPkcs8Blob(pkcs8Reader, ref parameters);
-        }
-
-        private static void ReadPkcs8Blob(DerSequenceReader reader, ref RSAParameters parameters)
+        internal static void ReadPkcs8Blob(this DerSequenceReader reader, ref RSAParameters parameters)
         {
             // OneAsymmetricKey ::= SEQUENCE {
             //   version                   Version,
@@ -550,13 +426,11 @@ namespace System.Security.Cryptography
             // We don't care about the rest of the blob here, but it's expected to not exist.
         }
 
-        internal static void ConvertSubjectPublicKeyInfo(this byte[] keyBytes, ref RSAParameters parameters)
+        internal static void ReadSubjectPublicKeyInfo(this DerSequenceReader keyInfo, ref RSAParameters parameters)
         {
             // SubjectPublicKeyInfo::= SEQUENCE  {
             //    algorithm AlgorithmIdentifier,
             //    subjectPublicKey     BIT STRING  }
-
-            DerSequenceReader keyInfo = new DerSequenceReader(keyBytes);
             DerSequenceReader algorithm = keyInfo.ReadSequence();
             string algorithmOid = algorithm.ReadOidAsString();
 

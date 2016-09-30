@@ -791,7 +791,7 @@ namespace System.Security.Cryptography
             Stack<byte> littleEndianBytes = new Stack<byte>();
             byte continuance = 0;
 
-            while (unencoded != BigInteger.Zero)
+            do
             {
                 BigInteger remainder;
                 unencoded = BigInteger.DivRem(unencoded, divisor, out remainder);
@@ -802,7 +802,7 @@ namespace System.Security.Cryptography
                 // Any remaining (preceding) bytes need the continuance bit set.
                 continuance = 0x80;
                 littleEndianBytes.Push(octet);
-            }
+            } while (unencoded != BigInteger.Zero);
 
             encodedData.AddRange(littleEndianBytes);
         }

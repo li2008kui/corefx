@@ -15,6 +15,7 @@ namespace System.Security.Cryptography
     internal class DerSequenceReader
     {
         internal const byte ContextSpecificTagFlag = 0x80;
+        internal const byte ConstructedFlag = 0x20;
 
         private readonly byte[] _data;
         private readonly int _end;

@@ -28,13 +28,6 @@ internal static partial class Interop
             out SafeSecKeyRefHandle key,
             out int pOSStatus);
 
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaExportKey")]
-        internal static extern int RsaExportKey(
-            SafeSecKeyRefHandle key,
-            int exportPrivate,
-            out SafeCFDataHandle cfDataOut,
-            out int pOSStatus);
-
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaSign")]
         private static extern int RsaSign(
             SafeSecKeyRefHandle key,

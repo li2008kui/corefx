@@ -52,6 +52,12 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 {
                     return PlatformDetection.WindowsVersion >= 10;
                 }
+
+                if (PlatformDetection.IsOSX)
+                {
+                    return false;
+                }
+
                 return true;
             }
         }
