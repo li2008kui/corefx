@@ -4,10 +4,9 @@
 
 #pragma once
 
-#include "pal_digest.h"
-#include "pal_seckey.h"
+#include "pal_types.h"
 
-#include <Security/Security.h>
-
-extern "C" int
-AppleCryptoNative_RsaGenerateKey(int32_t keySizeBits, SecKeyRef* pPublicKey, SecKeyRef* pPrivateKey, int32_t* pOSStatus);
+static const int kErrorBadInput = -1;
+static const int kErrorSeeError= -2;
+static const int kErrorUnknownAlgorithm = -3;
+static const int kErrorUnknownState = -4;

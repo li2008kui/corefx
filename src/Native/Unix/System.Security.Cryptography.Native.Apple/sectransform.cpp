@@ -4,10 +4,6 @@
 
 #include "pal_rsa.h"
 
-static const int kErrorBadInput = -1;
-static const int kErrorSeeError= -2;
-static const int kErrorUnknownState = -4;
-
 int32_t ExecuteCFDataTransform(SecTransformRef xform, uint8_t* pbData, int32_t cbData, CFDataRef* pDataOut, CFErrorRef* pErrorOut)
 {
     if (xform == nullptr ||

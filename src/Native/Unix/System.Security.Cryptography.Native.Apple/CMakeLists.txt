@@ -11,9 +11,12 @@ find_library(SECURITY_LIBRARY Security)
 set(NATIVECRYPTO_SOURCES
     sectransform.cpp
     pal_digest.cpp
+    pal_ecdsa.cpp
     pal_hmac.cpp
     pal_random.cpp
     pal_rsa.cpp
+    pal_seckey.cpp
+    pal_signverify.cpp
     pal_symmetric.cpp
 )
 
