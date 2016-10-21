@@ -10,11 +10,10 @@ using System.Net.Security;
 using System.Runtime.Serialization;
 using System.Security.Principal;
 using System.Threading.Tasks;
-
 namespace System.Net
 {
     [Serializable]
-    public abstract class WebRequest : ISerializable
+    public abstract class WebRequest :  MarshalByRefObject, ISerializable
     {
         internal class WebRequestPrefixElement
         {
@@ -30,6 +29,8 @@ namespace System.Net
 
         private static volatile List<WebRequestPrefixElement> s_prefixList;
         private static readonly object s_internalSyncObject = new object();
+
+        internal const int DefaultTimeoutMilliseconds = 100 * 1000;
 
         protected WebRequest() { }
 
@@ -350,8 +351,8 @@ namespace System.Net
         //
         //
         // This is the method that initializes the prefix list. We create
-        // an List for the PrefixList, then an HttpRequestCreator object,
-        // and then we register the HTTP and HTTPS prefixes.
+        // an List for the PrefixList, then each of the request creators,
+        // and then we register them with the associated prefixes.
         //
         // Returns:
         //     true
@@ -369,14 +370,16 @@ namespace System.Net
                         if (s_prefixList == null)
                         {
                             var httpRequestCreator = new HttpRequestCreator();
+                            var fileRequestCreator = new FileWebRequestCreator();
 
-                            const int Count = 2;
+                            const int Count = 3;
                             var prefixList = new List<WebRequestPrefixElement>(Count)
                             {
                                 new WebRequestPrefixElement("http:", httpRequestCreator),
-                                new WebRequestPrefixElement("https:", httpRequestCreator)
+                                new WebRequestPrefixElement("https:", httpRequestCreator),
+                                new WebRequestPrefixElement("file:", fileRequestCreator),
                             };
-                            Debug.Assert(prefixList.Count == Count);
+                            Debug.Assert(prefixList.Count == Count, $"Expected {Count}, got {prefixList.Count}");
 
                             s_prefixList = prefixList;
                         }
@@ -442,6 +445,7 @@ namespace System.Net
                 throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
             }
         }
+
         public virtual long ContentLength
         {
             get
@@ -522,7 +526,7 @@ namespace System.Net
             throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
         }
 
-        public virtual IAsyncResult BeginGetRequestStream(AsyncCallback callback, Object state)
+        public virtual IAsyncResult BeginGetRequestStream(AsyncCallback callback, object state)
         {
             throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
         }
@@ -531,7 +535,7 @@ namespace System.Net
         {
             throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
         }
-
+   
         public virtual Task<Stream> GetRequestStreamAsync()
         {
             // Offload to a different thread to avoid blocking the caller during request submission.
@@ -604,7 +608,7 @@ namespace System.Net
             {
                 throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
             }
-        }
+        }    
 
         public virtual IWebProxy Proxy
         {

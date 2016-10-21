@@ -266,25 +266,25 @@ namespace System.Linq.Expressions
 
             var index = (IndexExpression)_left;
 
-            var vars = new List<ParameterExpression>(index.ArgumentCount + 2);
-            var exprs = new List<Expression>(index.ArgumentCount + 3);
+            var vars = new ArrayBuilder<ParameterExpression>(index.ArgumentCount + 2);
+            var exprs = new ArrayBuilder<Expression>(index.ArgumentCount + 3);
 
-            var tempObj = Expression.Variable(index.Object.Type, "tempObj");
-            vars.Add(tempObj);
-            exprs.Add(Expression.Assign(tempObj, index.Object));
+            ParameterExpression tempObj = Expression.Variable(index.Object.Type, "tempObj");
+            vars.UncheckedAdd(tempObj);
+            exprs.UncheckedAdd(Expression.Assign(tempObj, index.Object));
 
-            var n = index.ArgumentCount;
-            var tempArgs = new List<Expression>(n);
+            int n = index.ArgumentCount;
+            var tempArgs = new ArrayBuilder<Expression>(n);
             for (var i = 0; i < n; i++)
             {
-                var arg = index.GetArgument(i);
-                var tempArg = Expression.Variable(arg.Type, "tempArg" + tempArgs.Count);
-                vars.Add(tempArg);
-                tempArgs.Add(tempArg);
-                exprs.Add(Expression.Assign(tempArg, arg));
+                Expression arg = index.GetArgument(i);
+                ParameterExpression tempArg = Expression.Variable(arg.Type, "tempArg" + i);
+                vars.UncheckedAdd(tempArg);
+                tempArgs.UncheckedAdd(tempArg);
+                exprs.UncheckedAdd(Expression.Assign(tempArg, arg));
             }
 
-            var tempIndex = Expression.MakeIndex(tempObj, index.Indexer, tempArgs);
+            IndexExpression tempIndex = Expression.MakeIndex(tempObj, index.Indexer, tempArgs.ToReadOnly());
 
             // tempValue = tempObj[tempArg0, ... tempArgN] (op) r
             ExpressionType binaryOp = GetBinaryOpFromAssignmentOp(NodeType);
@@ -294,14 +294,14 @@ namespace System.Linq.Expressions
             {
                 op = Expression.Invoke(conversion, op);
             }
-            var tempValue = Expression.Variable(op.Type, "tempValue");
-            vars.Add(tempValue);
-            exprs.Add(Expression.Assign(tempValue, op));
+            ParameterExpression tempValue = Expression.Variable(op.Type, "tempValue");
+            vars.UncheckedAdd(tempValue);
+            exprs.UncheckedAdd(Expression.Assign(tempValue, op));
 
             // tempObj[tempArg0, ... tempArgN] = tempValue
-            exprs.Add(Expression.Assign(tempIndex, tempValue));
+            exprs.UncheckedAdd(Expression.Assign(tempIndex, tempValue));
 
-            return Expression.Block(vars, exprs);
+            return Expression.Block(vars.ToReadOnly(), exprs.ToReadOnly());
         }
 
         /// <summary>
@@ -440,8 +440,8 @@ namespace System.Linq.Expressions
         {
             Debug.Assert(IsLiftedLogical);
 
-            var left = Parameter(_left.Type, "left");
-            var right = Parameter(Right.Type, "right");
+            ParameterExpression left = Parameter(_left.Type, "left");
+            ParameterExpression right = Parameter(Right.Type, "right");
             string opName = NodeType == ExpressionType.AndAlso ? "op_False" : "op_True";
             MethodInfo opTrueFalse = TypeUtils.GetBooleanOperator(Method.DeclaringType, opName);
             Debug.Assert(opTrueFalse != null);

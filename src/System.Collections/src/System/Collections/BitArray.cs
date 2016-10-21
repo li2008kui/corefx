@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.Contracts;
 
 namespace System.Collections
 {
@@ -11,7 +12,7 @@ namespace System.Collections
     // shifting yourself.
     [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
-    public sealed class BitArray : ICollection
+    public sealed class BitArray : ICollection, ICloneable
     {
         private BitArray()
         {
@@ -497,7 +498,7 @@ namespace System.Collections
         }
 
         [Serializable]
-        private class BitArrayEnumeratorSimple : IEnumerator
+        private class BitArrayEnumeratorSimple : IEnumerator, ICloneable
         {
             private BitArray bitarray;
             private int index;

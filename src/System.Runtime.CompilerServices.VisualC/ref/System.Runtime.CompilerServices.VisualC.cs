@@ -32,9 +32,6 @@ namespace System.Runtime.CompilerServices
     public static partial class IsBoxed
     {
     }
-    public static partial class IsConst
-    {
-    }
     public static partial class IsByValue
     {
     }
@@ -71,7 +68,7 @@ namespace System.Runtime.CompilerServices
     public sealed partial class RequiredAttributeAttribute : System.Attribute
     {
         public RequiredAttributeAttribute(System.Type requiredContract) { }
-        public System.Type RequiredContract { get { return default(System.Type); } }
+        public System.Type RequiredContract { get { throw null; } }
     }
     public static partial class IsPinned
     {

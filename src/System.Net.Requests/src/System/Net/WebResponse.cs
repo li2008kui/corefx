@@ -13,7 +13,8 @@ namespace System.Net
     ///       response from a Uniform Resource Identifier (Uri). This is an abstract class.
     ///    </para>
     /// </devdoc>
-    public abstract class WebResponse : ISerializable, IDisposable
+    [Serializable]
+    public abstract class WebResponse : MarshalByRefObject, ISerializable, IDisposable
     {
         /// <devdoc>
         ///    <para>Initializes a new
@@ -70,6 +71,10 @@ namespace System.Net
             {
                 throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
             }
+            set
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
         }
 
 
@@ -81,6 +86,10 @@ namespace System.Net
         public virtual string ContentType
         {
             get
+            {
+                throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
+            }
+            set
             {
                 throw NotImplemented.ByDesignWithMessage(SR.net_PropertyNotImplementedException);
             }

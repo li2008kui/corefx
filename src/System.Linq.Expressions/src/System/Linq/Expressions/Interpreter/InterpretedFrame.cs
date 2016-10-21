@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -66,10 +64,7 @@ namespace System.Linq.Expressions.Interpreter
             return DebugInfo.GetMatchingDebugInfo(Interpreter._debugInfos, instructionIndex);
         }
 
-        public string Name
-        {
-            get { return Interpreter._name; }
-        }
+        public string Name => Interpreter.Name;
 
         #region Data Stack Operations
 
@@ -147,7 +142,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public IEnumerable<InterpretedFrameInfo> GetStackTraceDebugInfo()
         {
-            var frame = this;
+            InterpretedFrame frame = this;
             do
             {
                 yield return new InterpretedFrameInfo(frame.Name, frame.GetDebugInfo(frame.InstructionIndex));
@@ -174,7 +169,7 @@ namespace System.Linq.Expressions.Interpreter
             get
             {
                 var trace = new List<string>();
-                var frame = this;
+                InterpretedFrame frame = this;
                 do
                 {
                     trace.Add(frame.Name);
@@ -187,7 +182,7 @@ namespace System.Linq.Expressions.Interpreter
 
         internal InterpretedFrame Enter()
         {
-            var currentFrame = CurrentFrame;
+            InterpretedFrame currentFrame = CurrentFrame;
             CurrentFrame = this;
             return _parent = currentFrame;
         }
@@ -218,7 +213,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public int YieldToCurrentContinuation()
         {
-            var target = Interpreter._labels[_continuations[_continuationIndex - 1]];
+            RuntimeLabel target = Interpreter._labels[_continuations[_continuationIndex - 1]];
             SetStackDepth(target.StackDepth);
             return target.Index - InstructionIndex;
         }
@@ -288,7 +283,7 @@ namespace System.Linq.Expressions.Interpreter
             _pendingValue = value;
             return YieldToCurrentContinuation();
         }
-        #endregion
 
+        #endregion
     }
 }

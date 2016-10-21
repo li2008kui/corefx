@@ -96,7 +96,7 @@ namespace System.Linq.Expressions.Compiler
         {
             Node = node;
             IsMethod = isMethod;
-            var variables = GetVariables(node);
+            IList<ParameterExpression> variables = GetVariables(node);
 
             Definitions = new Dictionary<ParameterExpression, VariableStorageKind>(variables.Count);
             foreach (var v in variables)
@@ -169,10 +169,10 @@ namespace System.Linq.Expressions.Compiler
 
         internal void EmitVariableAccess(LambdaCompiler lc, ReadOnlyCollection<ParameterExpression> vars)
         {
-            if (NearestHoistedLocals != null)
+            if (NearestHoistedLocals != null && vars.Count > 0)
             {
                 // Find what array each variable is on & its index
-                var indexes = new List<long>(vars.Count);
+                var indexes = new ArrayBuilder<long>(vars.Count);
 
                 foreach (var variable in vars)
                 {
@@ -190,21 +190,18 @@ namespace System.Linq.Expressions.Compiler
                     // real index of variable to get the index to emit.
                     ulong index = (parents << 32) | (uint)locals.Indexes[variable];
 
-                    indexes.Add((long)index);
+                    indexes.UncheckedAdd((long)index);
                 }
 
-                if (indexes.Count > 0)
-                {
-                    EmitGet(NearestHoistedLocals.SelfVariable);
-                    lc.EmitConstantArray(indexes.ToArray());
-                    lc.IL.Emit(OpCodes.Call, RuntimeOps_CreateRuntimeVariables_ObjectArray_Int64Array);
-                    return;
-                }
+                EmitGet(NearestHoistedLocals.SelfVariable);
+                lc.EmitConstantArray(indexes.ToArray());
+                lc.IL.Emit(OpCodes.Call, RuntimeOps_CreateRuntimeVariables_ObjectArray_Int64Array);
             }
-
-            // No visible variables
-            lc.IL.Emit(OpCodes.Call, RuntimeOps_CreateRuntimeVariables);
-            return;
+            else
+            {
+                // No visible variables
+                lc.IL.Emit(OpCodes.Call, RuntimeOps_CreateRuntimeVariables);
+            }
         }
 
         #endregion
@@ -296,7 +293,7 @@ namespace System.Linq.Expressions.Compiler
                 _closureHoistedLocals = _parent.NearestHoistedLocals;
             }
 
-            var hoistedVars = GetVariables().Where(p => Definitions[p] == VariableStorageKind.Hoisted).ToReadOnly();
+            ReadOnlyCollection<ParameterExpression> hoistedVars = GetVariables().Where(p => Definitions[p] == VariableStorageKind.Hoisted).ToReadOnly();
 
             if (hoistedVars.Count > 0)
             {
@@ -420,7 +417,7 @@ namespace System.Linq.Expressions.Compiler
 
             while ((locals = locals.Parent) != null)
             {
-                var v = locals.SelfVariable;
+                ParameterExpression v = locals.SelfVariable;
                 var local = new LocalStorage(lc, v);
                 local.EmitStore(ResolveVariable(v));
                 _locals.Add(v, local);

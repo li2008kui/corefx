@@ -7,7 +7,13 @@
 
 namespace System.Net
 {
-    public class WebProxy : System.Runtime.Serialization.ISerializable
+    public interface IWebProxyScript
+    {
+        void Close();
+        bool Load(System.Uri scriptLocation, string script, System.Type helperType);
+        string Run(string url, string host);
+    }
+    public class WebProxy : System.Net.IWebProxy, System.Runtime.Serialization.ISerializable
     {
         public WebProxy() { }
         public WebProxy(System.Uri Address) { }
