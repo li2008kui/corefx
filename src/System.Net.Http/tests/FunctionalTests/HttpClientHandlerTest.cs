@@ -21,6 +21,8 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
     // Note:  Disposing the HttpClient object automatically disposes the handler within. So, it is not necessary
     // to separately Dispose (or have a 'using' statement) for the handler.
     public class HttpClientHandlerTest
@@ -494,7 +496,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [ActiveIssue(8945, TestPlatforms.Windows)]
         [Theory]
         [InlineData(3, 2)]
         [InlineData(3, 3)]
@@ -977,6 +978,53 @@ namespace System.Net.Http.Functional.Tests
                         }
                     });
                 });
+            });
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Theory]
+        [InlineData(200)]
+        [InlineData(500)]
+        [InlineData(600)]
+        [InlineData(900)]
+        [InlineData(999)]
+        public async Task GetAsync_ExpectedStatusCode(int statusCode)
+        {
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            {
+                using (var client = new HttpClient())
+                {
+                    Task<HttpResponseMessage> getResponse = client.GetAsync(url);
+                    await LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                            $"HTTP/1.1 {statusCode}\r\n" +
+                            $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
+                            "\r\n");
+                    using (HttpResponseMessage response = await getResponse)
+                    {
+                        Assert.Equal(statusCode, (int)response.StatusCode);
+                    }
+                }
+            });
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Theory]
+        [InlineData(99)]
+        [InlineData(1000)]
+        public async Task GetAsync_StatusCodeOutOfRange_ExpectedException(int statusCode)
+        {
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            {
+                using (var client = new HttpClient())
+                {
+                    Task<HttpResponseMessage> getResponse = client.GetAsync(url);
+                    await LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                            $"HTTP/1.1 {statusCode}\r\n" +
+                            $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
+                            "\r\n");
+
+                    await Assert.ThrowsAsync<HttpRequestException>(() => getResponse);
+                }
             });
         }
 

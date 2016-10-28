@@ -15,6 +15,8 @@
     <!-- System.IO.Path conflicts between type in partial facade and in mscorlib -->
     <NoWarn>0436</NoWarn>
     <NuGetTargetMoniker Condition="'$(NuGetTargetMoniker)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
+    <!-- copy to uap10.1 until nuget makes the change to map that to ns1.7 -->
+    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.7;uap10.1</PackageTargetFramework>
     <TargetsWindowsUap Condition="'$(TargetGroup)'=='uap101aot'">true</TargetsWindowsUap>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
@@ -34,7 +36,9 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net462' And '$(TargetGroup)' != 'net463'">
     <Compile Include="System\AppDomain.cs" />
+    <Compile Include="System\Context.cs" />
     <Compile Include="System\AppDomainUnloadedException.cs" />
+    <Compile Include="System\ApplicationId.cs" />
     <Compile Include="System\CannotUnloadAppDomainException.cs" />
     <Compile Include="System\BitConverter.cs" />
     <Compile Include="System\Diagnostics\Stopwatch.cs" />
@@ -42,10 +46,12 @@
     <Compile Include="System\Environment.SpecialFolder.cs" />
     <Compile Include="System\Environment.SpecialFolderOption.cs" />
     <Compile Include="System\EnvironmentVariableTarget.cs" />
+    <Compile Include="System\MathF.cs" /> <!-- https://github.com/dotnet/buildtools/issues/1041 -->
     <Compile Include="System\OperatingSystem.cs" />
     <Compile Include="System\PlatformID.cs" />
     <Compile Include="System\IO\Path.cs" />
     <Compile Include="System\Net\WebUtility.cs" />
+    <Compile Include="System\Reflection\AssemblyNameProxy.cs" />
     <Compile Include="System\Runtime\Versioning\FrameworkName.cs" />
     <Compile Include="System\Runtime\Versioning\ComponentGuaranteesAttribute.cs" />
     <Compile Include="System\Runtime\Versioning\ResourceConsumptionAttribute.cs" />
@@ -76,6 +82,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Runtime\InteropServices\StringBuffer.cs">
       <Link>Common\System\Runtime\InteropServices\StringBuffer.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\HResults.cs">
+      <Link>Common\System\HResults.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- WINDOWS: Shared CoreCLR and .NET Native -->

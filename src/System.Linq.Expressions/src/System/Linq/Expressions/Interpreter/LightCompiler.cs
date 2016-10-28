@@ -108,7 +108,7 @@ namespace System.Linq.Expressions.Interpreter
 
             if (_handlers != null)
             {
-                foreach (var handler in _handlers)
+                foreach (ExceptionHandler handler in _handlers)
                 {
                     handler.SetParent(this);
                 }
@@ -250,11 +250,11 @@ namespace System.Linq.Expressions.Interpreter
         {
             if (IsClear)
             {
-                return String.Format(CultureInfo.InvariantCulture, "{0}: clear", Index);
+                return string.Format(CultureInfo.InvariantCulture, "{0}: clear", Index);
             }
             else
             {
-                return String.Format(CultureInfo.InvariantCulture, "{0}: [{1}-{2}] '{3}'", Index, StartLine, EndLine, FileName);
+                return string.Format(CultureInfo.InvariantCulture, "{0}: [{1}-{2}] '{3}'", Index, StartLine, EndLine, FileName);
             }
         }
     }
@@ -314,7 +314,7 @@ namespace System.Linq.Expressions.Interpreter
         public LightDelegateCreator CompileTop(LambdaExpression node)
         {
             //Console.WriteLine(node.DebugView);
-            foreach (var p in node.Parameters)
+            foreach (ParameterExpression p in node.Parameters)
             {
                 LocalDefinition local = _locals.DefineLocal(p, 0);
                 _instructions.EmitInitializeParameter(local.Index);
@@ -369,7 +369,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    _instructions.EmitLoad(null);
+                    _instructions.EmitLoad(value: null);
                 }
             }
         }
@@ -539,7 +539,7 @@ namespace System.Linq.Expressions.Interpreter
                 // variables.
                 locals = new LocalDefinition[variables.Count];
                 int localCnt = 0;
-                foreach (var variable in variables)
+                foreach (ParameterExpression variable in variables)
                 {
                     LocalDefinition local = _locals.DefineLocal(variable, start);
                     locals[localCnt++] = local;
@@ -562,7 +562,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private void CompileBlockEnd(LocalDefinition[] locals)
         {
-            foreach (var local in locals)
+            foreach (LocalDefinition local in locals)
             {
                 _locals.UndefineLocal(local, _instructions.Count);
             }
@@ -591,7 +591,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             if (index.Indexer != null)
             {
-                _instructions.EmitCall(index.Indexer.GetGetMethod(true));
+                _instructions.EmitCall(index.Indexer.GetGetMethod(nonPublic: true));
             }
             else if (index.ArgumentCount != 1)
             {
@@ -630,7 +630,7 @@ namespace System.Linq.Expressions.Interpreter
 
             if (index.Indexer != null)
             {
-                _instructions.EmitCall(index.Indexer.GetSetMethod(true));
+                _instructions.EmitCall(index.Indexer.GetSetMethod(nonPublic: true));
             }
             else if (index.ArgumentCount != 1)
             {
@@ -657,7 +657,7 @@ namespace System.Linq.Expressions.Interpreter
                 EmitThisForMethodCall(expr);
             }
 
-            CompileMemberAssignment(asVoid, member.Member, node.Right, false);
+            CompileMemberAssignment(asVoid, member.Member, node.Right, forBinding: false);
         }
 
         private void CompileMemberAssignment(bool asVoid, MemberInfo refMember, Expression value, bool forBinding)
@@ -665,7 +665,7 @@ namespace System.Linq.Expressions.Interpreter
             var pi = refMember as PropertyInfo;
             if (pi != null)
             {
-                MethodInfo method = pi.GetSetMethod(true);
+                MethodInfo method = pi.GetSetMethod(nonPublic: true);
                 if (forBinding && method.IsStatic)
                 {
                     throw Error.InvalidProgram();
@@ -813,7 +813,7 @@ namespace System.Linq.Expressions.Interpreter
                             {
                                 _instructions.EmitNotEqual(typeof(object));
                             }
-                            _instructions.EmitBranch(end, false, true);
+                            _instructions.EmitBranch(end, hasResult: false, hasValue: true);
 
                             _instructions.MarkLabel(testRight);
 
@@ -833,7 +833,7 @@ namespace System.Linq.Expressions.Interpreter
                                 // right null, left not, true
                                 _instructions.EmitLoad(ScriptingRuntimeHelpers.True, typeof(bool));
                             }
-                            _instructions.EmitBranch(end, false, true);
+                            _instructions.EmitBranch(end, hasResult: false, hasValue: true);
 
                             // both are not null
                             _instructions.MarkLabel(callMethod);
@@ -863,7 +863,7 @@ namespace System.Linq.Expressions.Interpreter
                             _instructions.EmitLoadLocal(leftTemp.Index);
                             _instructions.EmitLoadLocal(rightTemp.Index);
                             _instructions.EmitCall(node.Method);
-                            _instructions.EmitBranch(end, false, true);
+                            _instructions.EmitBranch(end, hasResult: false, hasValue: true);
 
                             _instructions.MarkLabel(loadDefault);
                             switch (node.NodeType)
@@ -1008,12 +1008,12 @@ namespace System.Linq.Expressions.Interpreter
             Compile(right);
             switch (nodeType)
             {
-                case ExpressionType.Add: _instructions.EmitAdd(left.Type, false); break;
-                case ExpressionType.AddChecked: _instructions.EmitAdd(left.Type, true); break;
-                case ExpressionType.Subtract: _instructions.EmitSub(left.Type, false); break;
-                case ExpressionType.SubtractChecked: _instructions.EmitSub(left.Type, true); break;
-                case ExpressionType.Multiply: _instructions.EmitMul(left.Type, false); break;
-                case ExpressionType.MultiplyChecked: _instructions.EmitMul(left.Type, true); break;
+                case ExpressionType.Add: _instructions.EmitAdd(left.Type, @checked: false); break;
+                case ExpressionType.AddChecked: _instructions.EmitAdd(left.Type, @checked: true); break;
+                case ExpressionType.Subtract: _instructions.EmitSub(left.Type, @checked: false); break;
+                case ExpressionType.SubtractChecked: _instructions.EmitSub(left.Type, @checked: true); break;
+                case ExpressionType.Multiply: _instructions.EmitMul(left.Type, @checked: false); break;
+                case ExpressionType.MultiplyChecked: _instructions.EmitMul(left.Type, @checked: true); break;
                 case ExpressionType.Divide: _instructions.EmitDiv(left.Type); break;
                 case ExpressionType.Modulo: _instructions.EmitModulo(left.Type); break;
                 default: throw ContractUtils.Unreachable;
@@ -1050,7 +1050,7 @@ namespace System.Linq.Expressions.Interpreter
 
                 _instructions.EmitCall(node.Method);
 
-                _instructions.EmitBranch(end, false, true);
+                _instructions.EmitBranch(end, hasResult: false, hasValue: true);
 
                 _instructions.MarkLabel(loadDefault);
                 _instructions.EmitLoad(null, typeof(object));
@@ -1277,12 +1277,12 @@ namespace System.Linq.Expressions.Interpreter
 
         private void CompileAndAlsoBinaryExpression(Expression expr)
         {
-            CompileLogicalBinaryExpression((BinaryExpression)expr, true);
+            CompileLogicalBinaryExpression((BinaryExpression)expr, andAlso: true);
         }
 
         private void CompileOrElseBinaryExpression(Expression expr)
         {
-            CompileLogicalBinaryExpression((BinaryExpression)expr, false);
+            CompileLogicalBinaryExpression((BinaryExpression)expr, andAlso: false);
         }
 
         private void CompileLogicalBinaryExpression(BinaryExpression b, bool andAlso)
@@ -1419,7 +1419,7 @@ namespace System.Linq.Expressions.Interpreter
                 _instructions.EmitBranchTrue(elseLabel);
             }
             Compile(expr.Right);
-            _instructions.EmitBranch(endLabel, false, true);
+            _instructions.EmitBranch(endLabel, hasResult: false, hasValue: true);
             _instructions.MarkLabel(elseLabel);
             _instructions.EmitLoad(!andAlso);
             _instructions.MarkLabel(endLabel);
@@ -1474,7 +1474,7 @@ namespace System.Linq.Expressions.Interpreter
             CompileAsVoid(node.Body);
 
             // emit loop branch:
-            _instructions.EmitBranch(continueLabel.GetLabel(this), node.Type != typeof(void), false);
+            _instructions.EmitBranch(continueLabel.GetLabel(this), node.Type != typeof(void), hasValue: false);
 
             _instructions.MarkLabel(breakLabel.GetLabel(this));
 
@@ -1561,9 +1561,9 @@ namespace System.Linq.Expressions.Interpreter
 
             LabelTarget doneLabel = Expression.Label(node.Type, "done");
 
-            foreach (var @case in node.Cases)
+            foreach (SwitchCase @case in node.Cases)
             {
-                foreach (var val in @case.TestValues)
+                foreach (Expression val in @case.TestValues)
                 {
                     //  temp == val ? 
                     //          goto(Body) doneLabel: 
@@ -1586,7 +1586,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private void CompileIntSwitchExpression<T>(SwitchExpression node)
         {
-            LabelInfo end = DefineLabel(null);
+            LabelInfo end = DefineLabel(node: null);
             bool hasValue = node.Type != typeof(void);
 
             Compile(node.SwitchValue);
@@ -1631,7 +1631,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private void CompileStringSwitchExpression(SwitchExpression node)
         {
-            LabelInfo end = DefineLabel(null);
+            LabelInfo end = DefineLabel(node: null);
             bool hasValue = node.Type != typeof(void);
 
             Compile(node.SwitchValue);
@@ -1881,7 +1881,7 @@ namespace System.Linq.Expressions.Interpreter
         private HybridReferenceDictionary<LabelTarget, BranchLabel> GetBranchMapping()
         {
             var newLabelMapping = new HybridReferenceDictionary<LabelTarget, BranchLabel>(_treeLabels.Count);
-            foreach (var kvp in _treeLabels)
+            foreach (KeyValuePair<LabelTarget, LabelInfo> kvp in _treeLabels)
             {
                 kvp.Value.ValidateFinish();
                 newLabelMapping[kvp.Key] = kvp.Value.GetLabel(this);
@@ -1984,7 +1984,7 @@ namespace System.Linq.Expressions.Interpreter
                 if (node.Handlers.Count > 0)
                 {
                     exHandlers = new List<ExceptionHandler>();
-                    foreach (var handler in node.Handlers)
+                    foreach (CatchBlock handler in node.Handlers)
                     {
                         ParameterExpression parameter = handler.Variable ?? Expression.Parameter(handler.Test);
 
@@ -2003,7 +2003,7 @@ namespace System.Linq.Expressions.Interpreter
                             int filterLabel = _instructions.MarkRuntimeLabel();
                             int filterStart = _instructions.Count;
 
-                            CompileSetVariable(parameter, true);
+                            CompileSetVariable(parameter, isVoid: true);
                             Compile(handler.Filter);
 
                             filter = new ExceptionFilter(filterLabel, filterStart, _instructions.Count);
@@ -2030,7 +2030,7 @@ namespace System.Linq.Expressions.Interpreter
                         int handlerLabel = _instructions.MarkRuntimeLabel();
                         int handlerStart = _instructions.Count;
 
-                        CompileSetVariable(parameter, true);
+                        CompileSetVariable(parameter, isVoid: true);
                         Compile(handler.Body, !hasValue);
 
                         _exceptionForRethrowStack.Pop();
@@ -2174,7 +2174,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     _instructions.EmitByRefCall(method, parameters, updaters.ToArray());
 
-                    foreach (var updater in updaters)
+                    foreach (ByRefUpdater updater in updaters)
                     {
                         updater.UndefineTemps(_instructions, _locals);
                     }
@@ -2308,7 +2308,7 @@ namespace System.Linq.Expressions.Interpreter
                         }
                         Debug.Assert(member.Member is PropertyInfo);
                         var property = (PropertyInfo)member.Member;
-                        _instructions.EmitCall(property.GetGetMethod(true));
+                        _instructions.EmitCall(property.GetGetMethod(nonPublic: true));
                         if (property.CanWrite)
                         {
                             return new PropertyByRefUpdater(memberTemp, property, index);
@@ -2419,7 +2419,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             var node = (MemberExpression)expr;
 
-            CompileMember(node.Expression, node.Member, false);
+            CompileMember(node.Expression, node.Member, forBinding: false);
         }
 
         private void CompileMember(Expression from, MemberInfo member, bool forBinding)
@@ -2430,7 +2430,7 @@ namespace System.Linq.Expressions.Interpreter
                 if (fi.IsLiteral)
                 {
                     Debug.Assert(!forBinding);
-                    _instructions.EmitLoad(fi.GetValue(null), fi.FieldType);
+                    _instructions.EmitLoad(fi.GetValue(obj: null), fi.FieldType);
                 }
                 else if (fi.IsStatic)
                 {
@@ -2441,7 +2441,7 @@ namespace System.Linq.Expressions.Interpreter
 
                     if (fi.IsInitOnly)
                     {
-                        _instructions.EmitLoad(fi.GetValue(null), fi.FieldType);
+                        _instructions.EmitLoad(fi.GetValue(obj: null), fi.FieldType);
                     }
                     else
                     {
@@ -2464,7 +2464,7 @@ namespace System.Linq.Expressions.Interpreter
                 var pi = (PropertyInfo)member;
                 if (pi != null)
                 {
-                    MethodInfo method = pi.GetGetMethod(true);
+                    MethodInfo method = pi.GetGetMethod(nonPublic: true);
                     if (forBinding && method.IsStatic)
                     {
                         throw Error.InvalidProgram();
@@ -2494,7 +2494,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             var node = (NewArrayExpression)expr;
 
-            foreach (var arg in node.Expressions)
+            foreach (Expression arg in node.Expressions)
             {
                 Compile(arg);
             }
@@ -2539,7 +2539,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             // Generates IRuntimeVariables for all requested variables
             var node = (RuntimeVariablesExpression)expr;
-            foreach (var variable in node.Variables)
+            foreach (ParameterExpression variable in node.Variables)
             {
                 EnsureAvailableForClosure(variable);
                 CompileGetBoxedVariable(variable);
@@ -2667,7 +2667,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 ElementInit initializer = initializers[i];
                 _instructions.EmitDup();
-                foreach (var arg in initializer.Arguments)
+                foreach (Expression arg in initializer.Arguments)
                 {
                     Compile(arg);
                 }
@@ -2688,7 +2688,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private void CompileMemberInit(ReadOnlyCollection<MemberBinding> bindings)
         {
-            foreach (var binding in bindings)
+            foreach (MemberBinding binding in bindings)
             {
                 switch (binding.BindingType)
                 {
@@ -2698,13 +2698,13 @@ namespace System.Linq.Expressions.Interpreter
                             true,
                             ((MemberAssignment)binding).Member,
                             ((MemberAssignment)binding).Expression,
-                            true
+                            forBinding: true
                         );
                         break;
                     case MemberBindingType.ListBinding:
                         var memberList = (MemberListBinding)binding;
                         _instructions.EmitDup();
-                        CompileMember(null, memberList.Member, true);
+                        CompileMember(null, memberList.Member, forBinding: true);
                         CompileListInit(memberList.Initializers);
                         _instructions.EmitPop();
                         break;
@@ -2717,7 +2717,7 @@ namespace System.Linq.Expressions.Interpreter
                             throw Error.CannotAutoInitializeValueTypeMemberThroughProperty(memberMember.Bindings);
                         }
 
-                        CompileMember(null, memberMember.Member, true);
+                        CompileMember(null, memberMember.Member, forBinding: true);
                         CompileMemberInit(memberMember.Bindings);
                         _instructions.EmitPop();
                         break;
@@ -2744,7 +2744,7 @@ namespace System.Linq.Expressions.Interpreter
 
             var mapping = new Dictionary<ParameterExpression, LocalVariable>();
 
-            foreach (var local in visitor._hoistedParameters)
+            foreach (ParameterExpression local in visitor._hoistedParameters)
             {
                 EnsureAvailableForClosure(local);
                 mapping[local] = ResolveLocal(local);
@@ -2806,7 +2806,7 @@ namespace System.Linq.Expressions.Interpreter
 
             private void PushParameters(ICollection<ParameterExpression> parameters)
             {
-                foreach (var param in parameters)
+                foreach (ParameterExpression param in parameters)
                 {
                     int count;
                     if (_definedParameters.TryGetValue(param, out count))
@@ -2822,7 +2822,7 @@ namespace System.Linq.Expressions.Interpreter
 
             private void PopParameters(ICollection<ParameterExpression> parameters)
             {
-                foreach (var param in parameters)
+                foreach (ParameterExpression param in parameters)
                 {
                     int count = _definedParameters[param];
                     if (count == 0)
@@ -2933,15 +2933,15 @@ namespace System.Linq.Expressions.Interpreter
             switch (expr.NodeType)
             {
                 case ExpressionType.Assign:
-                    CompileAssignBinaryExpression(expr, true);
+                    CompileAssignBinaryExpression(expr, asVoid: true);
                     break;
 
                 case ExpressionType.Block:
-                    CompileBlockExpression(expr, true);
+                    CompileBlockExpression(expr, asVoid: true);
                     break;
 
                 case ExpressionType.Throw:
-                    CompileThrowUnaryExpression(expr, true);
+                    CompileThrowUnaryExpression(expr, asVoid: true);
                     break;
 
                 case ExpressionType.Constant:
@@ -3050,7 +3050,7 @@ namespace System.Linq.Expressions.Interpreter
                     break;
             }
             Debug.Assert(_instructions.CurrentStackDepth == startingStackDepth + (expr.Type == typeof(void) ? 0 : 1),
-                String.Format("{0} vs {1} for {2}", _instructions.CurrentStackDepth, startingStackDepth + (expr.Type == typeof(void) ? 0 : 1), expr.NodeType));
+                string.Format("{0} vs {1} for {2}", _instructions.CurrentStackDepth, startingStackDepth + (expr.Type == typeof(void) ? 0 : 1), expr.NodeType));
         }
 
         public void Compile(Expression expr)
