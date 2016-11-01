@@ -29,7 +29,6 @@ AppleCryptoNative_EccGenerateKey(int32_t keySizeBits, SecKeyRef* pPublicKey, Sec
 
 extern "C" int32_t AppleCryptoNative_EccImportEphemeralKey(uint8_t* pbKeyBlob, int32_t cbKeyBlob, int32_t isPrivateKey, SecKeyRef* ppKeyOut, int32_t* pOSStatus)
 {
-    printf("EccImport(%d, %d)\n", cbKeyBlob, isPrivateKey);
     if (pbKeyBlob == nullptr ||
         cbKeyBlob < 0 ||
         isPrivateKey < 0 ||
@@ -40,22 +39,10 @@ extern "C" int32_t AppleCryptoNative_EccImportEphemeralKey(uint8_t* pbKeyBlob, i
         return kErrorBadInput;
     }
 
-    printf("Importing blob");
-    for (int i = 0; i < cbKeyBlob; i++)
-    {
-        if (i % 16 == 0)
-            printf("\n");
-        else
-            printf(" ");
-
-        printf("%02X", pbKeyBlob[i]);
-    }
-    printf("\nEND blob\n");
-
     int32_t ret = 0;
     CFDataRef cfData = CFDataCreateWithBytesNoCopy(nullptr, pbKeyBlob, cbKeyBlob, kCFAllocatorNull);
 
-    SecExternalFormat dataFormat = isPrivateKey ? kSecFormatWrappedPKCS8 : kSecFormatOpenSSL;
+    SecExternalFormat dataFormat = kSecFormatOpenSSL;
     SecExternalFormat actualFormat = dataFormat;
 
     SecExternalItemType itemType = isPrivateKey ? kSecItemTypePrivateKey : kSecItemTypePublicKey;

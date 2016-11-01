@@ -219,14 +219,12 @@ extern "C" int AppleCryptoNative_EcdsaVerify(SecKeyRef publicKey, uint8_t* pbDat
 
     if (verifier == nullptr || *pErrorOut != nullptr)
     {
-        printf("Could not create verify transform\n");
         ret = kErrorSeeError;
         goto cleanup;
     }
 
     if (!ConfigureEcdsaSignVerifyTransform(verifier, dataHash, pErrorOut))
     {
-        printf("Could not configure verify transform\n");
         ret = kErrorSeeError;
         goto cleanup;
     }
