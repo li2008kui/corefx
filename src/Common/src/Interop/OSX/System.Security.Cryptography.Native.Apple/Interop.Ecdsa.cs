@@ -27,7 +27,6 @@ internal static partial class Interop
             out SafeSecKeyRefHandle key,
             out int pOSStatus);
 
-
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_EcdsaSign")]
         private static extern int EcdsaSign(
             SafeSecKeyRefHandle key,

@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography.Apple;
 using Internal.Cryptography;
-using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
 {
@@ -175,6 +174,16 @@ namespace System.Security.Cryptography
                         keyReader.ReadSubjectPublicKeyInfo(ref parameters);
                     }
 
+                    int size = OpenSslAsymmetricAlgorithmCore.BitsToBytes(KeySize);
+
+                    KeyBlobHelpers.ZeroExtend(ref parameters.Q.X, size);
+                    KeyBlobHelpers.ZeroExtend(ref parameters.Q.Y, size);
+
+                    if (includePrivateParameters)
+                    {
+                        KeyBlobHelpers.ZeroExtend(ref parameters.D, size);
+                    }
+
                     return parameters;
                 }
 
@@ -207,7 +216,6 @@ namespace System.Security.Cryptography
                         }
 
                         SetKey(KeyPair.PublicPrivatePair(publicKey, privateKey));
-                        //SetKey(KeyPair.PublicOnly(publicKey));
                     }
                     else
                     {
@@ -223,7 +231,7 @@ namespace System.Security.Cryptography
                     if (!curve.IsNamed)
                     {
                         // Only named curves are supported
-                        throw new PlatformNotSupportedException();
+                        throw new PlatformNotSupportedException("Only named curves are supported");
                     }
 
                     int keySize;
@@ -261,7 +269,7 @@ namespace System.Security.Cryptography
                     SafeSecKeyRefHandle keyHandle;
                     int osStatus;
                     bool isPrivateKey = parameters.D != null;
-                    byte[] blob = isPrivateKey ? parameters.ToPkcs8() : parameters.ToSubjectPublicKeyInfo();
+                    byte[] blob = isPrivateKey ? parameters.ToPrivateKeyBlob() : parameters.ToSubjectPublicKeyInfo();
 
                     int ret = Interop.AppleCrypto.EccImportEphemeralKey(
                         blob,
@@ -495,7 +503,7 @@ namespace System.Security.Cryptography
             return pointBlob;
         }
 
-        internal static byte[] ToPkcs8(this ECParameters parameters)
+        internal static byte[] ToPrivateKeyBlob(this ECParameters parameters)
         {
             parameters.Validate();
 
@@ -507,21 +515,6 @@ namespace System.Security.Cryptography
 
             byte[] pointBlob = GetPointBlob(ref parameters);
 
-            // OneAsymmetricKey ::= SEQUENCE {
-            //   version                   Version,
-            //   privateKeyAlgorithm       PrivateKeyAlgorithmIdentifier,
-            //   privateKey                PrivateKey,
-            //   attributes            [0] Attributes OPTIONAL,
-            //   ...,
-            //   [[2: publicKey        [1] PublicKey OPTIONAL ]],
-            //   ...
-            // }
-            //
-            // PrivateKeyInfo ::= OneAsymmetricKey
-            //
-            // PrivateKey ::= OCTET STRING
-
-
             // ECPrivateKey{CURVES:IOSet} ::= SEQUENCE {
             //   version INTEGER { ecPrivkeyVer1(1) } (ecPrivkeyVer1),
             //   privateKey OCTET STRING,
@@ -530,13 +523,13 @@ namespace System.Security.Cryptography
             // }
             return DerEncoder.ConstructSequence(
                 s_encodedVersion1,
-                DerEncoder.ConstructSegmentedSequence(
-                    s_encodedIdEcPublicKey,
+                DerEncoder.SegmentedEncodeOctetString(parameters.D),
+                DerEncoder.ConstructSegmentedContextSpecificValue(
+                    0,
                     DerEncoder.SegmentedEncodeOid(parameters.Curve.Oid)),
-                DerEncoder.SegmentedEncodeOctetString(
-                    DerEncoder.ConstructSequence(
-                        s_encodedVersion1,
-                        DerEncoder.SegmentedEncodeOctetString(pointBlob))));
+                DerEncoder.ConstructSegmentedContextSpecificValue(
+                    1,
+                    DerEncoder.SegmentedEncodeBitString(pointBlob)));
         }
 
         private static void ReadEncodedPoint(byte[] encodedPoint, ref ECParameters parameters)

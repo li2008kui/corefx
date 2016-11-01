@@ -509,6 +509,34 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
+        /// Make a context-specific tagged value which is constructed of other DER encoded values.
+        /// Logically the same as a SEQUENCE, but providing context as to data interpretation (and usually
+        /// indicates an optional element adjacent to another SEQUENCE).
+        /// </summary>
+        /// <param name="contextId">The value's context ID</param>
+        /// <param name="items">Series of Tag-Length-Value triplets to build into one sequence.</param>
+        /// <returns>The encoded segments { tag, length, value }</returns>
+        internal static byte[][] ConstructSegmentedContextSpecificValue(int contextId, params byte[][][] items)
+        {
+            Debug.Assert(items != null);
+            Debug.Assert(contextId >= 0 && contextId <= 30);
+
+            byte[] data = ConcatenateArrays(items);
+
+            byte tagId = (byte)(
+                DerSequenceReader.ConstructedFlag |
+                DerSequenceReader.ContextSpecificTagFlag |
+                contextId);
+
+            return new byte[][]
+            {
+                new byte[] { tagId },
+                EncodeLength(data.Length),
+                data,
+            };
+        }
+
+        /// <summary>
         /// Make a constructed SET of the byte-triplets of the contents, but leave
         /// the value in a segmented form (to be included in a larger SEQUENCE).
         /// </summary>
