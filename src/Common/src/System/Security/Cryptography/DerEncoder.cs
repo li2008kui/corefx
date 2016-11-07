@@ -104,7 +104,7 @@ namespace System.Security.Cryptography
                 data, 
             };
         }
-
+        
         /// <summary>
         /// Encode the segments { tag, length, value } of an unsigned integer.
         /// </summary>
@@ -172,6 +172,20 @@ namespace System.Security.Cryptography
                 EncodeLength(dataBytes.Length),
                 dataBytes,
             };
+        }
+
+        /// <summary>
+        /// Encode the segments { tag, length, value } of a BIT STRING which is wrapped over
+        /// other DER-encoded data.
+        /// </summary>
+        /// <param name="childSegments"></param>
+        /// <remarks>
+        /// Despite containing other DER-encoded data this does not get the constructed bit,
+        /// because it doesn't when encoding public keys in SubjectPublicKeyInfo</remarks>
+        /// <returns></returns>
+        internal static byte[][] SegmentedEncodeBitString(params byte[][][] childSegments)
+        {
+            return SegmentedEncodeBitString(ConcatenateArrays(childSegments));
         }
 
         /// <summary>
