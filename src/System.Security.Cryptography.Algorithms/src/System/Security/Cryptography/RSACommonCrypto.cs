@@ -420,7 +420,7 @@ namespace System.Security.Cryptography
             }
 
             byte[] privateKeyBytes = reader.ReadOctetString();
-            // Because this wsa an RSA private key, the key format is PKCS#1.
+            // Because this was an RSA private key, the key format is PKCS#1.
             ReadPkcs1Blob(privateKeyBytes, ref parameters);
 
             // We don't care about the rest of the blob here, but it's expected to not exist.

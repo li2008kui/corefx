@@ -311,8 +311,7 @@ namespace System.Security.Cryptography
 
             if (algorithm.PeekTag() != (int)DerSequenceReader.DerTag.ObjectIdentifier)
             {
-                // Only named curves are supported
-                throw new PlatformNotSupportedException();
+                throw new PlatformNotSupportedException("Only named curves are supported");
             }
 
             byte[] publicKeyBlob = keyInfo.ReadBitString();

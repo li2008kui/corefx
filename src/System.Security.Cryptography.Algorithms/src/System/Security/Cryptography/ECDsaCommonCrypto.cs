@@ -148,7 +148,7 @@ namespace System.Security.Cryptography
 
                 public override ECParameters ExportExplicitParameters(bool includePrivateParameters)
                 {
-                    throw new PlatformNotSupportedException();
+                    throw new PlatformNotSupportedException("Only named curves are supported");
                 }
 
                 public override ECParameters ExportParameters(bool includePrivateParameters)
@@ -426,8 +426,7 @@ namespace System.Security.Cryptography
 
             if (parametersReader.PeekTag() != (int)DerSequenceReader.DerTag.ObjectIdentifier)
             {
-                // Only named curves are supported
-                throw new PlatformNotSupportedException();
+                throw new PlatformNotSupportedException("Only named curves are supported");
             }
 
             parameters.Curve = ECCurve.CreateFromValue(parametersReader.ReadOidAsString());
@@ -461,8 +460,7 @@ namespace System.Security.Cryptography
 
             if (algorithm.PeekTag() != (int)DerSequenceReader.DerTag.ObjectIdentifier)
             {
-                // Only named curves are supported
-                throw new PlatformNotSupportedException();
+                throw new PlatformNotSupportedException("Only named curves are supported");
             }
 
             parameters.Curve = ECCurve.CreateFromValue(algorithm.ReadOidAsString());
@@ -479,8 +477,7 @@ namespace System.Security.Cryptography
 
             if (!parameters.Curve.IsNamed)
             {
-                // Only named is supported
-                throw new PlatformNotSupportedException();
+                throw new PlatformNotSupportedException("Only named curves are supported");
             }
 
             byte[] pointBlob = GetPointBlob(ref parameters);
@@ -509,8 +506,7 @@ namespace System.Security.Cryptography
 
             if (!parameters.Curve.IsNamed)
             {
-                // Only named is supported
-                throw new PlatformNotSupportedException();
+                throw new PlatformNotSupportedException("Only named curves are supported");
             }
 
             byte[] pointBlob = GetPointBlob(ref parameters);

@@ -104,7 +104,7 @@ namespace System.Security.Cryptography
                 data, 
             };
         }
-        
+
         /// <summary>
         /// Encode the segments { tag, length, value } of an unsigned integer.
         /// </summary>

@@ -115,7 +115,7 @@ internal static partial class Interop
                     throw new CryptographicException("A CFError was produced");
                 }
 
-                Debug.Fail("RsaVerify returned {ret}");
+                Debug.Fail("RsaSign returned {ret}");
                 throw new CryptographicException();
             }
         }

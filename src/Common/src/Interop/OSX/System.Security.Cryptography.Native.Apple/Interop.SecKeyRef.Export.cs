@@ -13,6 +13,11 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
+        private const string OidPbes2 = "1.2.840.113549.1.5.13";
+        private const string OidPbkdf2 = "1.2.840.113549.1.5.12";
+        private const string OidSha1 = "1.3.14.3.2.26";
+        private const string OidTripleDesCbc = "1.2.840.113549.3.7";
+
         [DllImport(Libraries.AppleCryptoNative)]
         private static extern int AppleCryptoNative_SecKeyExport(
             SafeSecKeyRefHandle key,
@@ -59,7 +64,7 @@ internal static partial class Interop
 
                 if (ret != 1)
                 {
-                    Debug.Assert(ret == 0, $"AppleCryptoNative_SecKeyExport returned {ret}");
+                    Debug.Fail($"AppleCryptoNative_SecKeyExport returned {ret}");
                     throw new CryptographicException();
                 }
 
@@ -106,7 +111,7 @@ internal static partial class Interop
             string algorithmOid = algorithmIdentifier.ReadOidAsString();
 
             // PBES2 (Password-Based Encryption Scheme 2)
-            if (algorithmOid != "1.2.840.113549.1.5.13")
+            if (algorithmOid != OidPbes2)
             {
                 throw new CryptographicException();
             }
@@ -122,7 +127,7 @@ internal static partial class Interop
             string kdfOid = algorithmIdentifier.ReadOidAsString();
 
             // PBKDF2 (Password-Based Key Derivation Function 2)
-            if (kdfOid != "1.2.840.113549.1.5.12")
+            if (kdfOid != OidPbkdf2)
             {
                 throw new CryptographicException();
             }
@@ -152,7 +157,7 @@ internal static partial class Interop
                 string prfOid = pbkdf2Params.ReadOidAsString();
 
                 // SHA-1 is the only hash algorithm our PBKDF2 supports.
-                if (prfOid != "1.3.14.3.2.26")
+                if (prfOid != OidSha1)
                 {
                     throw new CryptographicException(prfOid);
                 }
@@ -162,7 +167,7 @@ internal static partial class Interop
             string cipherOid = encryptionScheme.ReadOidAsString();
 
             // DES-EDE3-CBC (TripleDES in CBC mode)
-            if (cipherOid != "1.2.840.113549.3.7")
+            if (cipherOid != OidTripleDesCbc)
             {
                 throw new CryptographicException();
             }

@@ -58,7 +58,7 @@ internal static partial class Interop
                     throw new CryptographicException("A CFError was produced");
                 }
 
-                Debug.Fail("RsaVerify returned {ret}");
+                Debug.Fail("DsaSign returned {ret}");
                 throw new CryptographicException();
             }
         }
@@ -90,7 +90,7 @@ internal static partial class Interop
                     throw new CryptographicException("A CFError was produced");
                 }
 
-                Debug.Fail("RsaVerify returned {ret}");
+                Debug.Fail("DsaVerify returned {ret}");
                 throw new CryptographicException();
             }
         }
