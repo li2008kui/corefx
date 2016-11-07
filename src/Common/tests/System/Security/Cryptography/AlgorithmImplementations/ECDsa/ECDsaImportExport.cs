@@ -9,52 +9,6 @@ namespace System.Security.Cryptography.EcDsa.Tests
 {
     public class ECDsaImportExportTests : ECDsaTestsBase
     {
-        [Fact]
-        public static void DoNotCheckin()
-        {
-            using (ECDsa ec = ECDsaFactory.Create(521))
-            {
-                ECParameters privateParams = ec.ExportParameters(true);
-                ECParameters publicParams1 = ec.ExportParameters(false);
-                ECParameters publicParams2;
-
-                ec.Exercise();
-                byte[] data = { 1, 1, 2, 3, 5, 8 };
-                byte[] signature = ec.SignData(data, HashAlgorithmName.SHA384);
-                byte[] signature2;
-
-                Console.WriteLine($"Signature: {signature.ByteArrayToHex()}");
-                using (ECDsa ec2 = ECDsaFactory.Create())
-                {
-                    ec2.ImportParameters(privateParams);
-                    publicParams2 = ec2.ExportParameters(false);
-                    signature2 = ec2.SignData(data, HashAlgorithmName.SHA512);
-                }
-
-                using (ECDsa ec3 = ECDsaFactory.Create())
-                {
-                    ec3.ImportParameters(publicParams1);
-
-                    Assert.True(ec3.VerifyData(data, signature, HashAlgorithmName.SHA384));
-                    Assert.True(ec3.VerifyData(data, signature2, HashAlgorithmName.SHA512));
-                    data[0] ^= 0xFF;
-                    Assert.False(ec3.VerifyData(data, signature, HashAlgorithmName.SHA384));
-                    data[0] ^= 0xFF;
-                }
-
-                using (ECDsa ec4 = ECDsaFactory.Create())
-                {
-                    ec4.ImportParameters(publicParams2);
-
-                    Assert.True(ec4.VerifyData(data, signature, HashAlgorithmName.SHA384));
-                    Assert.True(ec4.VerifyData(data, signature2, HashAlgorithmName.SHA512));
-                    data[0] ^= 0xFF;
-                    Assert.False(ec4.VerifyData(data, signature, HashAlgorithmName.SHA384));
-                    data[0] ^= 0xFF;
-                }
-            }
-        }
-
         [Theory, MemberData(nameof(TestCurvesFull))]
         public static void TestNamedCurves(CurveDef curveDef)
         {
