@@ -4,11 +4,10 @@
 
 #include "pal_rsa.h"
 
-extern "C" int32_t AppleCryptoNative_SecKeyExport(SecKeyRef pKey, int32_t exportPrivate, CFStringRef cfExportPassphrase, CFDataRef* ppDataOut, int32_t* pOSStatus)
+extern "C" int32_t AppleCryptoNative_SecKeyExport(
+    SecKeyRef pKey, int32_t exportPrivate, CFStringRef cfExportPassphrase, CFDataRef* ppDataOut, int32_t* pOSStatus)
 {
-    if (pKey == nullptr ||
-        ppDataOut == nullptr ||
-        pOSStatus == nullptr)
+    if (pKey == nullptr || ppDataOut == nullptr || pOSStatus == nullptr)
     {
         return kErrorBadInput;
     }
@@ -28,12 +27,7 @@ extern "C" int32_t AppleCryptoNative_SecKeyExport(SecKeyRef pKey, int32_t export
         dataFormat = kSecFormatWrappedPKCS8;
     }
 
-    *pOSStatus = SecItemExport(
-        pKey,
-        dataFormat,
-        0,
-        &keyParams,
-        ppDataOut);
+    *pOSStatus = SecItemExport(pKey, dataFormat, 0, &keyParams, ppDataOut);
 
     return (*pOSStatus == noErr);
 }

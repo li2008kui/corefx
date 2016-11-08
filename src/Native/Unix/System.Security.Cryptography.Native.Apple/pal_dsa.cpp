@@ -5,31 +5,10 @@
 #include "pal_rsa.h"
 #include <stdio.h>
 
-extern "C" int
-AppleCryptoNative_EccGenerateKey(int32_t keySizeBits, SecKeyRef* pPublicKey, SecKeyRef* pPrivateKey, int32_t* pOSStatus)
-{
-    if (pPublicKey == nullptr || pPrivateKey == nullptr || pOSStatus == nullptr)
-        return kErrorBadInput;
-
-    CFMutableDictionaryRef attributes = CFDictionaryCreateMutable(nullptr, 2, &kCFTypeDictionaryKeyCallBacks, nullptr);
-
-    CFNumberRef cfKeySizeValue = CFNumberCreate(nullptr, kCFNumberIntType, &keySizeBits);
-
-    CFDictionaryAddValue(attributes, kSecAttrKeyType, kSecAttrKeyTypeEC);
-    CFDictionaryAddValue(attributes, kSecAttrKeySizeInBits, cfKeySizeValue);
-
-    OSStatus status = SecKeyGeneratePair(attributes, pPublicKey, pPrivateKey);
-
-    CFRelease(attributes);
-    CFRelease(cfKeySizeValue);
-
-    *pOSStatus = status;
-    return status == noErr;
-}
-
-extern "C" int32_t AppleCryptoNative_EccImportEphemeralKey(
+extern "C" int32_t AppleCryptoNative_DsaImportEphemeralKey(
     uint8_t* pbKeyBlob, int32_t cbKeyBlob, int32_t isPrivateKey, SecKeyRef* ppKeyOut, int32_t* pOSStatus)
 {
+    printf("DsaImport(%d, %d)\n", cbKeyBlob, isPrivateKey);
     if (pbKeyBlob == nullptr || cbKeyBlob < 0 || isPrivateKey < 0 || isPrivateKey > 1 || ppKeyOut == nullptr ||
         pOSStatus == nullptr)
     {

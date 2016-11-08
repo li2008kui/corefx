@@ -9,5 +9,7 @@
 
 #include <Security/Security.h>
 
-extern "C" int
-AppleCryptoNative_RsaGenerateKey(int32_t keySizeBits, SecKeyRef* pPublicKey, SecKeyRef* pPrivateKey, int32_t* pOSStatus);
+extern "C" int AppleCryptoNative_RsaGenerateKey(int32_t keySizeBits,
+                                                SecKeyRef* pPublicKey,
+                                                SecKeyRef* pPrivateKey,
+                                                int32_t* pOSStatus);

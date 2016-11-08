@@ -4,13 +4,10 @@
 
 #include "pal_rsa.h"
 
-int32_t ExecuteCFDataTransform(SecTransformRef xform, uint8_t* pbData, int32_t cbData, CFDataRef* pDataOut, CFErrorRef* pErrorOut)
+int32_t ExecuteCFDataTransform(
+    SecTransformRef xform, uint8_t* pbData, int32_t cbData, CFDataRef* pDataOut, CFErrorRef* pErrorOut)
 {
-    if (xform == nullptr ||
-        pbData == nullptr ||
-        cbData < 0 ||
-        pDataOut == nullptr ||
-        pErrorOut == nullptr)
+    if (xform == nullptr || pbData == nullptr || cbData < 0 || pDataOut == nullptr || pErrorOut == nullptr)
     {
         return kErrorBadInput;
     }

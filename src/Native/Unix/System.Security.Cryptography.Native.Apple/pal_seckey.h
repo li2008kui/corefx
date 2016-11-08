@@ -7,6 +7,6 @@
 #include "pal_types.h"
 
 static const int kErrorBadInput = -1;
-static const int kErrorSeeError= -2;
+static const int kErrorSeeError = -2;
 static const int kErrorUnknownAlgorithm = -3;
 static const int kErrorUnknownState = -4;
