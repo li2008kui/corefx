@@ -67,7 +67,7 @@ namespace System.Security.Cryptography
                     if (keys.PublicKey == null ||
                         (includePrivateParameters && keys.PrivateKey == null))
                     { 
-                        throw new CryptographicException("No key handle allocated");
+                        throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
                     }
 
                     DSAParameters parameters = new DSAParameters();
@@ -115,13 +115,11 @@ namespace System.Security.Cryptography
                     if (hasPrivateKey && parameters.X.Length != parameters.Q.Length)
                         throw new ArgumentException(SR.Cryptography_InvalidDsaParameters_MismatchedQX);
 
-                    if (parameters.Q.Length != 20)
-                        throw new CryptographicException("FIPS 186-2 only");
-
                     if (!(8 * parameters.P.Length).IsLegalSize(LegalKeySizes))
-                    {
-                        throw new CryptographicException("FIPS 186-2 only");
-                    }
+                        throw new CryptographicException(SR.Cryptography_InvalidKeySize);
+
+                    if (parameters.Q.Length != 20)
+                        throw new CryptographicException(SR.Cryptography_InvalidDsaParameters_QRestriction_ShortKey);
 
                     if (hasPrivateKey)
                     {
@@ -153,31 +151,9 @@ namespace System.Security.Cryptography
                 private static SafeSecKeyRefHandle ImportKey(DSAParameters parameters)
                 {
                     bool hasPrivateKey = parameters.X != null;
-
                     byte[] blob = hasPrivateKey ? parameters.ToPrivateKeyBlob() : parameters.ToSubjectPublicKeyInfo();
-                    SafeSecKeyRefHandle keyHandle;
-                    int osStatus;
 
-                    int ret = Interop.AppleCrypto.DsaImportEphemeralKey(
-                        blob,
-                        blob.Length,
-                        hasPrivateKey,
-                        out keyHandle,
-                        out osStatus);
-
-                    if (ret == 1 && !keyHandle.IsInvalid)
-                    {
-                        return keyHandle;
-                    }
-
-                    if (ret == 0)
-                    {
-                        // TODO: Is there a better OSStatus lookup?
-                        throw Interop.AppleCrypto.CreateExceptionForCCError(osStatus, "OSStatus");
-                    }
-
-                    Debug.Fail($"RsaImportEphemeralKey returned {ret}");
-                    throw new CryptographicException();
+                    return Interop.AppleCrypto.ImportEphemeralKey(blob, hasPrivateKey);
                 }
 
                 public override byte[] CreateSignature(byte[] hash)
@@ -194,6 +170,8 @@ namespace System.Security.Cryptography
 
                     byte[] derFormatSignature = Interop.AppleCrypto.DsaSign(keys.PrivateKey, hash);
 
+                    // Since the AppleCrypto implementation is limited to FIPS 186-2, signature field sizes
+                    // are always 160 bits / 20 bytes (the size of SHA-1, and the only legal length for Q).
                     byte[] ieeeFormatSignature = OpenSslAsymmetricAlgorithmCore.ConvertDerToIeee1363(
                         derFormatSignature,
                         0,
@@ -222,6 +200,7 @@ namespace System.Security.Cryptography
                 {
                     if (hashAlgorithm != HashAlgorithmName.SHA1)
                     {
+                        // Matching DSACryptoServiceProvider's "I only understand SHA-1/FIPS 186-2" exception
                         throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name);
                     }
 
@@ -258,7 +237,7 @@ namespace System.Security.Cryptography
                     // (OSStatus)-4 (errSecUnimplemented), just make the exception occur here.
                     //
                     // When the native code can be verified, then it can be added.
-                    throw new PlatformNotSupportedException("DSA Key Generation is not supported");
+                    throw new PlatformNotSupportedException(SR.Cryptography_DSA_KeyGenNotSupported);
                 }
 
                 private void SetKey(KeyPair newKeyPair)
@@ -296,7 +275,7 @@ namespace System.Security.Cryptography
 
     internal static class DsaKeyBlobHelpers
     {
-        private static Oid s_idDsa = new Oid("1.2.840.10040.4.1");
+        private static readonly Oid s_idDsa = new Oid("1.2.840.10040.4.1");
 
         internal static void ReadSubjectPublicKeyInfo(this DerSequenceReader keyInfo, ref DSAParameters parameters)
         {
@@ -325,7 +304,7 @@ namespace System.Security.Cryptography
 
             if (algorithm.PeekTag() != (int)DerSequenceReader.DerTag.ObjectIdentifier)
             {
-                throw new PlatformNotSupportedException("Only named curves are supported");
+                throw new PlatformNotSupportedException(SR.Cryptography_ECC_NamedCurvesOnly);
             }
 
             byte[] publicKeyBlob = keyInfo.ReadBitString();

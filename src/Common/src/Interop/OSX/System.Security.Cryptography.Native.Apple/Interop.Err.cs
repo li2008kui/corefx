@@ -11,6 +11,7 @@ internal static partial class Interop
     {
         internal const string CCCryptorStatus = "CCCryptorStatus";
         internal const string CCRNGStatus = "CCRNGStatus";
+        internal const string OSStatus = "OSStatus";
 
         internal static Exception CreateExceptionForCCError(int errorCode, string errorType)
         {
