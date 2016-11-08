@@ -22,7 +22,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         {
             get
             {
-                return (!PlatformDetection.IsWindows7);
+                return !(PlatformDetection.IsWindows7 || PlatformDetection.IsOSX);
             }
         }
     }

@@ -20,7 +20,7 @@ internal static partial class Interop
             out SafeSecKeyRefHandle key,
             out int pOSStatus);
 
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_EcdsaSign")]
+        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DsaSign")]
         private static extern int DsaSign(
             SafeSecKeyRefHandle key,
             byte[] pbDataHash,
@@ -28,7 +28,7 @@ internal static partial class Interop
             out SafeCFDataHandle pSignatureOut,
             out SafeCreateHandle pErrorOut);
 
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_EcdsaVerify")]
+        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DsaVerify")]
         private static extern int DsaVerify(
             SafeSecKeyRefHandle key,
             byte[] pbDataHash,

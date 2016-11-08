@@ -24,7 +24,7 @@ namespace System.Security.Cryptography
                 private KeyPair _keys;
 
                 public DSASecurityTransforms()
-                    : this(2048)
+                    : this(1024)
                 {
                 }
 
@@ -37,7 +37,7 @@ namespace System.Security.Cryptography
                 {
                     get
                     {
-                        return new[] { new KeySizes(minSize: 512, maxSize: 3072, skipSize: 64) };
+                        return new[] { new KeySizes(minSize: 512, maxSize: 1024, skipSize: 64) };
                     }
                 }
 
@@ -115,6 +115,14 @@ namespace System.Security.Cryptography
                     if (hasPrivateKey && parameters.X.Length != parameters.Q.Length)
                         throw new ArgumentException(SR.Cryptography_InvalidDsaParameters_MismatchedQX);
 
+                    if (parameters.Q.Length != 20)
+                        throw new CryptographicException("FIPS 186-2 only");
+
+                    if (!(8 * parameters.P.Length).IsLegalSize(LegalKeySizes))
+                    {
+                        throw new CryptographicException("FIPS 186-2 only");
+                    }
+
                     if (hasPrivateKey)
                     {
                         SafeSecKeyRefHandle privateKey = ImportKey(parameters);
@@ -185,11 +193,12 @@ namespace System.Security.Cryptography
                     }
 
                     byte[] derFormatSignature = Interop.AppleCrypto.DsaSign(keys.PrivateKey, hash);
+
                     byte[] ieeeFormatSignature = OpenSslAsymmetricAlgorithmCore.ConvertDerToIeee1363(
                         derFormatSignature,
                         0,
                         derFormatSignature.Length,
-                        20*8);
+                        fieldSizeBits: 160);
 
                     return ieeeFormatSignature;
                 }
@@ -211,6 +220,11 @@ namespace System.Security.Cryptography
 
                 protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
                 {
+                    if (hashAlgorithm != HashAlgorithmName.SHA1)
+                    {
+                        throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name);
+                    }
+
                     return OpenSslAsymmetricAlgorithmCore.HashData(data, offset, count, hashAlgorithm);
                 }
 
