@@ -98,6 +98,8 @@ internal static partial class Interop
             throw new CryptographicException($"Data was neither PrivateKey or EncryptedPrivateKey: {tag:X2}");
         }
 
+        // We are using 3DES when the payload says to do so, not by choice.
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350")]
         private static DerSequenceReader ReadEncryptedPkcs8Blob(string passphrase, DerSequenceReader reader)
         {
             // EncryptedPrivateKeyInfo::= SEQUENCE {
