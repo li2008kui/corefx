@@ -38,11 +38,12 @@ namespace System.Security.Cryptography
             {
                 get
                 {
-                    // See https://msdn.microsoft.com/en-us/library/windows/desktop/bb931354(v=vs.85).aspx
                     return new KeySizes[]
                     {
                         // All values are in bits.
-                        new KeySizes(minSize: 512, maxSize: 16384, skipSize: 64),
+                        // 1024 was achieved via experimentation.
+                        // 1024 and 1024+64 both generated successfully, 1024-64 produced errSecParam.
+                        new KeySizes(minSize: 1024, maxSize: 16384, skipSize: 64),
                     };
                 }
             }
@@ -159,7 +160,7 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
                 }
 
-                return Interop.AppleCrypto.RsaSign(
+                return Interop.AppleCrypto.GenerateSignature(
                     keys.PrivateKey,
                     hash,
                     PalAlgorithmFromAlgorithmName(hashAlgorithm));
@@ -174,7 +175,7 @@ namespace System.Security.Cryptography
                 if (padding != RSASignaturePadding.Pkcs1)
                     throw new CryptographicException(SR.Cryptography_InvalidPaddingMode);
 
-                return Interop.AppleCrypto.RsaVerify(
+                return Interop.AppleCrypto.VerifySignature(
                     GetKeys().PublicKey,
                     hash,
                     signature,
@@ -443,8 +444,8 @@ namespace System.Security.Cryptography
 
             DerSequenceReader subjectPublicKey = new DerSequenceReader(subjectPublicKeyBytes);
 
-            parameters.Modulus = TrimPaddingByte(subjectPublicKey.ReadIntegerBytes());
-            parameters.Exponent = TrimPaddingByte(subjectPublicKey.ReadIntegerBytes());
+            parameters.Modulus = KeyBlobHelpers.TrimPaddingByte(subjectPublicKey.ReadIntegerBytes());
+            parameters.Exponent = KeyBlobHelpers.TrimPaddingByte(subjectPublicKey.ReadIntegerBytes());
 
             if (subjectPublicKey.HasData)
                 throw new CryptographicException();
@@ -472,51 +473,23 @@ namespace System.Security.Cryptography
                 throw new CryptographicException();
             }
 
-            parameters.Modulus = TrimPaddingByte(privateKey.ReadIntegerBytes());
-            parameters.Exponent = TrimPaddingByte(privateKey.ReadIntegerBytes());
+            parameters.Modulus = KeyBlobHelpers.TrimPaddingByte(privateKey.ReadIntegerBytes());
+            parameters.Exponent = KeyBlobHelpers.TrimPaddingByte(privateKey.ReadIntegerBytes());
 
             int modulusLen = parameters.Modulus.Length;
             int halfModulus = modulusLen / 2;
 
-            parameters.D = PadOrTrim(privateKey.ReadIntegerBytes(), modulusLen);
-            parameters.P = PadOrTrim(privateKey.ReadIntegerBytes(), halfModulus);
-            parameters.Q = PadOrTrim(privateKey.ReadIntegerBytes(), halfModulus);
-            parameters.DP = PadOrTrim(privateKey.ReadIntegerBytes(), halfModulus);
-            parameters.DQ = PadOrTrim(privateKey.ReadIntegerBytes(), halfModulus);
-            parameters.InverseQ = PadOrTrim(privateKey.ReadIntegerBytes(), halfModulus);
+            parameters.D = KeyBlobHelpers.PadOrTrim(privateKey.ReadIntegerBytes(), modulusLen);
+            parameters.P = KeyBlobHelpers.PadOrTrim(privateKey.ReadIntegerBytes(), halfModulus);
+            parameters.Q = KeyBlobHelpers.PadOrTrim(privateKey.ReadIntegerBytes(), halfModulus);
+            parameters.DP = KeyBlobHelpers.PadOrTrim(privateKey.ReadIntegerBytes(), halfModulus);
+            parameters.DQ = KeyBlobHelpers.PadOrTrim(privateKey.ReadIntegerBytes(), halfModulus);
+            parameters.InverseQ = KeyBlobHelpers.PadOrTrim(privateKey.ReadIntegerBytes(), halfModulus);
 
             if (privateKey.HasData)
             {
                 throw new CryptographicException();
             }
-        }
-
-        private static byte[] TrimPaddingByte(byte[] data)
-        {
-            if (data[0] != 0)
-                return data;
-
-            byte[] newData = new byte[data.Length - 1];
-            Buffer.BlockCopy(data, 1, newData, 0, newData.Length);
-            return newData;
-        }
-
-        private static byte[] PadOrTrim(byte[] data, int length)
-        {
-            if (data.Length == length)
-                return data;
-
-            // Need to skip the sign-padding byte.
-            if (data.Length == length + 1 && data[0] == 0)
-            {
-                return TrimPaddingByte(data);
-            }
-
-            int offset = length - data.Length;
-
-            byte[] newData = new byte[length];
-            Buffer.BlockCopy(data, 0, newData, offset, data.Length);
-            return newData;
         }
     }
 }

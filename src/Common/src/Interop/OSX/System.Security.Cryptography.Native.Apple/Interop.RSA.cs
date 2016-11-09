@@ -28,25 +28,6 @@ internal static partial class Interop
             out SafeSecKeyRefHandle key,
             out int pOSStatus);
 
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaSign")]
-        private static extern int RsaSign(
-            SafeSecKeyRefHandle key,
-            byte[] pbDataHash,
-            int cbDataHash,
-            PAL_HashAlgorithm algorithm,
-            out SafeCFDataHandle pSignatureOut,
-            out SafeCreateHandle pErrorOut);
-
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaVerify")]
-        private static extern int RsaVerify(
-            SafeSecKeyRefHandle key,
-            byte[] pbDataHash,
-            int cbDataHash,
-            byte[] pbSignature,
-            int cbSignature,
-            PAL_HashAlgorithm algorithm,
-            out SafeCreateHandle pErrorOut);
-
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaEncryptOaep")]
         private static extern int RsaEncryptOaep(
             SafeSecKeyRefHandle publicKey,
@@ -91,65 +72,6 @@ internal static partial class Interop
             checked
             {
                 return (int)(keySizeInBytes * 8);
-            }
-        }
-
-        internal static byte[] RsaSign(SafeSecKeyRefHandle key, byte[] hash, PAL_HashAlgorithm hashAlgorithm)
-        {
-            SafeCFDataHandle signature;
-            SafeCreateHandle error;
-            int ret = RsaSign(key, hash, hash.Length, hashAlgorithm, out signature, out error);
-
-            using (error)
-            using (signature)
-            {
-                if (ret == 1)
-                {
-                    return CoreFoundation.CFGetData(signature);
-                }
-
-                if (ret == -2)
-                {
-                    Debug.Assert(!error.IsInvalid, "Native layer indicated error object was populated");
-                    // TODO: Throw a CFErrorRef-based exception
-                    throw new CryptographicException("A CFError was produced");
-                }
-
-                Debug.Fail("RsaSign returned {ret}");
-                throw new CryptographicException();
-            }
-        }
-
-        internal static bool RsaVerify(
-            SafeSecKeyRefHandle key,
-            byte[] hash,
-            byte[] signature,
-            PAL_HashAlgorithm algorithm)
-        {
-            SafeCreateHandle error;
-            int ret = RsaVerify(key, hash, hash.Length, signature, signature.Length, algorithm, out error);
-
-            using (error)
-            {
-                if (ret == 1)
-                {
-                    return true;
-                }
-
-                if (ret == 0)
-                {
-                    return false;
-                }
-
-                if (ret == -2)
-                {
-                    Debug.Assert(!error.IsInvalid, "Native layer indicated error object was populated");
-                    // TODO: Throw a CFErrorRef-based exception
-                    throw new CryptographicException("A CFError was produced");
-                }
-
-                Debug.Fail("RsaVerify returned {ret}");
-                throw new CryptographicException();
             }
         }
 

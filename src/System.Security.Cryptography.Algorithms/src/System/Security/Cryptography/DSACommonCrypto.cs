@@ -83,12 +83,15 @@ namespace System.Security.Cryptography
                         privateKeyReader.ReadPkcs8Blob(ref parameters);
                     }
 
-                    KeyBlobHelpers.ZeroExtend(ref parameters.G, parameters.P.Length);
-                    KeyBlobHelpers.ZeroExtend(ref parameters.Y, parameters.P.Length);
+                    KeyBlobHelpers.TrimPaddingByte(ref parameters.P);
+                    KeyBlobHelpers.TrimPaddingByte(ref parameters.Q);
+
+                    KeyBlobHelpers.PadOrTrim(ref parameters.G, parameters.P.Length);
+                    KeyBlobHelpers.PadOrTrim(ref parameters.Y, parameters.P.Length);
 
                     if (includePrivateParameters)
                     {
-                        KeyBlobHelpers.ZeroExtend(ref parameters.X, parameters.Q.Length);
+                        KeyBlobHelpers.PadOrTrim(ref parameters.X, parameters.Q.Length);
                     }
 
                     return parameters;
@@ -168,7 +171,7 @@ namespace System.Security.Cryptography
                         throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
                     }
 
-                    byte[] derFormatSignature = Interop.AppleCrypto.DsaSign(keys.PrivateKey, hash);
+                    byte[] derFormatSignature = Interop.AppleCrypto.GenerateSignature(keys.PrivateKey, hash);
 
                     // Since the AppleCrypto implementation is limited to FIPS 186-2, signature field sizes
                     // are always 160 bits / 20 bytes (the size of SHA-1, and the only legal length for Q).
@@ -190,7 +193,7 @@ namespace System.Security.Cryptography
 
                     byte[] derFormatSignature = OpenSslAsymmetricAlgorithmCore.ConvertIeee1363ToDer(signature);
 
-                    return Interop.AppleCrypto.DsaVerify(
+                    return Interop.AppleCrypto.VerifySignature(
                         GetKeys().PublicKey,
                         hash,
                         derFormatSignature);
@@ -258,18 +261,47 @@ namespace System.Security.Cryptography
 
     internal static class KeyBlobHelpers
     {
-        internal static void ZeroExtend(ref byte[] blob, int minLength)
+        internal static byte[] TrimPaddingByte(byte[] data)
         {
-            Debug.Assert(blob != null);
+            byte[] dataLocal = data;
+            TrimPaddingByte(ref dataLocal);
+            return dataLocal;
+        }
 
-            if (blob.Length >= minLength)
+        internal static void TrimPaddingByte(ref byte[] data)
+        {
+            if (data[0] != 0)
+                return;
+
+            byte[] newData = new byte[data.Length - 1];
+            Buffer.BlockCopy(data, 1, newData, 0, newData.Length);
+            data = newData;
+        }
+
+        internal static byte[] PadOrTrim(byte[] data, int length)
+        {
+            byte[] dataLocal = data;
+            PadOrTrim(ref dataLocal, length);
+            return dataLocal;
+        }
+
+        internal static void PadOrTrim(ref byte[] data, int length)
+        {
+            if (data.Length == length)
+                return;
+
+            // Need to skip the sign-padding byte.
+            if (data.Length == length + 1 && data[0] == 0)
             {
+                TrimPaddingByte(ref data);
                 return;
             }
 
-            byte[] newBlob = new byte[minLength];
-            Buffer.BlockCopy(blob, 0, newBlob, minLength - blob.Length, blob.Length);
-            blob = newBlob;
+            int offset = length - data.Length;
+
+            byte[] newData = new byte[length];
+            Buffer.BlockCopy(data, 0, newData, offset, data.Length);
+            data = newData;
         }
     }
 
@@ -301,11 +333,6 @@ namespace System.Security.Cryptography
             parameters.P = algParameters.ReadIntegerBytes();
             parameters.Q = algParameters.ReadIntegerBytes();
             parameters.G = algParameters.ReadIntegerBytes();
-
-            if (algorithm.PeekTag() != (int)DerSequenceReader.DerTag.ObjectIdentifier)
-            {
-                throw new PlatformNotSupportedException(SR.Cryptography_ECC_NamedCurvesOnly);
-            }
 
             byte[] publicKeyBlob = keyInfo.ReadBitString();
             DerSequenceReader privateKeyReader = DerSequenceReader.CreateForPayload(publicKeyBlob);

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography.Apple;
 using Internal.Cryptography;
@@ -100,7 +99,7 @@ namespace System.Security.Cryptography
                         throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
                     }
 
-                    byte[] derFormatSignature = Interop.AppleCrypto.ECDsaSign(keys.PrivateKey, hash);
+                    byte[] derFormatSignature = Interop.AppleCrypto.GenerateSignature(keys.PrivateKey, hash);
                     byte[] ieeeFormatSignature = OpenSslAsymmetricAlgorithmCore.ConvertDerToIeee1363(
                         derFormatSignature,
                         0,
@@ -119,7 +118,7 @@ namespace System.Security.Cryptography
 
                     byte[] derFormatSignature = OpenSslAsymmetricAlgorithmCore.ConvertIeee1363ToDer(signature);
 
-                    return Interop.AppleCrypto.ECDsaVerify(
+                    return Interop.AppleCrypto.VerifySignature(
                         GetKeys().PublicKey,
                         hash,
                         derFormatSignature);
@@ -176,12 +175,12 @@ namespace System.Security.Cryptography
 
                     int size = OpenSslAsymmetricAlgorithmCore.BitsToBytes(KeySize);
 
-                    KeyBlobHelpers.ZeroExtend(ref parameters.Q.X, size);
-                    KeyBlobHelpers.ZeroExtend(ref parameters.Q.Y, size);
+                    KeyBlobHelpers.PadOrTrim(ref parameters.Q.X, size);
+                    KeyBlobHelpers.PadOrTrim(ref parameters.Q.Y, size);
 
                     if (includePrivateParameters)
                     {
-                        KeyBlobHelpers.ZeroExtend(ref parameters.D, size);
+                        KeyBlobHelpers.PadOrTrim(ref parameters.D, size);
                     }
 
                     return parameters;
@@ -266,31 +265,10 @@ namespace System.Security.Cryptography
 
                 private static SafeSecKeyRefHandle ImportKey(ECParameters parameters)
                 {
-                    SafeSecKeyRefHandle keyHandle;
-                    int osStatus;
                     bool isPrivateKey = parameters.D != null;
                     byte[] blob = isPrivateKey ? parameters.ToPrivateKeyBlob() : parameters.ToSubjectPublicKeyInfo();
 
-                    int ret = Interop.AppleCrypto.EccImportEphemeralKey(
-                        blob,
-                        blob.Length,
-                        isPrivateKey,
-                        out keyHandle,
-                        out osStatus);
-
-                    if (ret == 1 && !keyHandle.IsInvalid)
-                    {
-                        return keyHandle;
-                    }
-
-                    if (ret == 0)
-                    {
-                        // TODO: Is there a better OSStatus lookup?
-                        throw Interop.AppleCrypto.CreateExceptionForCCError(osStatus, "OSStatus");
-                    }
-
-                    Debug.Fail($"RsaImportEphemeralKey returned {ret}");
-                    throw new CryptographicException();
+                    return Interop.AppleCrypto.ImportEphemeralKey(blob, isPrivateKey);
                 }
 
                 private void SetKey(KeyPair newKeyPair)
@@ -301,7 +279,7 @@ namespace System.Security.Cryptography
 
                     if (newKeyPair != null)
                     {
-                        int size = Interop.AppleCrypto.RsaGetKeySizeInBits(newKeyPair.PublicKey);
+                        long size = Interop.AppleCrypto.EccGetKeySizeInBits(newKeyPair.PublicKey);
 
                         // If this is the byte-lifted value of nistp521, shrink it back to 521.
                         if (size == ((521 + 7) / 8))
@@ -309,7 +287,7 @@ namespace System.Security.Cryptography
                             size = 521;
                         }
 
-                        KeySizeValue = size;
+                        KeySizeValue = (int)size;
                     }
                 }
 
