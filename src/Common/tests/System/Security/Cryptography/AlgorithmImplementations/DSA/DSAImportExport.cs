@@ -8,7 +8,9 @@ namespace System.Security.Cryptography.Dsa.Tests
 {
     public partial class DSAImportExport
     {
-        [Fact]
+        public static bool SupportsKeyGeneration => DSAFactory.SupportsKeyGeneration;
+
+        [ConditionalFact(nameof(SupportsKeyGeneration))]
         public static void ExportAutoKey()
         {
             DSAParameters privateParams;

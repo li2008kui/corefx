@@ -25,6 +25,8 @@ namespace System.Security.Cryptography.Dsa.Tests
                 return !(PlatformDetection.IsWindows7 || PlatformDetection.IsOSX);
             }
         }
+
+        public bool SupportsKeyGeneration => !PlatformDetection.IsOSX;
     }
 
     public partial class DSAFactory
