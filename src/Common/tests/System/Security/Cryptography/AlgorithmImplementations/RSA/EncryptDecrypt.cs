@@ -86,7 +86,18 @@ namespace System.Security.Cryptography.Rsa.Tests
             using (RSA rsa = RSAFactory.Create())
             {
                 rsa.ImportParameters(TestData.RSA2048Params);
-                output = rsa.Decrypt(cipherBytes, RSAEncryptionPadding.OaepSHA384);
+
+                if (RSAFactory.SupportsSha2Oaep)
+                {
+                    output = rsa.Decrypt(cipherBytes, RSAEncryptionPadding.OaepSHA384);
+                }
+                else
+                {
+                    Assert.ThrowsAny<CryptographicException>(
+                        () => rsa.Decrypt(cipherBytes, RSAEncryptionPadding.OaepSHA384));
+
+                    return;
+                }
             }
 
             Assert.Equal(TestData.RSA2048Params.DP, output);

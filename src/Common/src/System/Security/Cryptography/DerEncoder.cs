@@ -844,7 +844,8 @@ namespace System.Security.Cryptography
                 // Any remaining (preceding) bytes need the continuance bit set.
                 continuance = 0x80;
                 littleEndianBytes.Push(octet);
-            } while (unencoded != BigInteger.Zero);
+            }
+            while (unencoded != BigInteger.Zero);
 
             encodedData.AddRange(littleEndianBytes);
         }
