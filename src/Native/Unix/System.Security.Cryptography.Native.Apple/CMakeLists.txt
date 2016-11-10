@@ -11,7 +11,6 @@ find_library(SECURITY_LIBRARY Security)
 set(NATIVECRYPTO_SOURCES
     sectransform.cpp
     pal_digest.cpp
-    pal_dsa.cpp
     pal_ecc.cpp
     pal_hmac.cpp
     pal_random.cpp
