@@ -20,14 +20,6 @@ internal static partial class Interop
             out SafeSecKeyRefHandle pPrivateKey,
             out int pOSStatus);
 
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaImportEphemeralKey")]
-        internal static extern int RsaImportEphemeralKey(
-            byte[] pkcs1Key,
-            int cbPkcs1Key,
-            bool isPrivateKey,
-            out SafeSecKeyRefHandle key,
-            out int pOSStatus);
-
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaEncryptOaep")]
         private static extern int RsaEncryptOaep(
             SafeSecKeyRefHandle publicKey,

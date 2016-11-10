@@ -269,31 +269,10 @@ namespace System.Security.Cryptography
 
             private static SafeSecKeyRefHandle ImportKey(RSAParameters parameters)
             {
-                SafeSecKeyRefHandle keyHandle;
-                int osStatus;
                 bool isPrivateKey = parameters.D != null;
-                byte[] pkcs1Blob = parameters.ToPkcs1Blob();
+                byte[] pkcs1Blob = isPrivateKey ? parameters.ToPkcs1Blob() : parameters.ToSubjectPublicKeyInfo();
 
-                int ret = Interop.AppleCrypto.RsaImportEphemeralKey(
-                    pkcs1Blob,
-                    pkcs1Blob.Length,
-                    isPrivateKey,
-                    out keyHandle,
-                    out osStatus);
-
-                if (ret == 1 && !keyHandle.IsInvalid)
-                {
-                    return keyHandle;
-                }
-
-                if (ret == 0)
-                {
-                    // TODO: Is there a better OSStatus lookup?
-                    throw Interop.AppleCrypto.CreateExceptionForCCError(osStatus, "OSStatus");
-                }
-
-                Debug.Fail($"RsaImportEphemeralKey returned {ret}");
-                throw new CryptographicException();
+                return Interop.AppleCrypto.ImportEphemeralKey(pkcs1Blob, isPrivateKey);
             }
         }
     }
@@ -338,8 +317,22 @@ namespace System.Security.Cryptography
 
     internal static class Pkcs1BlobHelpers
     {
+        private const string RsaOid = "1.2.840.113549.1.1.1";
+
         // The PKCS#1 version blob for an RSA key based on 2 primes.
         private static readonly byte[] s_versionNumberBytes = { 0 };
+
+        // The AlgorithmIdentifier structure for RSA contains an explicit NULL, for legacy/compat reasons.
+        private static readonly byte[][] s_encodedRsaAlgorithmIdentifier =
+            DerEncoder.ConstructSegmentedSequence(
+                DerEncoder.SegmentedEncodeOid(new Oid(RsaOid)),
+                // DER:NULL (0x05 0x00)
+                new byte[][]
+                {
+                    new byte[] { (byte)DerSequenceReader.DerTag.Null },
+                    new byte[] { 0 }, 
+                    Array.Empty<byte>(),
+                });
 
         internal static byte[] ToPkcs1Blob(this RSAParameters parameters)
         {
@@ -414,7 +407,7 @@ namespace System.Security.Cryptography
 
                 string algorithmOid = algorithm.ReadOidAsString();
 
-                if (algorithmOid != "1.2.840.113549.1.1.1")
+                if (algorithmOid != RsaOid)
                 {
                     throw new CryptographicException();
                 }
@@ -422,9 +415,22 @@ namespace System.Security.Cryptography
 
             byte[] privateKeyBytes = reader.ReadOctetString();
             // Because this was an RSA private key, the key format is PKCS#1.
-            ReadPkcs1Blob(privateKeyBytes, ref parameters);
+            ReadPkcs1PrivateBlob(privateKeyBytes, ref parameters);
 
             // We don't care about the rest of the blob here, but it's expected to not exist.
+        }
+
+        internal static byte[] ToSubjectPublicKeyInfo(this RSAParameters parameters)
+        {
+            Debug.Assert(parameters.D == null);
+
+            // SubjectPublicKeyInfo::= SEQUENCE  {
+            //    algorithm AlgorithmIdentifier,
+            //    subjectPublicKey     BIT STRING  }
+            return DerEncoder.ConstructSequence(
+                s_encodedRsaAlgorithmIdentifier,
+                DerEncoder.SegmentedEncodeBitString(
+                    parameters.ToPkcs1Blob()));
         }
 
         internal static void ReadSubjectPublicKeyInfo(this DerSequenceReader keyInfo, ref RSAParameters parameters)
@@ -435,7 +441,7 @@ namespace System.Security.Cryptography
             DerSequenceReader algorithm = keyInfo.ReadSequence();
             string algorithmOid = algorithm.ReadOidAsString();
 
-            if (algorithmOid != "1.2.840.113549.1.1.1")
+            if (algorithmOid != RsaOid)
             {
                 throw new CryptographicException();
             }
@@ -451,7 +457,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException();
         }
 
-        private static void ReadPkcs1Blob(byte[] privateKeyBytes, ref RSAParameters parameters)
+        private static void ReadPkcs1PrivateBlob(byte[] privateKeyBytes, ref RSAParameters parameters)
         {
             // RSAPrivateKey::= SEQUENCE {
             //    version Version,
