@@ -27,7 +27,7 @@ internal static partial class Interop
             int cbData,
             PAL_HashAlgorithm mgfAlgorithm,
             out SafeCFDataHandle pEncryptedOut,
-            out SafeCreateHandle pErrorOut);
+            out SafeCFErrorHandle pErrorOut);
 
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaEncryptPkcs")]
         private static extern int RsaEncryptPkcs(
@@ -35,7 +35,7 @@ internal static partial class Interop
             byte[] pbData,
             int cbData,
             out SafeCFDataHandle pEncryptedOut,
-            out SafeCreateHandle pErrorOut);
+            out SafeCFErrorHandle pErrorOut);
 
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaDecryptOaep")]
         private static extern int RsaDecryptOaep(
@@ -44,7 +44,7 @@ internal static partial class Interop
             int cbData,
             PAL_HashAlgorithm mgfAlgorithm,
             out SafeCFDataHandle pEncryptedOut,
-            out SafeCreateHandle pErrorOut);
+            out SafeCFErrorHandle pErrorOut);
 
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaDecryptPkcs")]
         private static extern int RsaDecryptPkcs(
@@ -52,7 +52,7 @@ internal static partial class Interop
             byte[] pbData,
             int cbData,
             out SafeCFDataHandle pEncryptedOut,
-            out SafeCreateHandle pErrorOut);
+            out SafeCFErrorHandle pErrorOut);
 
         internal static byte[] RsaEncrypt(
             SafeSecKeyRefHandle publicKey,
@@ -60,7 +60,7 @@ internal static partial class Interop
             RSAEncryptionPadding padding)
         {
             int ret;
-            SafeCreateHandle error;
+            SafeCFErrorHandle error;
             SafeCFDataHandle encrypted;
 
             if (padding == RSAEncryptionPadding.Pkcs1)
@@ -88,9 +88,7 @@ internal static partial class Interop
 
                 if (ret == -2)
                 {
-                    Debug.Assert(!error.IsInvalid, "Native layer indicated error object was populated");
-                    // TODO: Throw a CFErrorRef-based exception
-                    throw new CryptographicException("A CFError was produced");
+                    throw CreateExceptionForCFError(error);
                 }
 
                 Debug.Fail("RsaVerify returned {ret}");
@@ -104,7 +102,7 @@ internal static partial class Interop
             RSAEncryptionPadding padding)
         {
             int ret;
-            SafeCreateHandle error;
+            SafeCFErrorHandle error;
             SafeCFDataHandle decrypted;
 
             if (padding == RSAEncryptionPadding.Pkcs1)
@@ -132,9 +130,7 @@ internal static partial class Interop
 
                 if (ret == -2)
                 {
-                    Debug.Assert(!error.IsInvalid, "Native layer indicated error object was populated");
-                    // TODO: Throw a CFErrorRef-based exception
-                    throw new CryptographicException("A CFError was produced");
+                    throw CreateExceptionForCFError(error);
                 }
 
                 Debug.Fail("RsaVerify returned {ret}");

@@ -26,7 +26,7 @@ internal static partial class Interop
             byte[] pbDataHash,
             int cbDataHash,
             out SafeCFDataHandle pSignatureOut,
-            out SafeCreateHandle pErrorOut);
+            out SafeCFErrorHandle pErrorOut);
 
         [DllImport(Libraries.AppleCryptoNative)]
         private static extern int AppleCryptoNative_GenerateSignatureWithHashAlgorithm(
@@ -35,7 +35,7 @@ internal static partial class Interop
             int cbDataHash,
             PAL_HashAlgorithm hashAlgorithm,
             out SafeCFDataHandle pSignatureOut,
-            out SafeCreateHandle pErrorOut);
+            out SafeCFErrorHandle pErrorOut);
 
         [DllImport(Libraries.AppleCryptoNative)]
         private static extern int AppleCryptoNative_VerifySignature(
@@ -44,7 +44,7 @@ internal static partial class Interop
             int cbDataHash,
             byte[] pbSignature,
             int cbSignature,
-            out SafeCreateHandle pErrorOut);
+            out SafeCFErrorHandle pErrorOut);
 
         [DllImport(Libraries.AppleCryptoNative)]
         private static extern int AppleCryptoNative_VerifySignatureWithHashAlgorithm(
@@ -54,7 +54,7 @@ internal static partial class Interop
             byte[] pbSignature,
             int cbSignature,
             PAL_HashAlgorithm hashAlgorithm,
-            out SafeCreateHandle pErrorOut);
+            out SafeCFErrorHandle pErrorOut);
 
         [DllImport(Libraries.AppleCryptoNative)]
         private static extern ulong AppleCryptoNative_SecKeyGetSimpleKeySizeInBytes(SafeSecKeyRefHandle publicKey);
@@ -102,7 +102,8 @@ internal static partial class Interop
             Debug.Assert(dataHash != null, "dataHash != null");
 
             SafeCFDataHandle signature;
-            SafeCreateHandle error;
+            SafeCFErrorHandle error;
+
             int ret = AppleCryptoNative_GenerateSignature(
                 privateKey,
                 dataHash,
@@ -120,9 +121,7 @@ internal static partial class Interop
 
                 if (ret == -2)
                 {
-                    Debug.Assert(!error.IsInvalid, "Native layer indicated error object was populated");
-                    // TODO: Throw a CFErrorRef-based exception
-                    throw new CryptographicException("A CFError was produced");
+                    throw CreateExceptionForCFError(error);
                 }
 
                 Debug.Fail("GenerateSignature returned {ret}");
@@ -140,7 +139,8 @@ internal static partial class Interop
             Debug.Assert(hashAlgorithm != PAL_HashAlgorithm.Unknown, "hashAlgorithm != PAL_HashAlgorithm.Unknown");
 
             SafeCFDataHandle signature;
-            SafeCreateHandle error;
+            SafeCFErrorHandle error;
+
             int ret = AppleCryptoNative_GenerateSignatureWithHashAlgorithm(
                 privateKey,
                 dataHash,
@@ -159,9 +159,7 @@ internal static partial class Interop
 
                 if (ret == -2)
                 {
-                    Debug.Assert(!error.IsInvalid, "Native layer indicated error object was populated");
-                    // TODO: Throw a CFErrorRef-based exception
-                    throw new CryptographicException("A CFError was produced");
+                    throw CreateExceptionForCFError(error);
                 }
 
                 Debug.Fail("GenerateSignature returned {ret}");
@@ -178,7 +176,8 @@ internal static partial class Interop
             Debug.Assert(dataHash != null, "dataHash != null");
             Debug.Assert(signature != null, "signature != null");
 
-            SafeCreateHandle error;
+            SafeCFErrorHandle error;
+
             int ret = AppleCryptoNative_VerifySignature(
                 publicKey,
                 dataHash,
@@ -201,9 +200,7 @@ internal static partial class Interop
 
                 if (ret == -2)
                 {
-                    Debug.Assert(!error.IsInvalid, "Native layer indicated error object was populated");
-                    // TODO: Throw a CFErrorRef-based exception
-                    throw new CryptographicException("A CFError was produced");
+                    throw CreateExceptionForCFError(error);
                 }
 
                 Debug.Fail("VerifySignature returned {ret}");
@@ -222,7 +219,8 @@ internal static partial class Interop
             Debug.Assert(signature != null, "signature != null");
             Debug.Assert(hashAlgorithm != PAL_HashAlgorithm.Unknown);
 
-            SafeCreateHandle error;
+            SafeCFErrorHandle error;
+
             int ret = AppleCryptoNative_VerifySignatureWithHashAlgorithm(
                 publicKey,
                 dataHash,
@@ -246,9 +244,7 @@ internal static partial class Interop
 
                 if (ret == -2)
                 {
-                    Debug.Assert(!error.IsInvalid, "Native layer indicated error object was populated");
-                    // TODO: Throw a CFErrorRef-based exception
-                    throw new CryptographicException("A CFError was produced");
+                    throw CreateExceptionForCFError(error);
                 }
 
                 Debug.Fail("VerifySignature returned {ret}");

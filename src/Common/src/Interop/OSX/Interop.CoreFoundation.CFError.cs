@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 using Microsoft.Win32.SafeHandles;
@@ -15,35 +16,33 @@ internal static partial class Interop
     internal static partial class CoreFoundation
     {
         [DllImport(Libraries.CoreFoundationLibrary)]
-        private static extern unsafe byte* CFDataGetBytePtr(SafeCFDataHandle cfData);
+        private static extern CFIndex CFErrorGetCode(SafeCFErrorHandle cfError);
 
         [DllImport(Libraries.CoreFoundationLibrary)]
-        private static extern CFIndex CFDataGetLength(SafeCFDataHandle cfData);
+        private static extern SafeCFStringHandle CFErrorCopyDescription(SafeCFErrorHandle cfError);
 
-        internal static byte[] CFGetData(SafeCFDataHandle cfData)
+        internal static int GetErrorCode(SafeCFErrorHandle cfError)
         {
-            bool addedRef = false;
-
-            try
+            unchecked
             {
-                cfData.DangerousAddRef(ref addedRef);
-                byte[] bytes = new byte[CFDataGetLength(cfData).ToInt64()];
-
-                unsafe
-                {
-                    byte* dataBytes = CFDataGetBytePtr(cfData);
-                    Marshal.Copy((IntPtr)dataBytes, bytes, 0, bytes.Length);
-                }
-
-                return bytes;
-
+                return (int)(CFErrorGetCode(cfError).ToInt64());
             }
-            finally
+        }
+
+        internal static string GetErrorDescription(SafeCFErrorHandle cfError)
+        {
+            Debug.Assert(cfError != null);
+
+            if (cfError.IsInvalid)
             {
-                if (addedRef)
-                {
-                    cfData.DangerousRelease();
-                }
+                return null;
+            }
+
+            Debug.Assert(!cfError.IsClosed);
+
+            using (SafeCFStringHandle cfString = CFErrorCopyDescription(cfError))
+            {
+                return CFStringToString(cfString);
             }
         }
     }
@@ -51,9 +50,9 @@ internal static partial class Interop
 
 namespace Microsoft.Win32.SafeHandles
 {
-    internal sealed class SafeCFDataHandle : SafeHandle
+    internal sealed class SafeCFErrorHandle : SafeHandle
     {
-        internal SafeCFDataHandle()
+        internal SafeCFErrorHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         {
         }
