@@ -55,9 +55,9 @@ namespace System.Security.Cryptography.Dsa.Tests
             X = "AC32693E1CD72AD63E1A0B6E8157EBBCA671D3DB".HexToByteArray(),
 
             Y = (
-                "815a549b6fd0cedaf044b00b7cfe1351902d7727d6d7fb736003a4e1c4cd8dfb" +
-                "f431e4ff4733f3fa92c765f0cff944e3ed56a85b75953eb16901248985bb5f89" +
-                "1398eab5e39645e7").HexToByteArray(),
+                "815A549B6FD0CEDAF044B00B7CFE1351902D7727D6D7FB736003A4E1C4CD8DFB" +
+                "F431E4FF4733F3FA92C765F0CFF944E3ED56A85B75953EB16901248985BB5F89" +
+                "1398EAB5E39645E7").HexToByteArray(),
         };
 
         internal static DSAParameters GetDSA1024Params()
