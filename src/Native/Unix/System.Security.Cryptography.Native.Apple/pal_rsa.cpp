@@ -15,6 +15,9 @@ AppleCryptoNative_RsaGenerateKey(int32_t keySizeBits, SecKeyRef* pPublicKey, Sec
     if (keySizeBits < 384 || keySizeBits > 16384)
         return -2;
 
+    *pPublicKey = nullptr;
+    *pPrivateKey = nullptr;
+
     CFMutableDictionaryRef attributes = CFDictionaryCreateMutable(nullptr, 2, &kCFTypeDictionaryKeyCallBacks, nullptr);
 
     CFNumberRef cfKeySizeValue = CFNumberCreate(nullptr, kCFNumberIntType, &keySizeBits);
@@ -31,37 +34,12 @@ AppleCryptoNative_RsaGenerateKey(int32_t keySizeBits, SecKeyRef* pPublicKey, Sec
     return status == noErr;
 }
 
-extern "C" int32_t
-AppleCryptoNative_RsaExportKey(SecKeyRef pKey, int32_t exportPrivate, CFDataRef* ppDataOut, int32_t* pOSStatus)
-{
-    if (pKey == nullptr || ppDataOut == nullptr || pOSStatus == nullptr)
-    {
-        return kErrorBadInput;
-    }
-
-    SecExternalFormat dataFormat = kSecFormatOpenSSL;
-    SecItemImportExportKeyParameters keyParams = {};
-    keyParams.version = SEC_KEY_IMPORT_EXPORT_PARAMS_VERSION;
-
-    if (exportPrivate)
-    {
-        // CFSTR requires a string literal, and does not need to be CFRelease()d.
-        CFStringRef cfExportPassphrase = CFSTR("passphrase");
-        keyParams.passphrase = cfExportPassphrase;
-        dataFormat = kSecFormatWrappedPKCS8;
-    }
-
-    *pOSStatus = SecItemExport(pKey, dataFormat, 0, &keyParams, ppDataOut);
-
-    return (*pOSStatus == noErr);
-}
-
-int32_t ExecuteOaepTransform(SecTransformRef xform,
-                             uint8_t* pbData,
-                             int32_t cbData,
-                             PAL_HashAlgorithm algorithm,
-                             CFDataRef* pDataOut,
-                             CFErrorRef* pErrorOut)
+static int32_t ExecuteOaepTransform(SecTransformRef xform,
+                                    uint8_t* pbData,
+                                    int32_t cbData,
+                                    PAL_HashAlgorithm algorithm,
+                                    CFDataRef* pDataOut,
+                                    CFErrorRef* pErrorOut)
 {
     int ret = INT_MIN;
 
@@ -71,8 +49,9 @@ int32_t ExecuteOaepTransform(SecTransformRef xform,
         goto cleanup;
     }
 
-    // TODO: set kSecOAEPMGF1DigestAlgorithmAttributeName as appropriate.
-    // TODO: How does it do OAEP-SHA256?
+    // Documentation mentions kSecOAEPMGF1DigestAlgorithmAttributeName, but on the Apple platform
+    // "SHA2" is an algorithm and the size is encoded separately. Since there doesn't seem to be
+    // a second attribute to encode SHA2-256 vs SHA2-384, be limited to SHA-1.
     if (algorithm != PAL_SHA1)
     {
         ret = kErrorUnknownAlgorithm;
