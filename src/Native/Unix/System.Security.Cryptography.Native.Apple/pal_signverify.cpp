@@ -2,8 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#include "pal_rsa.h"
-#include <stdio.h>
+#include "pal_signverify.h"
 
 static int ExecuteSignTransform(SecTransformRef signer, CFDataRef* pSignatureOut, CFErrorRef* pErrorOut);
 static int ExecuteVerifyTransform(SecTransformRef verifier, CFErrorRef* pErrorOut);
@@ -137,22 +136,6 @@ extern "C" int AppleCryptoNative_VerifySignature(SecKeyRef publicKey,
                                                  CFErrorRef* pErrorOut)
 {
     return VerifySignature(publicKey, pbDataHash, cbDataHash, pbSignature, cbSignature, PAL_Unknown, false, pErrorOut);
-}
-
-extern "C" int AppleCryptoNative_DsaSign(
-    SecKeyRef privateKey, uint8_t* pbDataHash, int32_t cbDataHash, CFDataRef* pSignatureOut, CFErrorRef* pErrorOut)
-{
-    return AppleCryptoNative_GenerateSignature(privateKey, pbDataHash, cbDataHash, pSignatureOut, pErrorOut);
-}
-
-extern "C" int AppleCryptoNative_DsaVerify(SecKeyRef publicKey,
-                                           uint8_t* pbDataHash,
-                                           int32_t cbDataHash,
-                                           uint8_t* pbSignature,
-                                           int32_t cbSignature,
-                                           CFErrorRef* pErrorOut)
-{
-    return AppleCryptoNative_VerifySignature(publicKey, pbDataHash, cbDataHash, pbSignature, cbSignature, pErrorOut);
 }
 
 static int ExecuteSignTransform(SecTransformRef signer, CFDataRef* pSignatureOut, CFErrorRef* pErrorOut)
