@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography.Apple;
 using Internal.Cryptography;
@@ -147,7 +148,7 @@ namespace System.Security.Cryptography
 
                 public override ECParameters ExportExplicitParameters(bool includePrivateParameters)
                 {
-                    throw new PlatformNotSupportedException("Only named curves are supported");
+                    throw new PlatformNotSupportedException(SR.Cryptography_ECC_NamedCurvesOnly);
                 }
 
                 public override ECParameters ExportParameters(bool includePrivateParameters)
@@ -158,7 +159,7 @@ namespace System.Security.Cryptography
 
                     if (keyHandle == null)
                     {
-                        throw new CryptographicException("No key handle allocated");
+                        throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
                     }
 
                     DerSequenceReader keyReader = Interop.AppleCrypto.SecKeyExport(keyHandle, includePrivateParameters);
@@ -194,8 +195,8 @@ namespace System.Security.Cryptography
 
                     if (isPrivateKey)
                     {
-                        // Start with the private key, in case some of the private key fields
-                        // don't match the public key fields.
+                        // Start with the private key, in case some of the private key fields don't
+                        // match the public key fields and the system determines an integrity failure.
                         //
                         // Public import should go off without a hitch.
                         SafeSecKeyRefHandle privateKey = ImportKey(parameters);
@@ -229,8 +230,7 @@ namespace System.Security.Cryptography
 
                     if (!curve.IsNamed)
                     {
-                        // Only named curves are supported
-                        throw new PlatformNotSupportedException("Only named curves are supported");
+                        throw new PlatformNotSupportedException(SR.Cryptography_ECC_NamedCurvesOnly);
                     }
 
                     int keySize;
@@ -281,12 +281,7 @@ namespace System.Security.Cryptography
                     {
                         long size = Interop.AppleCrypto.EccGetKeySizeInBits(newKeyPair.PublicKey);
 
-                        // If this is the byte-lifted value of nistp521, shrink it back to 521.
-                        if (size == ((521 + 7) / 8))
-                        {
-                            size = 521;
-                        }
-
+                        Debug.Assert(size == 256 || size == 384 || size == 512, $"Unknown keysize ({size})");
                         KeySizeValue = (int)size;
                     }
                 }
@@ -308,7 +303,7 @@ namespace System.Security.Cryptography
 
                     if (gen != 1)
                     {
-                        throw new CryptographicException($"EccGenerateKey returned {gen} | {osStatus}");
+                        throw Interop.AppleCrypto.CreateExceptionForCCError(osStatus, Interop.AppleCrypto.OSStatus);
                     }
 
                     current = KeyPair.PublicPrivatePair(publicKey, privateKey);
@@ -404,7 +399,7 @@ namespace System.Security.Cryptography
 
             if (parametersReader.PeekTag() != (int)DerSequenceReader.DerTag.ObjectIdentifier)
             {
-                throw new PlatformNotSupportedException("Only named curves are supported");
+                throw new PlatformNotSupportedException(SR.Cryptography_ECC_NamedCurvesOnly);
             }
 
             parameters.Curve = ECCurve.CreateFromValue(parametersReader.ReadOidAsString());
@@ -438,7 +433,7 @@ namespace System.Security.Cryptography
 
             if (algorithm.PeekTag() != (int)DerSequenceReader.DerTag.ObjectIdentifier)
             {
-                throw new PlatformNotSupportedException("Only named curves are supported");
+                throw new PlatformNotSupportedException(SR.Cryptography_ECC_NamedCurvesOnly);
             }
 
             parameters.Curve = ECCurve.CreateFromValue(algorithm.ReadOidAsString());
@@ -455,7 +450,7 @@ namespace System.Security.Cryptography
 
             if (!parameters.Curve.IsNamed)
             {
-                throw new PlatformNotSupportedException("Only named curves are supported");
+                throw new PlatformNotSupportedException(SR.Cryptography_ECC_NamedCurvesOnly);
             }
 
             byte[] pointBlob = GetPointBlob(ref parameters);
@@ -484,7 +479,7 @@ namespace System.Security.Cryptography
 
             if (!parameters.Curve.IsNamed)
             {
-                throw new PlatformNotSupportedException("Only named curves are supported");
+                throw new PlatformNotSupportedException(SR.Cryptography_ECC_NamedCurvesOnly);
             }
 
             byte[] pointBlob = GetPointBlob(ref parameters);
@@ -525,6 +520,7 @@ namespace System.Security.Cryptography
                 case 0x07:
                     break;
                 default:
+                    Debug.Fail($"Don't know how to read point encoding {encoding}");
                     throw new CryptographicException();
             }
 

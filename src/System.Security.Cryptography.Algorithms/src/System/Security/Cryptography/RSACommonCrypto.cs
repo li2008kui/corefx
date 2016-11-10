@@ -75,7 +75,7 @@ namespace System.Security.Cryptography
 
                 if (keyHandle == null)
                 {
-                    throw new CryptographicException("No key handle allocated");
+                    throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
                 }
 
                 DerSequenceReader keyReader = Interop.AppleCrypto.SecKeyExport(keyHandle, includePrivateParameters);
@@ -247,7 +247,8 @@ namespace System.Security.Cryptography
 
                 if (gen != 1)
                 {
-                    throw new CryptographicException($"RsaGenerateKey returned {gen} | {osStatus}");
+                    Debug.Assert(gen == 0, $"Expected gen=0, got gen={gen}");
+                    throw Interop.AppleCrypto.CreateExceptionForCCError(osStatus, Interop.AppleCrypto.OSStatus);
                 }
 
                 current = KeyPair.PublicPrivatePair(publicKey, privateKey);
