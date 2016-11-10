@@ -9,7 +9,6 @@ find_library(COREFOUNDATION_LIBRARY CoreFoundation)
 find_library(SECURITY_LIBRARY Security)
 
 set(NATIVECRYPTO_SOURCES
-    sectransform.cpp
     pal_digest.cpp
     pal_ecc.cpp
     pal_hmac.cpp
