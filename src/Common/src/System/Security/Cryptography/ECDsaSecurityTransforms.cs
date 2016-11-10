@@ -101,7 +101,7 @@ namespace System.Security.Cryptography
                     }
 
                     byte[] derFormatSignature = Interop.AppleCrypto.GenerateSignature(keys.PrivateKey, hash);
-                    byte[] ieeeFormatSignature = OpenSslAsymmetricAlgorithmCore.ConvertDerToIeee1363(
+                    byte[] ieeeFormatSignature = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(
                         derFormatSignature,
                         0,
                         derFormatSignature.Length,
@@ -117,7 +117,7 @@ namespace System.Security.Cryptography
                     if (signature == null)
                         throw new ArgumentNullException(nameof(signature));
 
-                    byte[] derFormatSignature = OpenSslAsymmetricAlgorithmCore.ConvertIeee1363ToDer(signature);
+                    byte[] derFormatSignature = AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(signature);
 
                     return Interop.AppleCrypto.VerifySignature(
                         GetKeys().PublicKey,
@@ -127,12 +127,12 @@ namespace System.Security.Cryptography
 
                 protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
                 {
-                    return OpenSslAsymmetricAlgorithmCore.HashData(data, offset, count, hashAlgorithm);
+                    return AsymmetricAlgorithmHelpers.HashData(data, offset, count, hashAlgorithm);
                 }
 
                 protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm)
                 {
-                    return OpenSslAsymmetricAlgorithmCore.HashData(data, hashAlgorithm);
+                    return AsymmetricAlgorithmHelpers.HashData(data, hashAlgorithm);
                 }
 
                 protected override void Dispose(bool disposing)
@@ -174,7 +174,7 @@ namespace System.Security.Cryptography
                         keyReader.ReadSubjectPublicKeyInfo(ref parameters);
                     }
 
-                    int size = OpenSslAsymmetricAlgorithmCore.BitsToBytes(KeySize);
+                    int size = AsymmetricAlgorithmHelpers.BitsToBytes(KeySize);
 
                     KeyBlobHelpers.PadOrTrim(ref parameters.Q.X, size);
                     KeyBlobHelpers.PadOrTrim(ref parameters.Q.Y, size);

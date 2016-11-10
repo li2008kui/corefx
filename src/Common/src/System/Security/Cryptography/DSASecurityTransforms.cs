@@ -18,7 +18,6 @@ namespace System.Security.Cryptography
 
         internal static partial class DSAImplementation
         {
-            // TODO: Name this for real.
             public sealed partial class DSASecurityTransforms : DSA
             {
                 private KeyPair _keys;
@@ -175,7 +174,7 @@ namespace System.Security.Cryptography
 
                     // Since the AppleCrypto implementation is limited to FIPS 186-2, signature field sizes
                     // are always 160 bits / 20 bytes (the size of SHA-1, and the only legal length for Q).
-                    byte[] ieeeFormatSignature = OpenSslAsymmetricAlgorithmCore.ConvertDerToIeee1363(
+                    byte[] ieeeFormatSignature = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(
                         derFormatSignature,
                         0,
                         derFormatSignature.Length,
@@ -191,7 +190,7 @@ namespace System.Security.Cryptography
                     if (signature == null)
                         throw new ArgumentNullException(nameof(signature));
 
-                    byte[] derFormatSignature = OpenSslAsymmetricAlgorithmCore.ConvertIeee1363ToDer(signature);
+                    byte[] derFormatSignature = AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(signature);
 
                     return Interop.AppleCrypto.VerifySignature(
                         GetKeys().PublicKey,
@@ -207,12 +206,12 @@ namespace System.Security.Cryptography
                         throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name);
                     }
 
-                    return OpenSslAsymmetricAlgorithmCore.HashData(data, offset, count, hashAlgorithm);
+                    return AsymmetricAlgorithmHelpers.HashData(data, offset, count, hashAlgorithm);
                 }
 
                 protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm)
                 {
-                    return OpenSslAsymmetricAlgorithmCore.HashData(data, hashAlgorithm);
+                    return AsymmetricAlgorithmHelpers.HashData(data, hashAlgorithm);
                 }
 
                 protected override void Dispose(bool disposing)

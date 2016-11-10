@@ -19,7 +19,6 @@ namespace System.Security.Cryptography
 
     internal static partial class RSAImplementation
     {
-        // TODO: Name this for real.
         public sealed partial class RSASecurityTransforms : RSA
         {
             private KeyPair _keys;
@@ -184,12 +183,12 @@ namespace System.Security.Cryptography
 
             protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
             {
-                return OpenSslAsymmetricAlgorithmCore.HashData(data, offset, count, hashAlgorithm);
+                return AsymmetricAlgorithmHelpers.HashData(data, offset, count, hashAlgorithm);
             }
 
             protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm)
             {
-                return OpenSslAsymmetricAlgorithmCore.HashData(data, hashAlgorithm);
+                return AsymmetricAlgorithmHelpers.HashData(data, hashAlgorithm);
             }
 
             protected override void Dispose(bool disposing)
