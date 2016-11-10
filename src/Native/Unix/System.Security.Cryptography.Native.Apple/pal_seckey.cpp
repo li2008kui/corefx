@@ -118,3 +118,13 @@ cleanup:
     CFRelease(cfData);
     return ret;
 }
+
+extern "C" uint64_t AppleCryptoNative_SecKeyGetSimpleKeySizeInBytes(SecKeyRef publicKey)
+{
+    if (publicKey == nullptr)
+    {
+        return 0;
+    }
+
+    return SecKeyGetBlockSize(publicKey);
+}
