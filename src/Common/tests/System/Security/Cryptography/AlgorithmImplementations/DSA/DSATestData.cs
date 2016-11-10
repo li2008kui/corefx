@@ -19,6 +19,47 @@ namespace System.Security.Cryptography.Dsa.Tests
     {
         public static readonly byte[] HelloBytes = new ASCIIEncoding().GetBytes("Hello");
 
+        internal static DSAParameters Dsa512Parameters = new DSAParameters
+        {
+            P = (
+                "D6A8B7F1CAF7A6964D07663FC691D22F6ABCD55C37AEF58D20746740D82FE14E" +
+                "146363627D91925142DCDEE384BE0A1E04ED5BF5F471486F4D986D42A2E7DF95").HexToByteArray(),
+
+            Q = "FAB5F625D5D5E16430A1EF630EBE33897CC224F9".HexToByteArray(),
+
+            G = (
+                "0844C490E52EF58E05902C636D64D1D5EB2C6082A0D4F3BFD1CE078E87B43A7E" +
+                "F7BBECE19A4EFE2A6D9C229D360083CEA9F721F39B05BAF97052DEFC67A58A2B").HexToByteArray(),
+
+            X = "2E3D7A84C85B66785E1F6FE796982B22B0CB98BC".HexToByteArray(),
+
+            Y = (
+                "C300E0E67D877E6CED39FEEAAAC1F2C2BD568E6A32467227E12B6AE45A8D9478" +
+                "541A480AC80038AAC863827D6E3984061A25905C18BD2499A839663C3CA45605").HexToByteArray(),
+        };
+
+        internal static DSAParameters Dsa576Parameters = new DSAParameters
+        {
+            P = (
+                "E2167306BFFD86BB62F4327B778BBFA07BA42323EC567B106B9563882BDDD6D7" +
+                "F2EE7360F299888DE9F40A61C78D0BD8442EFA9C322B868AD367B3941D72B7A3" +
+                "32C954EB1629132B").HexToByteArray(),
+
+            Q = "CCDCECCF5F0B2C8FE238E2F06F22137F17FAEB1B".HexToByteArray(),
+
+            G = (
+                "AF17D4061302079E33034A77A058DDB4B832ACB114B7B8D2D3AE4451DFF85EB8" +
+                "DD75D4474218369D485B2206506406044AB4E6407FDAA5A29E95D4964CA559E8" +
+                "1C6F7CFCDA872665").HexToByteArray(),
+
+            X = "AC32693E1CD72AD63E1A0B6E8157EBBCA671D3DB".HexToByteArray(),
+
+            Y = (
+                "815a549b6fd0cedaf044b00b7cfe1351902d7727d6d7fb736003a4e1c4cd8dfb" +
+                "f431e4ff4733f3fa92c765f0cff944e3ed56a85b75953eb16901248985bb5f89" +
+                "1398eab5e39645e7").HexToByteArray(),
+        };
+
         internal static DSAParameters GetDSA1024Params()
         {
             DSAParameters p = new DSAParameters();
