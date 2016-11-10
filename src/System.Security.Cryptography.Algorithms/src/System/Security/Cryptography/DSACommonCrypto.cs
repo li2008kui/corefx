@@ -251,7 +251,7 @@ namespace System.Security.Cryptography
 
                     if (newKeyPair != null)
                     {
-                        int size = Interop.AppleCrypto.RsaGetKeySizeInBits(newKeyPair.PublicKey);
+                        int size = Interop.AppleCrypto.GetSimpleKeySizeInBits(newKeyPair.PublicKey);
                         KeySizeValue = size;
                     }
                 }

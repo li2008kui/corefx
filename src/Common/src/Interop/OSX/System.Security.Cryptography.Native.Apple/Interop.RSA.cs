@@ -54,19 +54,6 @@ internal static partial class Interop
             out SafeCFDataHandle pEncryptedOut,
             out SafeCreateHandle pErrorOut);
 
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern ulong AppleCryptoNative_RsaGetKeySizeInBytes(SafeSecKeyRefHandle publicKey);
-
-        internal static int RsaGetKeySizeInBits(SafeSecKeyRefHandle publicKey)
-        {
-            ulong keySizeInBytes = AppleCryptoNative_RsaGetKeySizeInBytes(publicKey);
-
-            checked
-            {
-                return (int)(keySizeInBytes * 8);
-            }
-        }
-
         internal static byte[] RsaEncrypt(
             SafeSecKeyRefHandle publicKey,
             byte[] data,
