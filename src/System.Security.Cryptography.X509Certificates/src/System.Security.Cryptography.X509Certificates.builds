@@ -3,10 +3,17 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="System.Security.Cryptography.X509Certificates.csproj">
+      <OSGroup>OSX</OSGroup>
+    </Project>
+    <Project Include="System.Security.Cryptography.X509Certificates.csproj">
       <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="System.Security.Cryptography.X509Certificates.csproj">
       <OSGroup>Windows_NT</OSGroup>
+    </Project>
+    <Project Include="System.Security.Cryptography.X509Certificates.csproj">
+      <OSGroup>OSX</OSGroup>
+      <TargetGroup>netstandard1.7</TargetGroup>
     </Project>
     <Project Include="System.Security.Cryptography.X509Certificates.csproj">
       <OSGroup>Unix</OSGroup>
