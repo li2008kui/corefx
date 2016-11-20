@@ -48,6 +48,8 @@ namespace Internal.Cryptography.Pal
     {
         private SafeSecCertificateHandle _certHandle;
         private SafeCreateHandle _privateKeyHandle;
+        private CertificateData _certData;
+        private bool _readCertData;
 
         internal AppleCertificatePal(SafeSecCertificateHandle certHandle, SafeCreateHandle privateKey)
         {
@@ -70,23 +72,108 @@ namespace Internal.Cryptography.Pal
 
         public string Issuer { get; }
         public string Subject { get; }
-        public byte[] Thumbprint { get; }
-        public string KeyAlgorithm { get; }
-        public byte[] KeyAlgorithmParameters { get; }
-        public byte[] PublicKeyValue { get; }
-        public byte[] SerialNumber { get; }
-        public string SignatureAlgorithm { get; }
-        public DateTime NotAfter { get; }
-        public DateTime NotBefore { get; }
 
-        public byte[] RawData => _certHandle == null ? null : Interop.AppleCrypto.X509GetRawData(_certHandle);
+        public string KeyAlgorithm
+        {
+            get
+            {
+                EnsureCertData();
+                return _certData.PublicKeyAlgorithm.AlgorithmId;
+            }
+        }
 
-        public int Version { get; }
-        public bool Archived { get; set; }
+        public byte[] KeyAlgorithmParameters
+        {
+            get
+            {
+                EnsureCertData();
+                return _certData.PublicKeyAlgorithm.Parameters;
+            }
+        }
+
+        public byte[] PublicKeyValue
+        {
+            get
+            {
+                EnsureCertData();
+                return _certData.PublicKey;
+            }
+        }
+
+        public byte[] SerialNumber
+        {
+            get
+            {
+                EnsureCertData();
+                byte[] serial = _certData.SerialNumber;
+                Array.Reverse(serial);
+                return serial;
+            }
+        }
+
+        public string SignatureAlgorithm
+        {
+            get
+            {
+                EnsureCertData();
+                return _certData.SignatureAlgorithm.AlgorithmId;
+            }
+        }
+
         public string FriendlyName { get; set; }
+        public int Version { get; }
         public X500DistinguishedName SubjectName { get; }
         public X500DistinguishedName IssuerName { get; }
         public IEnumerable<X509Extension> Extensions { get; }
+
+        public byte[] RawData
+        {
+            get
+            {
+                EnsureCertData();
+                return _certData.RawData;
+            }
+        }
+
+        public DateTime NotAfter
+        {
+            get
+            {
+                EnsureCertData();
+                return _certData.NotAfter.ToLocalTime();
+            }
+        }
+
+        public DateTime NotBefore
+        {
+            get
+            {
+                EnsureCertData();
+                return _certData.NotBefore.ToLocalTime();
+            }
+        }
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350",
+            Justification = "SHA1 is required for Compat")]
+        public byte[] Thumbprint
+        {
+            get
+            {
+                EnsureCertData();
+
+                using (SHA1 hash = SHA1.Create())
+                {
+                    return hash.ComputeHash(_certData.RawData);
+                }
+            }
+        }
+
+        public bool Archived
+        {
+            get { return false; }
+            set { throw new PlatformNotSupportedException(); }
+        }
+
         public AsymmetricAlgorithm GetPrivateKey()
         {
             throw new NotImplementedException();
@@ -115,6 +202,174 @@ namespace Internal.Cryptography.Pal
         public void AppendPrivateKeyInfo(StringBuilder sb)
         {
             throw new NotImplementedException();
+        }
+
+        private void EnsureCertData()
+        {
+            if (_readCertData)
+                return;
+
+            Debug.Assert(!_certHandle.IsInvalid);
+            _certData = new CertificateData(Interop.AppleCrypto.X509GetRawData(_certHandle));
+            _readCertData = true;
+        }
+    }
+
+    internal struct CertificateData
+    {
+        internal struct AlgorithmIdentifier
+        {
+            internal string AlgorithmId;
+            internal byte[] Parameters;
+        }
+
+        internal byte[] RawData;
+        internal byte[] SubjectPublicKeyInfo;
+
+        internal int Version;
+        internal byte[] SerialNumber;
+        internal AlgorithmIdentifier TbsSignature;
+        internal X500DistinguishedName Issuer;
+        internal DateTime NotBefore;
+        internal DateTime NotAfter;
+        internal X500DistinguishedName Subject;
+        internal AlgorithmIdentifier PublicKeyAlgorithm;
+        internal byte[] PublicKey;
+        internal byte[] IssuerUniqueId;
+        internal byte[] SubjectUniqueId;
+        internal List<X509Extension> Extensions;
+        internal AlgorithmIdentifier SignatureAlgorithm;
+        internal byte[] SignatureValue;
+
+        internal CertificateData(byte[] rawData)
+        {
+            DerSequenceReader reader = new DerSequenceReader(rawData);
+
+            DerSequenceReader tbsCertificate = reader.ReadSequence();
+
+            if (tbsCertificate.PeekTag() == DerSequenceReader.ContextSpecificConstructedTag0)
+            {
+                DerSequenceReader version = tbsCertificate.ReadSequence();
+                Version = version.ReadInteger();
+            }
+            else if (tbsCertificate.PeekTag() !=
+                     (DerSequenceReader.ConstructedFlag | (byte)DerSequenceReader.DerTag.Sequence))
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+            else
+            {
+                Version = 0;
+            }
+
+            if (Version < 0 || Version > 2)
+                throw new CryptographicException();
+
+            SerialNumber = tbsCertificate.ReadIntegerBytes();
+
+            DerSequenceReader tbsSignature = tbsCertificate.ReadSequence();
+            TbsSignature.AlgorithmId = tbsSignature.ReadOidAsString();
+            TbsSignature.Parameters = tbsSignature.ReadNextEncodedValue();
+
+            if (tbsSignature.HasData)
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+
+            Issuer = new X500DistinguishedName(tbsCertificate.ReadNextEncodedValue());
+
+            DerSequenceReader validity = tbsCertificate.ReadSequence();
+            NotBefore = validity.ReadX509Date();
+            NotAfter = validity.ReadX509Date();
+
+            if (validity.HasData)
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+
+            Subject = new X500DistinguishedName(tbsCertificate.ReadNextEncodedValue());
+
+            SubjectPublicKeyInfo = tbsCertificate.ReadNextEncodedValue();
+            DerSequenceReader subjectPublicKeyInfo = new DerSequenceReader(SubjectPublicKeyInfo);
+            DerSequenceReader subjectKeyAlgorithm = subjectPublicKeyInfo.ReadSequence();
+            PublicKeyAlgorithm.AlgorithmId = subjectKeyAlgorithm.ReadOidAsString();
+            PublicKeyAlgorithm.Parameters = subjectKeyAlgorithm.ReadNextEncodedValue();
+
+            if (subjectKeyAlgorithm.HasData)
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+
+            PublicKey = subjectPublicKeyInfo.ReadBitString();
+
+            if (subjectPublicKeyInfo.HasData)
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+
+            if (tbsCertificate.PeekTag() == DerSequenceReader.ContextSpecificConstructedTag1)
+            {
+                if (Version == 0)
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+
+                IssuerUniqueId = tbsCertificate.ReadBitString();
+            }
+            else
+            {
+                IssuerUniqueId = null;
+            }
+
+            if (tbsCertificate.PeekTag() == DerSequenceReader.ContextSpecificConstructedTag2)
+            {
+                if (Version == 0)
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+
+                SubjectUniqueId = tbsCertificate.ReadBitString();
+            }
+            else
+            {
+                SubjectUniqueId = null;
+            }
+
+            if (tbsCertificate.PeekTag() == DerSequenceReader.ContextSpecificConstructedTag3)
+            {
+                DerSequenceReader extensions = tbsCertificate.ReadSequence();
+                extensions = extensions.ReadSequence();
+
+                Extensions = new List<X509Extension>();
+
+                while (extensions.HasData)
+                {
+                    DerSequenceReader extensionReader = extensions.ReadSequence();
+                    string oid = extensionReader.ReadOidAsString();
+                    bool critical = false;
+
+                    if (extensionReader.PeekTag() == (byte)DerSequenceReader.DerTag.Boolean)
+                    {
+                        critical = extensionReader.ReadBoolean();
+                    }
+
+                    byte[] extensionData = extensionReader.ReadOctetString();
+
+                    Extensions.Add(new X509Extension(oid, extensionData, critical));
+
+                    if (extensionReader.HasData)
+                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
+            }
+            else
+            {
+                Extensions = null;
+            }
+
+            if (tbsCertificate.HasData)
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+
+            DerSequenceReader signatureAlgorithm = reader.ReadSequence();
+            SignatureAlgorithm.AlgorithmId = signatureAlgorithm.ReadOidAsString();
+            SignatureAlgorithm.Parameters = signatureAlgorithm.ReadNextEncodedValue();
+
+            if (signatureAlgorithm.HasData)
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+
+            SignatureValue = reader.ReadBitString();
+
+            if (reader.HasData)
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+
+            RawData = rawData;
         }
     }
 }
