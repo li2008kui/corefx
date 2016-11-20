@@ -180,6 +180,9 @@
   <data name="Cryptography_Unix_X509_SerializedExport" xml:space="preserve">
     <value>X509ContentType.SerializedCert and X509ContentType.SerializedStore are not supported on Unix.</value>
   </data>
+  <data name="Cryptography_Unmapped_System_Typed_Error" xml:space="preserve">
+    <value>The system cryptographic library returned error '{0}' of type '{1}'</value>
+  </data>
   <data name="Cryptography_X509_ExportFailed" xml:space="preserve">
     <value>The certificate export operation failed.</value>
   </data>
