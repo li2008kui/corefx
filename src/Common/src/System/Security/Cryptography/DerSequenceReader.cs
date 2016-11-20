@@ -3,8 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Globalization;
 using System.Numerics;
 using System.Text;
+using System.Threading;
 
 namespace System.Security.Cryptography
 {
@@ -16,7 +18,13 @@ namespace System.Security.Cryptography
     {
         internal const byte ContextSpecificTagFlag = 0x80;
         internal const byte ConstructedFlag = 0x20;
+        internal const byte ContextSpecificConstructedTag0 = ContextSpecificTagFlag | ConstructedFlag;
+        internal const byte ContextSpecificConstructedTag1 = ContextSpecificConstructedTag0 | 1;
+        internal const byte ContextSpecificConstructedTag2 = ContextSpecificConstructedTag0 | 2;
+        internal const byte ContextSpecificConstructedTag3 = ContextSpecificConstructedTag0 | 3;
         internal const byte TagNumberMask = 0x1F;
+
+        internal static DateTimeFormatInfo s_validityDateTimeFormatInfo;
 
         private readonly byte[] _data;
         private readonly int _end;
@@ -76,6 +84,37 @@ namespace System.Security.Cryptography
             EatTag((DerTag)PeekTag());
             int contentLength = EatLength();
             _position += contentLength;
+        }
+
+        /// <summary>
+        /// Returns the next value encoded (this includes tag and length)
+        /// </summary>
+        internal byte[] ReadNextEncodedValue()
+        {
+            int lengthLength;
+            int contentLength = ScanContentLength(_data, _position + 1, out lengthLength);
+            // Length of tag, encoded length, and the content
+            int totalLength = 1 + lengthLength + contentLength;
+
+            byte[] encodedValue = new byte[totalLength];
+            Buffer.BlockCopy(_data, _position, encodedValue, 0, totalLength);
+
+            _position += totalLength;
+            return encodedValue;
+        }
+
+        internal bool ReadBoolean()
+        {
+            EatTag(DerTag.Boolean);
+
+            int length = EatLength();
+
+            if (length != 1)
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+
+            bool value = _data[_position] != 0;
+            _position += length;
+            return value;
         }
 
         internal int ReadInteger()
@@ -206,6 +245,71 @@ namespace System.Security.Cryptography
             return ia5String;
         }
 
+        internal DateTime ReadX509Date()
+        {
+            byte tag = PeekTag();
+
+            switch ((DerTag)tag)
+            {
+                case DerTag.UTCTime:
+                    return ReadUtcTime();
+                case DerTag.GeneralizedTime:
+                    return ReadGeneralizedTime();
+            }
+
+            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+        }
+
+        internal DateTime ReadUtcTime()
+        {
+            return ReadTime(DerTag.UTCTime, "yyMMddHHmmss'Z'");
+        }
+
+        internal DateTime ReadGeneralizedTime()
+        {
+            // Currently only supports reading times with no fractional seconds or time differentials
+            // as RFC 2630 doesn't allow these. In case this is done, the format string has to be parsed
+            // to follow rules on X.680 and X.690.
+            return ReadTime(DerTag.GeneralizedTime, "yyyyMMddHHmmss'Z'");
+        }
+
+        private DateTime ReadTime(DerTag timeTag, string formatString)
+        {
+            EatTag(timeTag);
+            int contentLength = EatLength();
+
+            string decodedTime = System.Text.Encoding.ASCII.GetString(_data, _position, contentLength);
+            _position += contentLength;
+
+            Debug.Assert(
+                decodedTime[decodedTime.Length - 1] == 'Z',
+                $"The date doesn't follow the X.690 format, ending with {decodedTime[decodedTime.Length - 1]}");
+
+            DateTime time;
+
+            DateTimeFormatInfo fi = LazyInitializer.EnsureInitialized(
+                ref s_validityDateTimeFormatInfo,
+                () =>
+                {
+                    var clone = (DateTimeFormatInfo)CultureInfo.InvariantCulture.DateTimeFormat.Clone();
+                    clone.Calendar.TwoDigitYearMax = 2049;
+
+                    return clone;
+                });
+
+            if (!DateTime.TryParseExact(
+                    decodedTime,
+                    formatString,
+                    fi,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                    out time))
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+
+            return time;
+        }
+
         private byte[] ReadContentAsBytes()
         {
             int contentLength = EatLength();
@@ -296,6 +400,7 @@ namespace System.Security.Cryptography
             T61String = 0x14,
             IA5String = 0x16,
             UTCTime = 0x17,
+            GeneralizedTime = 0x18,
         }
     }
 }
