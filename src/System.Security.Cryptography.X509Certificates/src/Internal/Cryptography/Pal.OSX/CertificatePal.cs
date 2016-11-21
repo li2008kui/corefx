@@ -40,7 +40,10 @@ namespace Internal.Cryptography.Pal
 
         public static ICertificatePal FromFile(string fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
-            throw new NotImplementedException();
+            Debug.Assert(password != null);
+
+            byte[] fileBytes = System.IO.File.ReadAllBytes(fileName);
+            return FromBlob(fileBytes, password, keyStorageFlags);
         }
     }
 
@@ -120,11 +123,46 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        public string FriendlyName { get; set; }
-        public int Version { get; }
-        public X500DistinguishedName SubjectName { get; }
-        public X500DistinguishedName IssuerName { get; }
-        public IEnumerable<X509Extension> Extensions { get; }
+        public string FriendlyName
+        {
+            get { return ""; }
+            set { throw new PlatformNotSupportedException(); }
+        }
+
+        public int Version
+        {
+            get
+            {
+                EnsureCertData();
+                return _certData.Version + 1;
+            }
+        }
+
+        public X500DistinguishedName SubjectName
+        {
+            get
+            {
+                EnsureCertData();
+                return _certData.Subject;
+            }
+        }
+
+        public X500DistinguishedName IssuerName
+        {
+            get
+            {
+                EnsureCertData();
+                return _certData.Issuer;
+            }
+        }
+
+        public IEnumerable<X509Extension> Extensions {
+            get
+            {
+                EnsureCertData();
+                return _certData.Extensions;
+            }
+        }
 
         public byte[] RawData
         {
@@ -269,7 +307,7 @@ namespace Internal.Cryptography.Pal
 
             DerSequenceReader tbsSignature = tbsCertificate.ReadSequence();
             TbsSignature.AlgorithmId = tbsSignature.ReadOidAsString();
-            TbsSignature.Parameters = tbsSignature.ReadNextEncodedValue();
+            TbsSignature.Parameters = tbsSignature.HasData ? tbsSignature.ReadNextEncodedValue() : Array.Empty<byte>();
 
             if (tbsSignature.HasData)
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
@@ -289,7 +327,7 @@ namespace Internal.Cryptography.Pal
             DerSequenceReader subjectPublicKeyInfo = new DerSequenceReader(SubjectPublicKeyInfo);
             DerSequenceReader subjectKeyAlgorithm = subjectPublicKeyInfo.ReadSequence();
             PublicKeyAlgorithm.AlgorithmId = subjectKeyAlgorithm.ReadOidAsString();
-            PublicKeyAlgorithm.Parameters = subjectKeyAlgorithm.ReadNextEncodedValue();
+            PublicKeyAlgorithm.Parameters = subjectKeyAlgorithm.HasData ? subjectKeyAlgorithm.ReadNextEncodedValue() : Array.Empty<byte>();
 
             if (subjectKeyAlgorithm.HasData)
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
@@ -359,7 +397,7 @@ namespace Internal.Cryptography.Pal
 
             DerSequenceReader signatureAlgorithm = reader.ReadSequence();
             SignatureAlgorithm.AlgorithmId = signatureAlgorithm.ReadOidAsString();
-            SignatureAlgorithm.Parameters = signatureAlgorithm.ReadNextEncodedValue();
+            SignatureAlgorithm.Parameters = signatureAlgorithm.HasData ? signatureAlgorithm.ReadNextEncodedValue() : Array.Empty<byte>();
 
             if (signatureAlgorithm.HasData)
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
