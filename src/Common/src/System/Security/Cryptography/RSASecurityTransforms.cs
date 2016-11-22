@@ -9,6 +9,7 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
     public partial class RSA : AsymmetricAlgorithm
     {
         public static new RSA Create()
@@ -16,6 +17,7 @@ namespace System.Security.Cryptography
             return new RSAImplementation.RSASecurityTransforms();
         }
     }
+#endif
 
     internal static partial class RSAImplementation
     {
@@ -31,6 +33,11 @@ namespace System.Security.Cryptography
             public RSASecurityTransforms(int keySize)
             {
                 KeySize = keySize;
+            }
+
+            internal RSASecurityTransforms(SafeSecKeyRefHandle publicKey)
+            {
+                SetKey(SecKeyPair.PublicOnly(publicKey));
             }
 
             public override KeySizes[] LegalKeySizes
