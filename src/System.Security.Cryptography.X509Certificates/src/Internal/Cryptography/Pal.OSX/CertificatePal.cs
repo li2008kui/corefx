@@ -69,12 +69,15 @@ namespace Internal.Cryptography.Pal
             _privateKeyHandle = null;
         }
 
+        internal SafeSecCertificateHandle SafeHandle => _certHandle;
+
         public bool HasPrivateKey => !(_privateKeyHandle?.IsInvalid ?? false);
 
         public IntPtr Handle => _certHandle?.DangerousGetHandle() ?? IntPtr.Zero;
 
-        public string Issuer { get; }
-        public string Subject { get; }
+        public string Issuer => IssuerName.Name;
+
+        public string Subject => SubjectName.Name;
 
         public string KeyAlgorithm
         {
@@ -361,12 +364,12 @@ namespace Internal.Cryptography.Pal
                 SubjectUniqueId = null;
             }
 
+            Extensions = new List<X509Extension>();
+
             if (tbsCertificate.PeekTag() == DerSequenceReader.ContextSpecificConstructedTag3)
             {
                 DerSequenceReader extensions = tbsCertificate.ReadSequence();
                 extensions = extensions.ReadSequence();
-
-                Extensions = new List<X509Extension>();
 
                 while (extensions.HasData)
                 {
@@ -386,10 +389,6 @@ namespace Internal.Cryptography.Pal
                     if (extensionReader.HasData)
                         throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
-            }
-            else
-            {
-                Extensions = null;
             }
 
             if (tbsCertificate.HasData)
