@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Diagnostics;
 using System.Security.Cryptography;
+using System.Security.Cryptography.Apple;
 using System.Security.Cryptography.X509Certificates;
 
 namespace Internal.Cryptography.Pal
@@ -20,7 +23,19 @@ namespace Internal.Cryptography.Pal
             public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters,
                 ICertificatePal certificatePal)
             {
-                throw new System.NotImplementedException();
+                AppleCertificatePal applePal = (AppleCertificatePal)certificatePal;
+                SafeSecKeyRefHandle key = Interop.AppleCrypto.X509GetPublicKey(applePal.SafeHandle);
+
+                switch (oid.Value)
+                {
+                    case Oids.RsaRsa:
+                        return new RSAImplementation.RSASecurityTransforms(key);
+                    case Oids.Ecc:
+                        return new ECDsaImplementation.ECDsaSecurityTransforms(key);
+                }
+
+                key.Dispose();
+                throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
             }
 
             public string X500DistinguishedNameDecode(byte[] encodedDistinguishedName, X500DistinguishedNameFlags flag)
@@ -40,12 +55,14 @@ namespace Internal.Cryptography.Pal
 
             public X509ContentType GetCertContentType(byte[] rawData)
             {
-                throw new System.NotImplementedException();
+                Debug.Assert(rawData != null);
+
+                return Interop.AppleCrypto.X509GetContentType(rawData, rawData.Length);
             }
 
             public X509ContentType GetCertContentType(string fileName)
             {
-                throw new System.NotImplementedException();
+                return GetCertContentType(System.IO.File.ReadAllBytes(fileName));
             }
 
             public byte[] EncodeX509KeyUsageExtension(X509KeyUsageFlags keyUsages)
