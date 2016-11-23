@@ -93,7 +93,17 @@ namespace System.Security.Cryptography
                 }
                 else
                 {
-                    keyReader.ReadSubjectPublicKeyInfo(ref parameters);
+                    // When exporting a key handle opened from a certificate, it seems to
+                    // export as a PKCS#1 blob instead of an X509 SubjectPublicKeyInfo blob.
+                    // So, check for that.
+                    if (keyReader.PeekTag() == (byte)DerSequenceReader.DerTag.Integer)
+                    {
+                        keyReader.ReadPkcs1PublicBlob(ref parameters);
+                    }
+                    else
+                    {
+                        keyReader.ReadSubjectPublicKeyInfo(ref parameters);
+                    }
                 }
 
                 return parameters;
@@ -422,7 +432,11 @@ namespace System.Security.Cryptography
             byte[] subjectPublicKeyBytes = keyInfo.ReadBitString();
 
             DerSequenceReader subjectPublicKey = new DerSequenceReader(subjectPublicKeyBytes);
+            subjectPublicKey.ReadPkcs1PublicBlob(ref parameters);
+        }
 
+        internal static void ReadPkcs1PublicBlob(this DerSequenceReader subjectPublicKey, ref RSAParameters parameters)
+        {
             parameters.Modulus = KeyBlobHelpers.TrimPaddingByte(subjectPublicKey.ReadIntegerBytes());
             parameters.Exponent = KeyBlobHelpers.TrimPaddingByte(subjectPublicKey.ReadIntegerBytes());
 
