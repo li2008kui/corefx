@@ -18,7 +18,7 @@ namespace Internal.Cryptography.Pal
         {
         }
 
-        private class Stub : IX509Pal
+        private class Stub : ManagedX509ExtensionProcessor, IX509Pal
         {
             public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters,
                 ICertificatePal certificatePal)
@@ -97,62 +97,7 @@ namespace Internal.Cryptography.Pal
             public X509ContentType GetCertContentType(string fileName)
             {
                 return GetCertContentType(System.IO.File.ReadAllBytes(fileName));
-            }
-
-            public byte[] EncodeX509KeyUsageExtension(X509KeyUsageFlags keyUsages)
-            {
-                throw new System.NotImplementedException();
-            }
-
-            public void DecodeX509KeyUsageExtension(byte[] encoded, out X509KeyUsageFlags keyUsages)
-            {
-                throw new System.NotImplementedException();
-            }
-
-            public bool SupportsLegacyBasicConstraintsExtension { get; }
-
-            public byte[] EncodeX509BasicConstraints2Extension(bool certificateAuthority, bool hasPathLengthConstraint,
-                int pathLengthConstraint)
-            {
-                throw new System.NotImplementedException();
-            }
-
-            public void DecodeX509BasicConstraintsExtension(byte[] encoded, out bool certificateAuthority, out bool hasPathLengthConstraint,
-                out int pathLengthConstraint)
-            {
-                throw new System.NotImplementedException();
-            }
-
-            public void DecodeX509BasicConstraints2Extension(byte[] encoded, out bool certificateAuthority,
-                out bool hasPathLengthConstraint, out int pathLengthConstraint)
-            {
-                throw new System.NotImplementedException();
-            }
-
-            public byte[] EncodeX509EnhancedKeyUsageExtension(OidCollection usages)
-            {
-                throw new System.NotImplementedException();
-            }
-
-            public void DecodeX509EnhancedKeyUsageExtension(byte[] encoded, out OidCollection usages)
-            {
-                throw new System.NotImplementedException();
-            }
-
-            public byte[] EncodeX509SubjectKeyIdentifierExtension(byte[] subjectKeyIdentifier)
-            {
-                throw new System.NotImplementedException();
-            }
-
-            public void DecodeX509SubjectKeyIdentifierExtension(byte[] encoded, out byte[] subjectKeyIdentifier)
-            {
-                throw new System.NotImplementedException();
-            }
-
-            public byte[] ComputeCapiSha1OfPublicKey(PublicKey key)
-            {
-                throw new System.NotImplementedException();
-            }
+            }           
         }
     }
 }
