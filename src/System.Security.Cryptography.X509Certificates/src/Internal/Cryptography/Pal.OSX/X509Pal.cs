@@ -23,19 +23,53 @@ namespace Internal.Cryptography.Pal
             public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters,
                 ICertificatePal certificatePal)
             {
-                AppleCertificatePal applePal = (AppleCertificatePal)certificatePal;
-                SafeSecKeyRefHandle key = Interop.AppleCrypto.X509GetPublicKey(applePal.SafeHandle);
+                AppleCertificatePal applePal = certificatePal as AppleCertificatePal;
 
-                switch (oid.Value)
+                if (applePal != null)
                 {
-                    case Oids.RsaRsa:
-                        return new RSAImplementation.RSASecurityTransforms(key);
-                    case Oids.Ecc:
-                        return new ECDsaImplementation.ECDsaSecurityTransforms(key);
+                    SafeSecKeyRefHandle key = Interop.AppleCrypto.X509GetPublicKey(applePal.SafeHandle);
+
+                    switch (oid.Value)
+                    {
+                        case Oids.RsaRsa:
+                            return new RSAImplementation.RSASecurityTransforms(key);
+                        case Oids.Ecc:
+                            return new ECDsaImplementation.ECDsaSecurityTransforms(key);
+                    }
+
+                    key.Dispose();
+                }
+                else
+                {
+                    switch (oid.Value)
+                    {
+                        case Oids.RsaRsa:
+                        {
+                            return DecodeRsaPublicKey(encodedKeyValue);
+                        }
+                    }
                 }
 
-                key.Dispose();
                 throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
+            }
+
+            private static AsymmetricAlgorithm DecodeRsaPublicKey(byte[] encodedKeyValue)
+            {
+                DerSequenceReader reader = new DerSequenceReader(encodedKeyValue);
+                RSAParameters rsaParameters = new RSAParameters();
+                reader.ReadPkcs1PublicBlob(ref rsaParameters);
+
+                RSA rsa = RSA.Create();
+                try
+                {
+                    rsa.ImportParameters(rsaParameters);
+                    return rsa;
+                }
+                catch (Exception)
+                {
+                    rsa.Dispose();
+                    throw;
+                }
             }
 
             public string X500DistinguishedNameDecode(byte[] encodedDistinguishedName, X500DistinguishedNameFlags flag)
