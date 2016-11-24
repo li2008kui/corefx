@@ -252,7 +252,7 @@ namespace Internal.Cryptography.Pal
                     {
                         // The extension exposes the value as a hexadecimal string, or we can decode here.
                         // Enough parsing has gone on, let's decode.
-                        certKeyId = OpenSslX509Encoder.DecodeX509SubjectKeyIdentifierExtension(ext.RawData);
+                        certKeyId = ManagedX509ExtensionProcessor.DecodeX509SubjectKeyIdentifierExtension(ext.RawData);
                     }
                     else
                     {
