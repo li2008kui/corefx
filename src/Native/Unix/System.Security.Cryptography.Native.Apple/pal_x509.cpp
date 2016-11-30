@@ -4,6 +4,9 @@
 
 #include "pal_x509.h"
 
+static const int32_t kErrOutItemsNull = -1;
+static const int32_t kErrOutItemsEmpty = -2;
+
 extern "C" int32_t AppleCryptoNative_X509GetPublicKey(SecCertificateRef cert, SecKeyRef* pPublicKeyOut, int32_t* pOSStatusOut)
 {
     if (pPublicKeyOut != nullptr)
@@ -100,35 +103,23 @@ extern "C" PAL_X509ContentType AppleCryptoNative_X509GetContentType(uint8_t* pbD
     return PAL_X509Unknown;
 }
 
-#if 0
-static int32_t ProcessCertificateTypeReturn(SecExternalItemType type, CFArrayRef items, SecCertificateRef* pCertOut, SecKeyRef* pPrivateKeyOut)
+static int32_t ProcessCertificateTypeReturn(SecExternalFormat format, SecExternalItemType type, CFArrayRef items, SecCertificateRef* pCertOut, SecKeyRef* pPrivateKeyOut)
 {
+    if (format == 3 || type == 2)
+        *pPrivateKeyOut = nullptr;
+
+    if (items == nullptr)
+    {
+        return kErrOutItemsNull;
+    }
+
     CFIndex itemCount = CFArrayGetCount(items);
 
     if (itemCount == 0)
     {
-        return -10;
+        return kErrOutItemsEmpty;
     }
 
-    if (type == kSecItemTypeCertificate)
-    {
-        CFTypeRef item = CFArrayGetValueAtIndex(items, 0);
-
-        if (item == nullptr)
-        {
-            return -11;
-        }
-
-        if (CFGetTypeID(item) != SecCertificateGetTypeID())
-        {
-            return -12;
-        }
-
-        CFRetain(item);
-        *pCertOut = reinterpret_cast<SecCertificateRef>(const_cast<void*>(item));
-        return 1;
-    }
-    else if (type == kSecItemTypeAggregate)
     {
         CFTypeRef bestItem = nullptr;
 
@@ -141,7 +132,7 @@ static int32_t ProcessCertificateTypeReturn(SecExternalItemType type, CFArrayRef
             CFTypeRef current = CFArrayGetValueAtIndex(items, i);
             auto currentItemType = CFGetTypeID(current);
 
-            printf("Item %lu: %lu\n", i, currentItemType);
+            printf("Item %lu/%lu: %lu\n", i, itemCount, currentItemType);
 
             if (currentItemType == SecIdentityGetTypeID())
             {
@@ -174,12 +165,11 @@ static int32_t ProcessCertificateTypeReturn(SecExternalItemType type, CFArrayRef
         }
     }
 
-    return 0;
+    return -19;
 }
-#endif
 
 extern "C" int32_t AppleCryptoNative_X509ImportCertificate(
-    uint8_t* pbData, int32_t cbData, SecCertificateRef* pCertOut, SecKeyRef* pPrivateKeyOut, int32_t* pOSStatus)
+    uint8_t* pbData, int32_t cbData, CFStringRef cfPfxPassphrase, SecCertificateRef* pCertOut, SecKeyRef* pPrivateKeyOut, int32_t* pOSStatus)
 {
     if (pCertOut != nullptr)
         *pCertOut = nullptr;
@@ -204,66 +194,44 @@ extern "C" int32_t AppleCryptoNative_X509ImportCertificate(
 
     SecExternalItemType itemType = kSecItemTypeCertificate;
     SecExternalItemType actualType = itemType;
-
     int32_t ret = 0;
-    CFIndex itemCount;
     CFArrayRef outItems = nullptr;
-    CFTypeRef outItem = nullptr;
 
     *pOSStatus = SecItemImport(cfData, nullptr, &dataFormat, &actualType, 0, nullptr, nullptr, &outItems);
 
-    if (*pOSStatus != noErr)
+    if (*pOSStatus == noErr)
     {
-        ret = 0;
-        goto cleanup;
-    }
-
-    if (outItems == nullptr)
-    {
-        ret = -1;
-        goto cleanup;
-    }
-
-    itemCount = CFArrayGetCount(outItems);
-
-    if (itemCount == 0)
-    {
-        ret = -2;
-        goto cleanup;
-    }
-
-    if (actualType == kSecItemTypeCertificate)
-    {
-        if (itemCount > 1)
-        {
-            ret = -4;
-            goto cleanup;
-        }
-
-        outItem = CFArrayGetValueAtIndex(outItems, 0);
-
-        if (outItem == nullptr)
-        {
-            ret = -5;
-            goto cleanup;
-        }
-
-        if (CFGetTypeID(outItem) != SecCertificateGetTypeID())
-        {
-            ret = -6;
-            goto cleanup;
-        }
-
-        CFRetain(outItem);
-        *pCertOut = reinterpret_cast<SecCertificateRef>(const_cast<void*>(outItem));
-        ret = 1;
+        printf("item type: %d, format: %d\n", actualType, dataFormat);
+        ret = ProcessCertificateTypeReturn(dataFormat, actualType, outItems, pCertOut, pPrivateKeyOut);
     }
     else
     {
-        ret = -3;
+        if (outItems != nullptr)
+        {
+            CFRelease(outItems);
+            outItems = nullptr;
+        }
+
+        actualType = kSecItemTypeAggregate;
+        dataFormat = kSecFormatPKCS12;
+    
+        SecItemImportExportKeyParameters importParams = {};
+        importParams.version = SEC_KEY_IMPORT_EXPORT_PARAMS_VERSION;
+        importParams.passphrase = cfPfxPassphrase;
+
+        *pOSStatus = SecItemImport(cfData, nullptr, &dataFormat, &actualType, 0, &importParams, nullptr, &outItems);
+
+        if (*pOSStatus == noErr)
+        {
+            printf("pfx item type: %d, format: %d, hadPass: %d\n", actualType, dataFormat, !!cfPfxPassphrase);
+            ret = ProcessCertificateTypeReturn(dataFormat, actualType, outItems, pCertOut, pPrivateKeyOut);
+        }
+        else
+        {
+            ret = 0;
+        }
     }
 
-cleanup:
     if (outItems != nullptr)
     {
         CFRelease(outItems);
