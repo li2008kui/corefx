@@ -74,17 +74,21 @@ namespace Internal.Cryptography.Pal
 
             public string X500DistinguishedNameDecode(byte[] encodedDistinguishedName, X500DistinguishedNameFlags flag)
             {
-                throw new System.NotImplementedException();
+                return X500NameEncoder.X500DistinguishedNameDecode(encodedDistinguishedName, true, flag);
             }
 
             public byte[] X500DistinguishedNameEncode(string distinguishedName, X500DistinguishedNameFlags flag)
             {
-                throw new System.NotImplementedException();
+                return X500NameEncoder.X500DistinguishedNameEncode(distinguishedName, flag);
             }
 
             public string X500DistinguishedNameFormat(byte[] encodedDistinguishedName, bool multiLine)
             {
-                throw new System.NotImplementedException();
+                return X500NameEncoder.X500DistinguishedNameDecode(
+                    encodedDistinguishedName,
+                    true,
+                    multiLine ? X500DistinguishedNameFlags.UseNewLines : X500DistinguishedNameFlags.None,
+                    multiLine);
             }
 
             public X509ContentType GetCertContentType(byte[] rawData)
