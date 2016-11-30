@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -18,6 +19,7 @@ internal static partial class Interop
         private static extern int AppleCryptoNative_X509ImportCertificate(
             byte[] pbKeyBlob,
             int cbKeyBlob,
+            SafeCreateHandle cfPfxPassphrase,
             out SafeSecCertificateHandle pCertOut,
             out SafeCreateHandle pPrivateKeyOut,
             out int pOSStatus);
@@ -60,17 +62,49 @@ internal static partial class Interop
 
         internal static SafeSecCertificateHandle X509ImportCertificate(
             byte[] bytes,
+            SafePasswordHandle importPassword,
             out SafeCreateHandle privateKey)
         {
             SafeSecCertificateHandle certHandle;
             int osStatus;
+            int ret;
 
-            int ret = AppleCryptoNative_X509ImportCertificate(
-                bytes,
-                bytes.Length,
-                out certHandle,
-                out privateKey,
-                out osStatus);
+            SafeCreateHandle cfPassphrase = s_nullExportString;
+            bool releasePassword = false;
+
+            try
+            {
+                if (!importPassword.IsInvalid)
+                {
+                    importPassword.DangerousAddRef(ref releasePassword);
+                    IntPtr passwordHandle = importPassword.DangerousGetHandle();
+
+                    if (passwordHandle != IntPtr.Zero)
+                    {
+                        cfPassphrase = CoreFoundation.CFStringCreateWithCString(passwordHandle);
+                    }
+                }
+
+                ret = AppleCryptoNative_X509ImportCertificate(
+                    bytes,
+                    bytes.Length,
+                    cfPassphrase,
+                    out certHandle,
+                    out privateKey,
+                    out osStatus);
+            }
+            finally
+            {
+                if (releasePassword)
+                {
+                    importPassword.DangerousRelease();
+                }
+
+                if (cfPassphrase != s_nullExportString)
+                {
+                    cfPassphrase.Dispose();
+                }
+            }
 
             if (ret == 1)
             {
@@ -80,13 +114,21 @@ internal static partial class Interop
             certHandle.Dispose();
             privateKey.Dispose();
 
-            if (ret == 0)
-            {
-                throw CreateExceptionForCCError(osStatus, OSStatus);
-            }
+            const int SeeOSStatus = 0;
+            const int ImportReturnedNull = -1;
+            const int ImportReturnedEmpty = -2;
 
-            Debug.Fail($"Unexpected return value {ret}");
-            throw new CryptographicException();
+            switch (ret)
+            {
+                case SeeOSStatus:
+                    throw CreateExceptionForCCError(osStatus, OSStatus);
+                case ImportReturnedNull:
+                case ImportReturnedEmpty:
+                    throw new CryptographicException();
+                default:
+                    Debug.Fail($"Unexpected return value {ret}");
+                    throw new CryptographicException();
+            }
         }
 
         internal static SafeSecKeyRefHandle X509GetPublicKey(SafeSecCertificateHandle cert)
