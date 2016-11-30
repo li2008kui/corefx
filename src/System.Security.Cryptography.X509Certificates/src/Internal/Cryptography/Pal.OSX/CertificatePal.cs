@@ -33,7 +33,7 @@ namespace Internal.Cryptography.Pal
             SafeCreateHandle privateKey;
 
             SafeSecCertificateHandle certHandle =
-                Interop.AppleCrypto.X509ImportCertificate(rawData, out privateKey);
+                Interop.AppleCrypto.X509ImportCertificate(rawData, password, out privateKey);
 
             return new AppleCertificatePal(certHandle, privateKey);
         }
