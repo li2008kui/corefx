@@ -14,6 +14,7 @@ set(NATIVECRYPTO_SOURCES
     pal_hmac.cpp
     pal_random.cpp
     pal_rsa.cpp
+    pal_sec.cpp
     pal_seckey.cpp
     pal_signverify.cpp
     pal_symmetric.cpp
