@@ -504,10 +504,11 @@ namespace Internal.Cryptography.Pal
                 rdnReaders.Push(x500NameReader.ReadSet());
             }
 
-            DerSequenceReader rdnReader;
 
-            while (rdnReaders.TryPop(out rdnReader))
+            while (rdnReaders.Count > 0)
             {
+                DerSequenceReader rdnReader = rdnReaders.Pop();
+
                 while (rdnReader.HasData)
                 {
                     DerSequenceReader tavReader = rdnReader.ReadSequence();
