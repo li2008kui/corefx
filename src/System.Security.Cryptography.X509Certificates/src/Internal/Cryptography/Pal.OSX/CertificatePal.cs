@@ -644,11 +644,8 @@ namespace Internal.Cryptography.Pal
             if (subjectPublicKeyInfo.HasData)
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
 
-            if (tbsCertificate.PeekTag() == DerSequenceReader.ContextSpecificConstructedTag1)
+            if (Version > 0 && tbsCertificate.PeekTag() == DerSequenceReader.ContextSpecificConstructedTag1)
             {
-                if (Version == 0)
-                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-
                 IssuerUniqueId = tbsCertificate.ReadBitString();
             }
             else
@@ -656,11 +653,8 @@ namespace Internal.Cryptography.Pal
                 IssuerUniqueId = null;
             }
 
-            if (tbsCertificate.PeekTag() == DerSequenceReader.ContextSpecificConstructedTag2)
+            if (Version > 0 && tbsCertificate.PeekTag() == DerSequenceReader.ContextSpecificConstructedTag2)
             {
-                if (Version == 0)
-                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-
                 SubjectUniqueId = tbsCertificate.ReadBitString();
             }
             else
@@ -670,7 +664,7 @@ namespace Internal.Cryptography.Pal
 
             Extensions = new List<X509Extension>();
 
-            if (tbsCertificate.PeekTag() == DerSequenceReader.ContextSpecificConstructedTag3)
+            if (Version > 1 && tbsCertificate.PeekTag() == DerSequenceReader.ContextSpecificConstructedTag3)
             {
                 DerSequenceReader extensions = tbsCertificate.ReadSequence();
                 extensions = extensions.ReadSequence();
