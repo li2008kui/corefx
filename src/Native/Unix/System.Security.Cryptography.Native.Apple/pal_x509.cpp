@@ -221,6 +221,19 @@ extern "C" int32_t AppleCryptoNative_X509ImportCertificate(
 
         *pOSStatus = SecItemImport(cfData, nullptr, &dataFormat, &actualType, 0, &importParams, nullptr, &outItems);
 
+        if (*pOSStatus == errSecPassphraseRequired)
+        {
+            // Try again with the empty string passphrase.
+            printf("pfx: errSecPassphraseRequired\n");
+            importParams.passphrase = CFSTR("");
+
+            *pOSStatus = SecItemImport(cfData, nullptr, &dataFormat, &actualType, 0, &importParams, nullptr, &outItems);
+
+            CFRelease(importParams.passphrase);
+            importParams.passphrase = nullptr;
+        }
+        else if (*pOSStatus == noErr) printf("Loaded data with NULL passphrase");
+
         if (*pOSStatus == noErr)
         {
             printf("pfx item type: %d, format: %d, hadPass: %d\n", actualType, dataFormat, !!cfPfxPassphrase);
