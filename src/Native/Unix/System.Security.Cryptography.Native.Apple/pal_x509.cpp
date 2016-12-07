@@ -142,7 +142,6 @@ static int32_t ProcessCertificateTypeReturn(SecExternalFormat format, SecExterna
             else if (bestItem == nullptr && currentItemType == SecCertificateGetTypeID())
             {
                 bestItem = current;
-                break;
             }
         }
 
