@@ -120,7 +120,7 @@ internal static partial class Interop
 
             if (ret == 0)
             {
-                throw CreateExceptionForCCError(osStatus, OSStatus);
+                throw CreateExceptionForOSStatus(osStatus);
             }
 
             Debug.Fail($"SecKeyImportEphemeral returned {ret}");

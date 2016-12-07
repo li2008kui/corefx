@@ -53,7 +53,7 @@ internal static partial class Interop
 
             if (ret == 0)
             {
-                throw CreateExceptionForCCError(osStatus, OSStatus);
+                throw CreateExceptionForOSStatus(osStatus);
             }
 
             Debug.Fail($"Unexpected return value {ret}");
@@ -121,7 +121,7 @@ internal static partial class Interop
             switch (ret)
             {
                 case SeeOSStatus:
-                    throw CreateExceptionForCCError(osStatus, OSStatus);
+                    throw CreateExceptionForOSStatus(osStatus);
                 case ImportReturnedNull:
                 case ImportReturnedEmpty:
                     throw new CryptographicException();
@@ -146,7 +146,7 @@ internal static partial class Interop
 
             if (ret == 0)
             {
-                throw CreateExceptionForCCError(osStatus, OSStatus);
+                throw CreateExceptionForOSStatus(osStatus);
             }
 
             Debug.Fail($"Unexpected return value {ret}");
