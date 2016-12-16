@@ -334,6 +334,9 @@
     <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509.cs">
       <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509Chain.cs">
+      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509Chain.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs</Link>
     </Compile>
@@ -363,6 +366,7 @@
     <Compile Include="$(CommonPath)\System\Security\Cryptography\DerSequenceReader.cs">
       <Link>Common\System\Security\Cryptography\DerSequenceReader.cs</Link>
     </Compile>
+    <Compile Include="Internal\Cryptography\Pal.Unix\ChainVerifier.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\ManagedX509ExtensionProcessor.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\X500NameEncoder.cs" />
   </ItemGroup>
