@@ -19,6 +19,7 @@ set(NATIVECRYPTO_SOURCES
     pal_signverify.cpp
     pal_symmetric.cpp
     pal_x509.cpp
+    pal_x509chain.cpp
 )
 
 add_library(System.Security.Cryptography.Native.Apple
