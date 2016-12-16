@@ -157,7 +157,7 @@ internal static partial class Interop
 
 namespace System.Security.Cryptography.X509Certificates
 {
-    internal class SafeSecCertificateHandle : SafeHandle
+    internal sealed class SafeSecCertificateHandle : SafeHandle
     {
         public SafeSecCertificateHandle()
             : base(IntPtr.Zero, ownsHandle: true)
@@ -171,5 +171,13 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         public override bool IsInvalid => handle == IntPtr.Zero;
+
+        internal static SafeSecCertificateHandle DuplicateHandle(IntPtr handle)
+        {
+            Interop.CoreFoundation.CFRetain(handle);
+            SafeSecCertificateHandle certHandle = new SafeSecCertificateHandle();
+            certHandle.SetHandle(handle);
+            return certHandle;
+        }
     }
 }

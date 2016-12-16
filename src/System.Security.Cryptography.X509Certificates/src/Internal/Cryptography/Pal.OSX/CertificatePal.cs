@@ -16,14 +16,17 @@ namespace Internal.Cryptography.Pal
     {
         public static ICertificatePal FromHandle(IntPtr handle)
         {
-            throw new NotImplementedException();
+            if (handle == IntPtr.Zero)
+                throw new ArgumentException(SR.Arg_InvalidHandle, nameof(handle));
+
+            return new AppleCertificatePal(SafeSecCertificateHandle.DuplicateHandle(handle), null);
         }
 
         public static ICertificatePal FromOtherCert(X509Certificate cert)
         {
             Debug.Assert(cert.Pal != null);
 
-            throw new NotImplementedException();
+            return FromHandle(cert.Handle);
         }
 
         public static ICertificatePal FromBlob(byte[] rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
