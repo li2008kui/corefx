@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 using Microsoft.Win32.SafeHandles;
@@ -100,6 +101,18 @@ internal static partial class Interop
             IntPtr[] values,
             ulong numValues,
             IntPtr callbacks);
+
+        /// <summary>
+        /// Creates a pointer to an unmanaged CFArray containing the input values. Follows the "Create Rule" where if you create it, you delete it.
+        /// </summary>
+        /// <param name="values">The values to put in the array</param>
+        /// <param name="numValues">The number of values in the array</param>
+        /// <returns>Returns a valid SafeCreateHandle to a CFArray on success; otherwise, returns an invalid SafeCreateHandle</returns>
+        internal static SafeCreateHandle CFArrayCreate(IntPtr[] values, int numValues)
+        {
+            Debug.Assert(numValues >= 0);
+            return CFArrayCreate(IntPtr.Zero, values, (ulong)numValues, IntPtr.Zero);
+        }
 
         /// <summary>
         /// Creates a pointer to an unmanaged CFArray containing the input values. Follows the "Create Rule" where if you create it, you delete it.
