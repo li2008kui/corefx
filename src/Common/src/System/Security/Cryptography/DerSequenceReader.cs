@@ -23,6 +23,7 @@ namespace System.Security.Cryptography
         internal const byte ContextSpecificConstructedTag1 = ContextSpecificConstructedTag0 | 1;
         internal const byte ContextSpecificConstructedTag2 = ContextSpecificConstructedTag0 | 2;
         internal const byte ContextSpecificConstructedTag3 = ContextSpecificConstructedTag0 | 3;
+        internal const byte TagNumberMask = 0x1F;
 
         internal static DateTimeFormatInfo s_validityDateTimeFormatInfo;
 
@@ -416,7 +417,7 @@ namespace System.Security.Cryptography
                 return;
             }
 
-            byte relevant = (byte)(actual & 0x1F);
+            byte relevant = (byte)(actual & TagNumberMask);
             byte expectedByte = (byte)expected;
 
             if (expectedByte != relevant)
