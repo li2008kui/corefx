@@ -484,7 +484,15 @@ namespace Internal.Cryptography.Pal
 
         public void AppendPrivateKeyInfo(StringBuilder sb)
         {
-            throw new NotImplementedException();
+            if (!HasPrivateKey)
+            {
+                return;
+            }
+
+            // There's nothing really to say about the key, just acknowledge there is one.
+            sb.AppendLine();
+            sb.AppendLine();
+            sb.AppendLine("[Private Key]");
         }
 
         private void EnsureCertData()
