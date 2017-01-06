@@ -4,6 +4,7 @@
     <BuildConfigurations>
       uap101-Windows_NT;
       net46-Windows_NT;
+      netstandard-OSX;
       netstandard-Unix;
       netstandard-Windows_NT;
     </BuildConfigurations>
