@@ -1012,6 +1012,7 @@ namespace System.Net.Security
                     }
 
                     sslPolicyErrors |= CertificateValidationPal.VerifyCertificateProperties(
+                        _securityContext,
                         chain,
                         remoteCertificateEx,
                         _checkCertName,
