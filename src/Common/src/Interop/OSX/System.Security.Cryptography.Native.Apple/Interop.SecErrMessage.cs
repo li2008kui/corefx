@@ -3,24 +3,28 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
-        internal static Exception CreateExceptionForOSStatus(int osStatus)
+        [DllImport(Libraries.AppleCryptoNative)]
+        private static extern SafeCFStringHandle AppleCryptoNative_SecCopyErrorMessageString(int osStatus);
+
+        internal static string GetSecErrorString(int osStatus)
         {
             using (SafeCFStringHandle cfString = AppleCryptoNative_SecCopyErrorMessageString(osStatus))
             {
                 if (cfString.IsInvalid)
                 {
-                    return CreateExceptionForCCError(osStatus, "OSStatus");
+                    return null;
                 }
 
-                string msg = CoreFoundation.CFStringToString(cfString);
-                return new AppleCommonCryptoCryptographicException(osStatus, msg);
+                return CoreFoundation.CFStringToString(cfString);
             }
         }
     }
