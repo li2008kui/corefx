@@ -22,10 +22,10 @@ internal static partial class Interop
     {
         static SslInitializer()
         {
-            CryptoInitializer.Initialize();
+            //CryptoInitializer.Initialize();
 
             //Call ssl specific initializer
-            Ssl.EnsureLibSslInitialized();
+            //Ssl.EnsureLibSslInitialized();
         }
 
         internal static void Initialize()

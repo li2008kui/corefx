@@ -58,6 +58,11 @@ namespace Microsoft.Win32.SafeHandles
         {
         }
 
+        internal SafeCFDataHandle(SafeCreateHandle openHandle)
+            : base(openHandle.DangerousGetHandle(), ownsHandle: false)
+        {
+        }
+
         protected override bool ReleaseHandle()
         {
             Interop.CoreFoundation.CFRelease(handle);
