@@ -24,8 +24,10 @@ namespace System.Net.Security
 
         internal const bool StartMutualAuthAsAnonymous = false;
 
-        // TODO: Can it?
-        internal const bool CanEncryptEmptyMessage = true;
+        // SecureTransport is okay with a 0 byte input, but it produces a 0 byte output.
+        // Since ST is not producing the framed empty message just call this false and avoid the
+        // special case of an empty array being passed to the `fixed` statement.
+        internal const bool CanEncryptEmptyMessage = false;
 
         public static void VerifyPackageInfo()
         {
@@ -83,6 +85,8 @@ namespace System.Net.Security
             out int resultSize)
         {
             resultSize = 0;
+
+            Debug.Assert(size > 0, $"{nameof(size)} > 0 since {nameof(CanEncryptEmptyMessage)} is false");
 
             try
             {
