@@ -151,7 +151,11 @@ namespace Internal.Cryptography.Pal
         public string FriendlyName
         {
             get { return ""; }
-            set { throw new PlatformNotSupportedException(); }
+            set
+            {
+                throw new PlatformNotSupportedException(
+                    SR.Format(SR.Cryptography_Unix_X509_PropertyNotSettable, nameof(FriendlyName)));
+            }
         }
 
         public int Version
@@ -234,12 +238,26 @@ namespace Internal.Cryptography.Pal
         public bool Archived
         {
             get { return false; }
-            set { throw new PlatformNotSupportedException(); }
+            set
+            {
+                throw new PlatformNotSupportedException(
+                    SR.Format(SR.Cryptography_Unix_X509_PropertyNotSettable, nameof(Archived)));
+            }
         }
 
         public AsymmetricAlgorithm GetPrivateKey()
         {
-            return (AsymmetricAlgorithm)GetRSAPrivateKey() ?? GetDSAPrivateKey();
+            switch (KeyAlgorithm)
+            {
+                case Oids.RsaRsa:
+                    return GetRSAPrivateKey();
+                case Oids.DsaDsa:
+                    return GetDSAPrivateKey();
+                case Oids.Ecc:
+                    return GetECDsaPrivateKey();
+            }
+
+            throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
         }
 
         public RSA GetRSAPrivateKey()
@@ -257,7 +275,10 @@ namespace Internal.Cryptography.Pal
 
         public ECDsa GetECDsaPrivateKey()
         {
-            throw new NotImplementedException();
+            SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.X509GetPublicKey(_certHandle);
+            SafeSecKeyRefHandle privateKey = Interop.AppleCrypto.X509GetPrivateKeyFromIdentity(_identityHandle);
+
+            return new ECDsaImplementation.ECDsaSecurityTransforms(publicKey, privateKey);
         }
 
         public string GetNameInfo(X509NameType nameType, bool forIssuer)
