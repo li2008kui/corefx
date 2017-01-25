@@ -40,6 +40,11 @@ namespace System.Security.Cryptography
                 SetKey(SecKeyPair.PublicOnly(publicKey));
             }
 
+            internal RSASecurityTransforms(SafeSecKeyRefHandle publicKey, SafeSecKeyRefHandle privateKey)
+            {
+                SetKey(SecKeyPair.PublicPrivatePair(publicKey, privateKey));
+            }
+
             public override KeySizes[] LegalKeySizes
             {
                 get

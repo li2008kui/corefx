@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Security.Cryptography;
+using System.Security.Cryptography.Apple;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
@@ -19,7 +20,8 @@ namespace Internal.Cryptography.Pal
             if (handle == IntPtr.Zero)
                 throw new ArgumentException(SR.Arg_InvalidHandle, nameof(handle));
 
-            return new AppleCertificatePal(SafeSecCertificateHandle.DuplicateHandle(handle), null);
+            // TODO: this might be an identity handle, need to ask if it's the right type.
+            return new AppleCertificatePal(SafeSecCertificateHandle.DuplicateHandle(handle));
         }
 
         public static ICertificatePal FromOtherCert(X509Certificate cert)
@@ -33,12 +35,20 @@ namespace Internal.Cryptography.Pal
         {
             Debug.Assert(password != null);
 
-            SafeCreateHandle privateKey;
+            SafeSecIdentityHandle identityHandle;
 
             SafeSecCertificateHandle certHandle =
-                Interop.AppleCrypto.X509ImportCertificate(rawData, password, out privateKey);
+                Interop.AppleCrypto.X509ImportCertificate(rawData, password, out identityHandle);
 
-            return new AppleCertificatePal(certHandle, privateKey);
+            if (identityHandle.IsInvalid)
+            {
+                identityHandle.Dispose();
+                return new AppleCertificatePal(certHandle);
+            }
+
+            Debug.Assert(certHandle.IsInvalid);
+            certHandle.Dispose();
+            return new AppleCertificatePal(identityHandle);
         }
 
         public static ICertificatePal FromFile(string fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
@@ -52,29 +62,38 @@ namespace Internal.Cryptography.Pal
 
     internal sealed class AppleCertificatePal : ICertificatePal
     {
+        private SafeSecIdentityHandle _identityHandle;
         private SafeSecCertificateHandle _certHandle;
-        private SafeCreateHandle _privateKeyHandle;
         private CertificateData _certData;
         private bool _readCertData;
 
-        internal AppleCertificatePal(SafeSecCertificateHandle certHandle, SafeCreateHandle privateKey)
+        internal AppleCertificatePal(SafeSecCertificateHandle certHandle)
         {
+            Debug.Assert(!certHandle.IsInvalid);
+
             _certHandle = certHandle;
-            _privateKeyHandle = privateKey;
+        }
+
+        internal AppleCertificatePal(SafeSecIdentityHandle identityHandle)
+        {
+            Debug.Assert(!identityHandle.IsInvalid);
+
+            _identityHandle = identityHandle;
+            _certHandle = Interop.AppleCrypto.X509GetCertFromIdentity(identityHandle);
         }
 
         public void Dispose()
         {
             _certHandle?.Dispose();
-            _privateKeyHandle?.Dispose();
+            _identityHandle?.Dispose();
 
             _certHandle = null;
-            _privateKeyHandle = null;
+            _identityHandle = null;
         }
 
         internal SafeSecCertificateHandle SafeHandle => _certHandle;
 
-        public bool HasPrivateKey => !(_privateKeyHandle?.IsInvalid ?? false);
+        public bool HasPrivateKey => !(_identityHandle?.IsInvalid ?? false);
 
         public IntPtr Handle => _certHandle?.DangerousGetHandle() ?? IntPtr.Zero;
 
@@ -220,12 +239,15 @@ namespace Internal.Cryptography.Pal
 
         public AsymmetricAlgorithm GetPrivateKey()
         {
-            throw new NotImplementedException();
+            return (AsymmetricAlgorithm)GetRSAPrivateKey() ?? GetDSAPrivateKey();
         }
 
         public RSA GetRSAPrivateKey()
         {
-            throw new NotImplementedException();
+            SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.X509GetPublicKey(_certHandle);
+            SafeSecKeyRefHandle privateKey = Interop.AppleCrypto.X509GetPrivateKeyFromIdentity(_identityHandle);
+
+            return new RSAImplementation.RSASecurityTransforms(publicKey, privateKey);
         }
 
         public DSA GetDSAPrivateKey()

@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Apple;
@@ -20,8 +21,9 @@ internal static partial class Interop
             byte[] pbKeyBlob,
             int cbKeyBlob,
             SafeCreateHandle cfPfxPassphrase,
+            string tmpKeychainPath,
             out SafeSecCertificateHandle pCertOut,
-            out SafeCreateHandle pPrivateKeyOut,
+            out SafeSecIdentityHandle pPrivateKeyOut,
             out int pOSStatus);
 
         [DllImport(Libraries.AppleCryptoNative)]
@@ -35,6 +37,16 @@ internal static partial class Interop
 
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_X509GetContentType")]
         internal static extern X509ContentType X509GetContentType(byte[] pbData, int cbData);
+
+        [DllImport(Libraries.AppleCryptoNative)]
+        private static extern int AppleCryptoNative_X509CopyCertFromIdentity(
+            SafeSecIdentityHandle identity,
+            out SafeSecCertificateHandle cert);
+
+        [DllImport(Libraries.AppleCryptoNative)]
+        private static extern int AppleCryptoNative_X509CopyPrivateKeyFromIdentity(
+            SafeSecIdentityHandle identity,
+            out SafeSecKeyRefHandle key);
 
         internal static byte[] X509GetRawData(SafeSecCertificateHandle cert)
         {
@@ -63,7 +75,7 @@ internal static partial class Interop
         internal static SafeSecCertificateHandle X509ImportCertificate(
             byte[] bytes,
             SafePasswordHandle importPassword,
-            out SafeCreateHandle privateKey)
+            out SafeSecIdentityHandle identityHandle)
         {
             SafeSecCertificateHandle certHandle;
             int osStatus;
@@ -71,6 +83,10 @@ internal static partial class Interop
 
             SafeCreateHandle cfPassphrase = s_nullExportString;
             bool releasePassword = false;
+
+            string tmpKeychainPath = Path.Combine(
+                Path.GetTempPath(),
+                Guid.NewGuid().ToString("N") + ".keychain");
 
             try
             {
@@ -89,8 +105,9 @@ internal static partial class Interop
                     bytes,
                     bytes.Length,
                     cfPassphrase,
+                    tmpKeychainPath,
                     out certHandle,
-                    out privateKey,
+                    out identityHandle,
                     out osStatus);
             }
             finally
@@ -104,6 +121,10 @@ internal static partial class Interop
                 {
                     cfPassphrase.Dispose();
                 }
+
+                Debug.Assert(
+                    !File.Exists(tmpKeychainPath),
+                    $"A temporary keychain was created at {tmpKeychainPath} and was not deleted");
             }
 
             if (ret == 1)
@@ -112,7 +133,7 @@ internal static partial class Interop
             }
 
             certHandle.Dispose();
-            privateKey.Dispose();
+            identityHandle.Dispose();
 
             const int SeeOSStatus = 0;
             const int ImportReturnedNull = -1;
@@ -130,6 +151,47 @@ internal static partial class Interop
                     throw new CryptographicException();
             }
         }
+
+        internal static SafeSecCertificateHandle X509GetCertFromIdentity(SafeSecIdentityHandle identity)
+        {
+            SafeSecCertificateHandle cert;
+            int osStatus = AppleCryptoNative_X509CopyCertFromIdentity(identity, out cert);
+
+            if (osStatus != 0)
+            {
+                cert.Dispose();
+                throw CreateExceptionForOSStatus(osStatus);
+            }
+
+            if (cert.IsInvalid)
+            {
+                cert.Dispose();
+                throw new CryptographicException(SR.Arg_InvalidHandle);
+            }
+
+            return cert;
+        }
+
+        internal static SafeSecKeyRefHandle X509GetPrivateKeyFromIdentity(SafeSecIdentityHandle identity)
+        {
+            SafeSecKeyRefHandle key;
+            int osStatus = AppleCryptoNative_X509CopyPrivateKeyFromIdentity(identity, out key);
+
+            if (osStatus != 0)
+            {
+                key.Dispose();
+                throw CreateExceptionForOSStatus(osStatus);
+            }
+
+            if (key.IsInvalid)
+            {
+                key.Dispose();
+                throw new CryptographicException(SR.Arg_InvalidHandle);
+            }
+
+            return key;
+        }
+
 
         internal static SafeSecKeyRefHandle X509GetPublicKey(SafeSecCertificateHandle cert)
         {
@@ -157,6 +219,22 @@ internal static partial class Interop
 
 namespace System.Security.Cryptography.X509Certificates
 {
+    internal sealed class SafeSecIdentityHandle : SafeHandle
+    {
+        public SafeSecIdentityHandle()
+            : base(IntPtr.Zero, ownsHandle: true)
+        {
+        }
+
+        protected override bool ReleaseHandle()
+        {
+            Interop.CoreFoundation.CFRelease(handle);
+            return true;
+        }
+
+        public override bool IsInvalid => handle == IntPtr.Zero;
+    }
+
     internal sealed class SafeSecCertificateHandle : SafeHandle
     {
         public SafeSecCertificateHandle()
