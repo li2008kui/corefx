@@ -7,6 +7,15 @@
 static const int32_t kErrOutItemsNull = -1;
 static const int32_t kErrOutItemsEmpty = -2;
 
+#ifndef DEBUG_LOAD
+static int not_printf(const char* format, ...)
+{
+    (void)format;
+    return 0;
+}
+#define printf not_printf
+#endif
+
 extern "C" int32_t
 AppleCryptoNative_X509GetPublicKey(SecCertificateRef cert, SecKeyRef* pPublicKeyOut, int32_t* pOSStatusOut)
 {
