@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 
+using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
@@ -83,6 +84,11 @@ internal static partial class Interop
             SafeSslHandle sslHandle,
             int setBreak,
             out int pOSStatus);
+
+        [DllImport(Interop.Libraries.AppleCryptoNative)]
+        private static extern int AppleCryptoNative_SslSetCertificate(
+            SafeSslHandle sslHandle,
+            SafeCreateHandle cfCertRefs);
 
         [DllImport(Interop.Libraries.AppleCryptoNative)]
         private static extern int AppleCryptoNative_SslSetTargetName(
@@ -209,6 +215,20 @@ internal static partial class Interop
 
             Debug.Fail($"AppleCryptoNative_SslSetBreakOnClientAuth returned {result}");
             throw new SslException();
+        }
+
+        internal static void SslSetCertificate(SafeSslHandle sslHandle, IntPtr[] certChainPtrs)
+        {
+
+            using (SafeCreateHandle cfCertRefs = CoreFoundation.CFArrayCreate(certChainPtrs, certChainPtrs.Length))
+            {
+                int osStatus = AppleCryptoNative_SslSetCertificate(sslHandle, cfCertRefs);
+
+                if (osStatus != 0)
+                {
+                    throw CreateExceptionForOSStatus(osStatus);
+                }
+            }
         }
 
         internal static void SslSetTargetName(SafeSslHandle sslHandle, string targetName)
