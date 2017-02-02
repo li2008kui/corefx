@@ -83,6 +83,12 @@ AppleCryptoNative_SslSetBreakOnClientAuth(SSLContextRef sslContext, int32_t setB
     return AppleCryptoNative_SslSetSessionOption(sslContext, kSSLSessionOptionBreakOnClientAuth, setBreak, pOSStatus);
 }
 
+extern "C" int32_t AppleCryptoNative_SslSetCertificate(SSLContextRef sslContext, CFArrayRef certRefs)
+{
+    // The underlying call handles NULL inputs, so just pass it through
+    return SSLSetCertificate(sslContext, certRefs);
+}
+
 extern "C" int32_t AppleCryptoNative_SslSetTargetName(SSLContextRef sslContext,
                                                       const char* pszTargetName,
                                                       int32_t cbTargetName,
