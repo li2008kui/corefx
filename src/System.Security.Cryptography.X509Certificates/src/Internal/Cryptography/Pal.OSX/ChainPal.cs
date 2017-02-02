@@ -110,13 +110,17 @@ namespace Internal.Cryptography.Pal
         {
             IntPtr[] ptrs = new IntPtr[1 + (extraStore?.Count ?? 0)];
 
-            ptrs[0] = cert.Handle;
+            AppleCertificatePal applePal = (AppleCertificatePal)cert;
+
+            ptrs[0] = applePal.CertificateHandle.DangerousGetHandle();
 
             if (extraStore != null)
             {
                 for (int i = 0; i < extraStore.Count; i++)
                 {
-                    ptrs[i + 1] = extraStore[i].Handle;
+                    AppleCertificatePal extraCertPal = (AppleCertificatePal)extraStore[i].Pal;
+
+                    ptrs[i + 1] = extraCertPal.CertificateHandle.DangerousGetHandle();
                 }
             }
 

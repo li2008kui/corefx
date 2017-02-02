@@ -91,11 +91,23 @@ namespace Internal.Cryptography.Pal
             _identityHandle = null;
         }
 
-        internal SafeSecCertificateHandle SafeHandle => _certHandle;
+        internal SafeSecCertificateHandle CertificateHandle => _certHandle;
 
         public bool HasPrivateKey => !(_identityHandle?.IsInvalid ?? false);
 
-        public IntPtr Handle => _certHandle?.DangerousGetHandle() ?? IntPtr.Zero;
+        public IntPtr Handle
+        {
+            get
+            {
+                if (HasPrivateKey)
+                {
+                    return _identityHandle.DangerousGetHandle();
+                }
+
+                return _certHandle?.DangerousGetHandle() ?? IntPtr.Zero;
+            }
+        }
+
 
         public string Issuer => IssuerName.Name;
 

@@ -27,7 +27,7 @@ namespace Internal.Cryptography.Pal
 
                 if (applePal != null)
                 {
-                    SafeSecKeyRefHandle key = Interop.AppleCrypto.X509GetPublicKey(applePal.SafeHandle);
+                    SafeSecKeyRefHandle key = Interop.AppleCrypto.X509GetPublicKey(applePal.CertificateHandle);
 
                     switch (oid.Value)
                     {
