@@ -303,8 +303,17 @@ namespace System.Net.Security
             ref SafeFreeCredentials credentialsHandle,
             SafeDeleteContext securityContext)
         {
-            throw new NotImplementedException();
-            //return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
+            SafeDeleteSslContext sslContext = ((SafeDeleteSslContext)securityContext);
+            int osStatus = Interop.AppleCrypto.SslShutdown(sslContext.SslContext);
+
+            if (osStatus == 0)
+            {
+                return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
+            }
+
+            return new SecurityStatusPal(
+                SecurityStatusPalErrorCode.InternalError,
+                Interop.AppleCrypto.CreateExceptionForOSStatus(osStatus));
         }
     }
 }

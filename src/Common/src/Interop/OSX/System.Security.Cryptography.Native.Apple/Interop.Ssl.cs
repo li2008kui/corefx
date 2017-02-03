@@ -118,6 +118,9 @@ internal static partial class Interop
         [DllImport(Interop.Libraries.AppleCryptoNative)]
         private static extern int AppleCryptoNative_SslIsHostnameMatch(SafeSslHandle handle, SafeCreateHandle cfHostname);
 
+        [DllImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslShutdown")]
+        internal static extern int SslShutdown(SafeSslHandle sslHandle);
+
         internal static void SslSetAcceptClientCert(SafeSslHandle sslHandle)
         {
             int osStatus = AppleCryptoNative_SslSetAcceptClientCert(sslHandle);
