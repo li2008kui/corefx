@@ -290,3 +290,8 @@ extern "C" int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext
     CFRelease(sslPolicy);
     return ret;
 }
+
+extern "C" int32_t AppleCryptoNative_SslShutdown(SSLContextRef sslContext)
+{
+    return SSLClose(sslContext);
+}
