@@ -12,6 +12,12 @@ extern "C" SSLContextRef AppleCryptoNative_SslCreateContext(int32_t isServer)
     return SSLCreateContext(nullptr, isServer ? kSSLServerSide : kSSLClientSide, kSSLStreamType);
 }
 
+extern "C" int32_t AppleCryptoNative_SslSetAcceptClientCert(SSLContextRef sslContext)
+{
+    // NULL and other illegal values are handled by the underlying API
+    return SSLSetClientSideAuthenticate(sslContext, kTryAuthenticate);
+}
+
 extern "C" int32_t AppleCryptoNative_SslSetMinProtocolVersion(SSLContextRef sslContext, SSLProtocol protocol)
 {
     // NULL and other illegal values are handled by the underlying API
