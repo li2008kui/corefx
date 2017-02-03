@@ -20,8 +20,26 @@ namespace Internal.Cryptography.Pal
             if (handle == IntPtr.Zero)
                 throw new ArgumentException(SR.Arg_InvalidHandle, nameof(handle));
 
-            // TODO: this might be an identity handle, need to ask if it's the right type.
-            return new AppleCertificatePal(SafeSecCertificateHandle.DuplicateHandle(handle));
+            SafeSecCertificateHandle certHandle;
+            SafeSecIdentityHandle identityHandle;
+
+            if (Interop.AppleCrypto.X509DemuxAndRetainHandle(handle, out certHandle, out identityHandle))
+            {
+                Debug.Assert(
+                    certHandle.IsInvalid != identityHandle.IsInvalid,
+                    $"certHandle.IsInvalid ({certHandle.IsInvalid}) should differ from identityHandle.IsInvalid ({identityHandle.IsInvalid})");
+
+                if (certHandle.IsInvalid)
+                {
+                    certHandle.Dispose();
+                    return new AppleCertificatePal(identityHandle);
+                }
+
+                identityHandle.Dispose();
+                return new AppleCertificatePal(certHandle);
+            }
+
+            throw new ArgumentException(SR.Arg_InvalidHandle, nameof(handle));
         }
 
         public static ICertificatePal FromOtherCert(X509Certificate cert)

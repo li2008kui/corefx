@@ -48,6 +48,12 @@ internal static partial class Interop
             SafeSecIdentityHandle identity,
             out SafeSecKeyRefHandle key);
 
+        [DllImport(Libraries.AppleCryptoNative)]
+        private static extern int AppleCryptoNative_X509DemuxAndRetainHandle(
+            IntPtr handle,
+            out SafeSecCertificateHandle certHandle,
+            out SafeSecIdentityHandle identityHandle);
+
         internal static byte[] X509GetRawData(SafeSecCertificateHandle cert)
         {
             int osStatus;
@@ -192,7 +198,6 @@ internal static partial class Interop
             return key;
         }
 
-
         internal static SafeSecKeyRefHandle X509GetPublicKey(SafeSecCertificateHandle cert)
         {
             SafeSecKeyRefHandle publicKey;
@@ -213,6 +218,25 @@ internal static partial class Interop
 
             Debug.Fail($"Unexpected return value {ret}");
             throw new CryptographicException();
+        }
+
+        internal static bool X509DemuxAndRetainHandle(
+            IntPtr handle,
+            out SafeSecCertificateHandle certHandle,
+            out SafeSecIdentityHandle identityHandle)
+        {
+            int result = AppleCryptoNative_X509DemuxAndRetainHandle(handle, out certHandle, out identityHandle);
+
+            switch (result)
+            {
+                case 1:
+                    return true;
+                case 0:
+                    return false;
+                default:
+                    Debug.Fail($"AppleCryptoNative_X509DemuxAndRetainHandle returned {result}");
+                    throw new CryptographicException();
+            }
         }
     }
 }
@@ -249,13 +273,5 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         public override bool IsInvalid => handle == IntPtr.Zero;
-
-        internal static SafeSecCertificateHandle DuplicateHandle(IntPtr handle)
-        {
-            Interop.CoreFoundation.CFRetain(handle);
-            SafeSecCertificateHandle certHandle = new SafeSecCertificateHandle();
-            certHandle.SetHandle(handle);
-            return certHandle;
-        }
     }
 }
