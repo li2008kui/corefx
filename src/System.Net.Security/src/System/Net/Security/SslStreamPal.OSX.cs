@@ -220,18 +220,24 @@ namespace System.Net.Security
 
             try
             {
+                SafeDeleteSslContext sslContext = ((SafeDeleteSslContext)context);
+
                 if ((null == context) || context.IsInvalid)
                 {
-                    context = new SafeDeleteSslContext(credential as SafeFreeSslCredentials, isServer, remoteCertRequired);
-                }
+                    sslContext = new SafeDeleteSslContext(credential as SafeFreeSslCredentials, isServer);
+                    context = sslContext;
 
-                SafeDeleteSslContext sslContext = ((SafeDeleteSslContext)context);
-                SafeSslHandle sslHandle = sslContext.SslContext;
+                    if (!string.IsNullOrEmpty(targetName))
+                    {
+                        Debug.Assert(!isServer, "targetName should not be set for server-side handshakes");
+                        Interop.AppleCrypto.SslSetTargetName(sslContext.SslContext, targetName);
+                    }
 
-                if (!string.IsNullOrEmpty(targetName))
-                {
-                    Debug.Assert(!isServer, "targetName should not be set for server-side handshakes");
-                    Interop.AppleCrypto.SslSetTargetName(sslHandle, targetName);
+                    if (remoteCertRequired)
+                    {
+                        Debug.Assert(isServer, "remoteCertRequired should not be set for client-side handshakes");
+                        Interop.AppleCrypto.SslSetAcceptClientCert(sslContext.SslContext);
+                    }
                 }
 
                 if (inputBuffer != null && inputBuffer.size > 0)
@@ -239,7 +245,7 @@ namespace System.Net.Security
                     sslContext.Write(inputBuffer.token, inputBuffer.offset, inputBuffer.size);
                 }
 
-                SecurityStatusPal status = PerformHandshake(sslHandle);
+                SecurityStatusPal status = PerformHandshake(sslContext.SslContext);
 
                 byte[] output = sslContext.ReadPendingWrites();
                 outputBuffer.offset = 0;

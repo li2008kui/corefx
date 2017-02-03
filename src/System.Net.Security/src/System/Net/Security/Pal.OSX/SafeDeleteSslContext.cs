@@ -22,26 +22,20 @@ namespace System.Net
 
         public SafeSslHandle SslContext => _sslContext;
 
-        public SafeDeleteSslContext(SafeFreeSslCredentials credential, bool isServer, bool remoteCertRequired)
+        public SafeDeleteSslContext(SafeFreeSslCredentials credential, bool isServer)
             : base(credential)
         {
             Debug.Assert((null != credential) && !credential.IsInvalid, "Invalid credential used in SafeDeleteSslContext");
 
             try
             {
-                if (isServer)
-                    throw new NotImplementedException();
-
-                if (remoteCertRequired)
-                    throw new NotImplementedException();
-
                 unsafe
                 {
                     _readCallback = ReadFromConnection;
                     _writeCallback = WriteToConnection;
                 }
 
-                _sslContext = CreateSslContext(credential, isServer, remoteCertRequired);
+                _sslContext = CreateSslContext(credential, isServer);
 
                 int osStatus = Interop.AppleCrypto.SslSetIoCallbacks(
                     _sslContext,
@@ -61,11 +55,8 @@ namespace System.Net
             }
         }
 
-        private static SafeSslHandle CreateSslContext(SafeFreeSslCredentials credential, bool isServer, bool remoteCertRequired)
+        private static SafeSslHandle CreateSslContext(SafeFreeSslCredentials credential, bool isServer)
         {
-            Debug.Assert(!isServer);
-            Debug.Assert(!remoteCertRequired);
-
             switch (credential.Policy)
             {
                 case EncryptionPolicy.RequireEncryption:

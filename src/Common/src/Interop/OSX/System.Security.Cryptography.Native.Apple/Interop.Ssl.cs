@@ -100,6 +100,9 @@ internal static partial class Interop
         [DllImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslHandshake")]
         internal static extern PAL_TlsHandshakeState SslHandshake(SafeSslHandle sslHandle);
 
+        [DllImport(Interop.Libraries.AppleCryptoNative)]
+        private static extern int AppleCryptoNative_SslSetAcceptClientCert(SafeSslHandle sslHandle);
+
         [DllImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslSetIoCallbacks")]
         internal static extern int SslSetIoCallbacks(
             SafeSslHandle sslHandle,
@@ -114,6 +117,16 @@ internal static partial class Interop
 
         [DllImport(Interop.Libraries.AppleCryptoNative)]
         private static extern int AppleCryptoNative_SslIsHostnameMatch(SafeSslHandle handle, SafeCreateHandle cfHostname);
+
+        internal static void SslSetAcceptClientCert(SafeSslHandle sslHandle)
+        {
+            int osStatus = AppleCryptoNative_SslSetAcceptClientCert(sslHandle);
+
+            if (osStatus != 0)
+            {
+                throw CreateExceptionForOSStatus(osStatus);
+            }
+        }
 
         internal static void SslSetMinProtocolVersion(SafeSslHandle sslHandle, PAL_TlsProtocolId minProtocolId)
         {
