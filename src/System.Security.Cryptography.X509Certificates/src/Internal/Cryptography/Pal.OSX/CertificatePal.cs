@@ -275,6 +275,16 @@ namespace Internal.Cryptography.Pal
             }
         }
 
+        public byte[] SubjectPublicKeyInfo
+        {
+            get
+            {
+                EnsureCertData();
+
+                return _certData.SubjectPublicKeyInfo;
+            }
+        }
+
         public AsymmetricAlgorithm GetPrivateKey()
         {
             switch (KeyAlgorithm)
