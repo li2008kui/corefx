@@ -111,7 +111,7 @@ namespace Internal.Cryptography.Pal
 
         internal SafeSecCertificateHandle CertificateHandle => _certHandle;
 
-        public bool HasPrivateKey => !(_identityHandle?.IsInvalid ?? false);
+        public bool HasPrivateKey => !(_identityHandle?.IsInvalid ?? true);
 
         public IntPtr Handle
         {
