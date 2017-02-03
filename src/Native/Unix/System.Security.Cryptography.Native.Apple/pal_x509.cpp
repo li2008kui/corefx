@@ -17,6 +17,37 @@ static int not_printf(const char* format, ...)
 #endif
 
 extern "C" int32_t
+AppleCryptoNative_X509DemuxAndRetainHandle(CFTypeRef handle, SecCertificateRef* pCertOut, SecIdentityRef* pIdentityOut)
+{
+    if (pCertOut != nullptr)
+        *pCertOut = nullptr;
+    if (pIdentityOut != nullptr)
+        *pIdentityOut = nullptr;
+
+    if (handle == nullptr || pCertOut == nullptr || pIdentityOut == nullptr)
+        return kErrorBadInput;
+
+    auto objectType = CFGetTypeID(handle);
+    void* nonConstHandle = const_cast<void*>(handle);
+
+    if (objectType == SecIdentityGetTypeID())
+    {
+        *pIdentityOut = reinterpret_cast<SecIdentityRef>(nonConstHandle);
+    }
+    else if (objectType == SecCertificateGetTypeID())
+    {
+        *pCertOut = reinterpret_cast<SecCertificateRef>(nonConstHandle);
+    }
+    else
+    {
+        return 0;
+    }
+
+    CFRetain(handle);
+    return 1;
+}
+
+extern "C" int32_t
 AppleCryptoNative_X509GetPublicKey(SecCertificateRef cert, SecKeyRef* pPublicKeyOut, int32_t* pOSStatusOut)
 {
     if (pPublicKeyOut != nullptr)
