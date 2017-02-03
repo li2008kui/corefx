@@ -295,8 +295,10 @@ namespace System.Net.Security
             TlsAlertType alertType,
             TlsAlertMessage alertMessage)
         {
-            throw new NotImplementedException();
-            //return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
+            // There doesn't seem to be an exposed API for writing an alert,
+            // the API seems to assume that all alerts are generated internally by
+            // SSLHandshake.
+            return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
         }
 
         public static SecurityStatusPal ApplyShutdownToken(
