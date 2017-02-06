@@ -54,6 +54,14 @@ internal static partial class Interop
             out SafeSecCertificateHandle certHandle,
             out SafeSecIdentityHandle identityHandle);
 
+        [DllImport(Libraries.AppleCryptoNative)]
+        private static extern int AppleCryptoNative_X509ExportData(
+            SafeCreateHandle data,
+            X509ContentType type,
+            SafeCreateHandle cfExportPassphrase,
+            out SafeCFDataHandle pExportOut,
+            out int pOSStatus);
+
         internal static byte[] X509GetRawData(SafeSecCertificateHandle cert)
         {
             int osStatus;
@@ -236,6 +244,106 @@ internal static partial class Interop
                 default:
                     Debug.Fail($"AppleCryptoNative_X509DemuxAndRetainHandle returned {result}");
                     throw new CryptographicException();
+            }
+        }
+
+        internal static byte[] X509ExportPkcs7(IntPtr[] certHandles)
+        {
+            using (SafeCreateHandle handlesArray = CoreFoundation.CFArrayCreate(certHandles, certHandles.Length))
+            {
+                SafeCFDataHandle exportData;
+                int osStatus;
+
+                int result = AppleCryptoNative_X509ExportData(
+                    handlesArray,
+                    X509ContentType.Pkcs7,
+                    s_nullExportString,
+                    out exportData,
+                    out osStatus);
+
+                if (result != 1 || exportData.IsInvalid)
+                {
+                    Debug.Assert(!exportData.IsInvalid, "Successful export yielded no data");
+                    exportData.Dispose();
+
+                    if (result == 0)
+                    {
+                        throw CreateExceptionForOSStatus(osStatus);
+                    }
+
+                    Debug.Fail($"Unexpected result from AppleCryptoNative_X509ExportData: {result}");
+                    throw new CryptographicException();
+                }
+
+                using (exportData)
+                {
+                    return CoreFoundation.CFGetData(exportData);
+                }
+            }
+        }
+
+        internal static byte[] X509ExportPfx(IntPtr[] certHandles, SafePasswordHandle exportPassword)
+        {
+            SafeCreateHandle handlesArray = null;
+            SafeCreateHandle cfPassphrase = s_emptyExportString;
+            SafeCFDataHandle exportData = null;
+            bool releasePassword = false;
+
+            try
+            {
+                handlesArray = CoreFoundation.CFArrayCreate(certHandles, certHandles.Length);
+
+                if (!exportPassword.IsInvalid)
+                {
+                    exportPassword.DangerousAddRef(ref releasePassword);
+                    IntPtr passwordHandle = exportPassword.DangerousGetHandle();
+
+                    if (passwordHandle != IntPtr.Zero)
+                    {
+                        cfPassphrase = CoreFoundation.CFStringCreateWithCString(passwordHandle);
+                    }
+                }
+
+                int osStatus;
+
+                int result = AppleCryptoNative_X509ExportData(
+                    handlesArray,
+                    X509ContentType.Pkcs12,
+                    cfPassphrase,
+                    out exportData,
+                    out osStatus);
+
+                if (result != 1 || exportData.IsInvalid)
+                {
+                    Debug.Assert(!exportData.IsInvalid, "Successful export yielded no data");
+                    exportData.Dispose();
+
+                    if (result == 0)
+                    {
+                        throw CreateExceptionForOSStatus(osStatus);
+                    }
+
+                    Debug.Fail($"Unexpected result from AppleCryptoNative_X509ExportData: {result}");
+                    throw new CryptographicException();
+                }
+
+                return CoreFoundation.CFGetData(exportData);
+            }
+            finally
+            {
+                exportData?.Dispose();
+
+                if (releasePassword)
+                {
+                    exportPassword.DangerousRelease();
+                }
+
+                if (cfPassphrase != s_emptyExportString)
+                {
+                    cfPassphrase.Dispose();
+                }
+
+                handlesArray?.Dispose();
             }
         }
     }
