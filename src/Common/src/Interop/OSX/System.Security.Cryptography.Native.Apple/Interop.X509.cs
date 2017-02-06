@@ -27,6 +27,15 @@ internal static partial class Interop
             out int pOSStatus);
 
         [DllImport(Libraries.AppleCryptoNative)]
+        private static extern int AppleCryptoNative_X509ImportCollection(
+            byte[] pbKeyBlob,
+            int cbKeyBlob,
+            SafeCreateHandle cfPfxPassphrase,
+            string tmpKeychainPath,
+            out SafeCFArrayHandle pCollectionOut,
+            out int pOSStatus);
+
+        [DllImport(Libraries.AppleCryptoNative)]
         private static extern int AppleCryptoNative_X509GetRawData(
             SafeSecCertificateHandle cert,
             out SafeCFDataHandle cfDataOut,
@@ -148,6 +157,83 @@ internal static partial class Interop
 
             certHandle.Dispose();
             identityHandle.Dispose();
+
+            const int SeeOSStatus = 0;
+            const int ImportReturnedNull = -1;
+            const int ImportReturnedEmpty = -2;
+
+            switch (ret)
+            {
+                case SeeOSStatus:
+                    throw CreateExceptionForOSStatus(osStatus);
+                case ImportReturnedNull:
+                case ImportReturnedEmpty:
+                    throw new CryptographicException();
+                default:
+                    Debug.Fail($"Unexpected return value {ret}");
+                    throw new CryptographicException();
+            }
+        }
+
+        internal static SafeCFArrayHandle X509ImportCollection(
+            byte[] bytes,
+            SafePasswordHandle importPassword)
+        {
+            SafeCreateHandle cfPassphrase = s_nullExportString;
+            bool releasePassword = false;
+
+            int ret;
+            SafeCFArrayHandle collectionHandle;
+            int osStatus;
+
+            string tmpKeychainPath = Path.Combine(
+                Path.GetTempPath(),
+                Guid.NewGuid().ToString("N") + ".keychain");
+
+            try
+            {
+                if (!importPassword.IsInvalid)
+                {
+                    importPassword.DangerousAddRef(ref releasePassword);
+                    IntPtr passwordHandle = importPassword.DangerousGetHandle();
+
+                    if (passwordHandle != IntPtr.Zero)
+                    {
+                        cfPassphrase = CoreFoundation.CFStringCreateWithCString(passwordHandle);
+                    }
+                }
+
+                ret = AppleCryptoNative_X509ImportCollection(
+                    bytes,
+                    bytes.Length,
+                    cfPassphrase,
+                    tmpKeychainPath,
+                    out collectionHandle,
+                    out osStatus);
+            }
+            finally
+            {
+                if (releasePassword)
+                {
+                    importPassword.DangerousRelease();
+                }
+
+                if (cfPassphrase != s_nullExportString)
+                {
+                    cfPassphrase.Dispose();
+                }
+
+                Debug.Assert(
+                    !File.Exists(tmpKeychainPath),
+                    $"A temporary keychain was created at {tmpKeychainPath} and was not deleted");
+            }
+
+            if (ret == 1)
+            {
+                return collectionHandle;
+            }
+
+            collectionHandle.Dispose();
 
             const int SeeOSStatus = 0;
             const int ImportReturnedNull = -1;

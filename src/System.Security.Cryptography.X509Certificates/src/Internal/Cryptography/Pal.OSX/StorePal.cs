@@ -19,12 +19,18 @@ namespace Internal.Cryptography.Pal
 
         public static ILoaderPal FromBlob(byte[] rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
-            throw new NotImplementedException();
+            Debug.Assert(password != null);
+
+            SafeCFArrayHandle collectionHandle = Interop.AppleCrypto.X509ImportCollection(rawData, password);
+            return new AppleCertLoader(collectionHandle);
         }
 
         public static ILoaderPal FromFile(string fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
-            throw new NotImplementedException();
+            Debug.Assert(password != null);
+
+            byte[] fileBytes = System.IO.File.ReadAllBytes(fileName);
+            return FromBlob(fileBytes, password, keyStorageFlags);
         }
 
         public static IExportPal FromCertificate(ICertificatePal cert)
@@ -40,6 +46,52 @@ namespace Internal.Cryptography.Pal
         public static IStorePal FromSystemStore(string storeName, StoreLocation storeLocation, OpenFlags openFlags)
         {
             throw new NotImplementedException();
+        }
+
+        private sealed class AppleCertLoader : ILoaderPal
+        {
+            private readonly SafeCFArrayHandle _collectionHandle;
+
+            public AppleCertLoader(SafeCFArrayHandle collectionHandle)
+            {
+                _collectionHandle = collectionHandle;
+            }
+
+            public void Dispose()
+            {
+                _collectionHandle.Dispose();
+            }
+
+            public void MoveTo(X509Certificate2Collection collection)
+            {
+                long longCount = Interop.CoreFoundation.CFArrayGetCount(_collectionHandle);
+
+                if (longCount > int.MaxValue)
+                    throw new CryptographicException();
+
+                int count = (int)longCount;
+
+                // Apple returns things in the opposite order from Windows, so read backwards.
+                for (int i = count - 1; i >= 0; i--)
+                {
+                    SafeCreateHandle value = Interop.CoreFoundation.CFArrayGetValueAtIndex(_collectionHandle, i);
+                    IntPtr handle = value.DangerousGetHandle();
+
+                    // We don't own this value.
+                    value.SetHandleAsInvalid();
+
+                    if (handle != IntPtr.Zero)
+                    {
+                        ICertificatePal certPal = CertificatePal.FromHandle(handle, throwOnFail: false);
+
+                        if (certPal != null)
+                        {
+                            X509Certificate2 cert = new X509Certificate2(certPal);
+                            collection.Add(cert);
+                        }
+                    }
+                }
+            }
         }
 
         private sealed class AppleCertificateExporter : IExportPal
