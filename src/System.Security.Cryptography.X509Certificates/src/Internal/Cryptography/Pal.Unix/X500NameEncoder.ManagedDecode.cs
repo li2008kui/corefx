@@ -100,6 +100,10 @@ namespace Internal.Cryptography.Pal
                     {
                         AppendOid(decodedName, tavReader.ReadOidAsString());
                     }
+                    else
+                    {
+                        tavReader.SkipValue();
+                    }
 
                     string attributeValue = ReadString(tavReader);
 
