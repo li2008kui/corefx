@@ -17,6 +17,11 @@ namespace Internal.Cryptography.Pal
     {
         public static ICertificatePal FromHandle(IntPtr handle)
         {
+            return FromHandle(handle, true);
+        }
+
+        internal static ICertificatePal FromHandle(IntPtr handle, bool throwOnFail)
+        {
             if (handle == IntPtr.Zero)
                 throw new ArgumentException(SR.Arg_InvalidHandle, nameof(handle));
 
@@ -39,7 +44,12 @@ namespace Internal.Cryptography.Pal
                 return new AppleCertificatePal(certHandle);
             }
 
-            throw new ArgumentException(SR.Arg_InvalidHandle, nameof(handle));
+            if (throwOnFail)
+            {
+                throw new ArgumentException(SR.Arg_InvalidHandle, nameof(handle));
+            }
+
+            return null;
         }
 
         public static ICertificatePal FromOtherCert(X509Certificate cert)
