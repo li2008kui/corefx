@@ -254,7 +254,7 @@ namespace System.Security.Cryptography
             string str = System.Text.Encoding.UTF8.GetString(_data, _position, contentLength);
             _position += contentLength;
 
-            return str;
+            return TrimTrailingNulls(str);
         }
 
         private DerSequenceReader ReadCollectionWithTag(DerTag expected)
@@ -290,7 +290,7 @@ namespace System.Security.Cryptography
             string str = System.Text.Encoding.ASCII.GetString(_data, _position, contentLength);
             _position += contentLength;
 
-            return str;
+            return TrimTrailingNulls(str);
         }
 
         internal string ReadIA5String()
@@ -303,7 +303,7 @@ namespace System.Security.Cryptography
             string ia5String = System.Text.Encoding.ASCII.GetString(_data, _position, contentLength);
             _position += contentLength;
 
-            return ia5String;
+            return TrimTrailingNulls(ia5String);
         }
 
         internal DateTime ReadX509Date()
@@ -344,7 +344,30 @@ namespace System.Security.Cryptography
             string str = System.Text.Encoding.BigEndianUnicode.GetString(_data, _position, contentLength);
             _position += contentLength;
 
-            return str;
+            return TrimTrailingNulls(str);
+        }
+
+        private static string TrimTrailingNulls(string value)
+        {
+            // .NET's string comparisons start by checking the length, so a trailing
+            // NULL character which was literally embedded in the DER would cause a
+            // failure in .NET whereas it wouldn't have with strcmp.
+            if (value?.Length > 0)
+            {
+                int newLength = value.Length;
+
+                while (newLength > 0 && value[newLength - 1] == 0)
+                {
+                    newLength--;
+                }
+
+                if (newLength != value.Length)
+                {
+                    return value.Substring(0, newLength);
+                }
+            }
+
+            return value;
         }
 
         private DateTime ReadTime(DerTag timeTag, string formatString)
