@@ -17,7 +17,7 @@ namespace Internal.Cryptography.Pal
         private static readonly DateTime s_cfDateEpoch = new DateTime(2001, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
         private Stack<SafeHandle> _extraHandles;
-        public SafeX509ChainHandle SafeHandle { get; private set; }
+        private SafeX509ChainHandle _chainHandle;
         public X509ChainElement[] ChainElements { get; private set; }
         public X509ChainStatus[] ChainStatus { get; private set; }
         private DateTime _verificationTime;
@@ -26,6 +26,8 @@ namespace Internal.Cryptography.Pal
         {
             _extraHandles = new Stack<SafeHandle>();
         }
+
+        public SafeX509ChainHandle SafeHandle => null;
 
         internal void OpenTrustHandle(
             ICertificatePal leafCert,
@@ -46,7 +48,7 @@ namespace Internal.Cryptography.Pal
 
             if (ret == 1)
             {
-                SafeHandle = chain;
+                _chainHandle = chain;
                 return;
             }
 
@@ -69,7 +71,7 @@ namespace Internal.Cryptography.Pal
             Stack<SafeHandle> extraHandles = _extraHandles;
             _extraHandles = null;
 
-            SafeHandle?.Dispose();
+            _chainHandle?.Dispose();
 
             while (extraHandles.Count > 0)
             {
@@ -137,7 +139,7 @@ namespace Internal.Cryptography.Pal
             _verificationTime = verificationTime;
 
             int ret = Interop.AppleCrypto.AppleCryptoNative_X509ChainEvaluate(
-                SafeHandle,
+                _chainHandle,
                 epochDeltaSeconds,
                 allowNetwork,
                 out osStatus);
@@ -146,7 +148,7 @@ namespace Internal.Cryptography.Pal
                 throw Interop.AppleCrypto.CreateExceptionForOSStatus(osStatus);
 
             if (ret == 2)
-                throw new NotImplementedException("Handle failure");
+                throw new NotImplementedException("Handle this failure");
 
             if (ret != 1)
                 throw new CryptographicUnexpectedOperationException($"ChainCreate: {ret}");
@@ -156,17 +158,17 @@ namespace Internal.Cryptography.Pal
 
         private void ParseResults()
         {
-            long elementCount = Interop.AppleCrypto.X509ChainGetChainSize(SafeHandle);
+            long elementCount = Interop.AppleCrypto.X509ChainGetChainSize(_chainHandle);
             X509ChainElement[] elements = new X509ChainElement[elementCount];
 
             int allStatus = 0;
 
-            using (var trustResults = Interop.AppleCrypto.X509ChainGetTrustResults(SafeHandle))
+            using (var trustResults = Interop.AppleCrypto.X509ChainGetTrustResults(_chainHandle))
             {
                 for (long elementIdx = 0; elementIdx < elementCount; elementIdx++)
                 {
                     IntPtr certHandle =
-                        Interop.AppleCrypto.X509ChainGetCertificateAtIndex(SafeHandle, elementIdx);
+                        Interop.AppleCrypto.X509ChainGetCertificateAtIndex(_chainHandle, elementIdx);
 
                     int dwStatus;
                     int ret = Interop.AppleCrypto.X509ChainGetStatusAtIndex(trustResults, elementIdx, out dwStatus);
