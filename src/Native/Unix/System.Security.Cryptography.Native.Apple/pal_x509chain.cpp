@@ -173,6 +173,16 @@ static void MergeStatusCodes(CFTypeRef key, CFTypeRef value, void* context)
         *pStatus |= PAL_X509ChainInvalidBasicConstraints;
     else if (CFEqual(keyString, CFSTR("UsageConstraints")))
         *pStatus |= PAL_X509ChainExplicitDistrust;
+    else if (CFEqual(keyString, CFSTR("WeakLeaf")) || CFEqual(keyString, CFSTR("WeakIntermediates")) ||
+             CFEqual(keyString, CFSTR("WeakRoot")))
+    {
+        // Because we won't report this out of a chain built by .NET on Windows,
+        // don't report it here.
+        //
+        // (On Windows CERT_CHAIN_PARA.pStrongSignPara is NULL, so "strongness" checks
+        // are not performed).
+    }
+
     else
     {
         *pStatus |= PAL_X509ChainErrorUnknownValue;
