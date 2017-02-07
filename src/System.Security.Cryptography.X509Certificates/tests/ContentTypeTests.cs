@@ -22,6 +22,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Theory]
         [MemberData(nameof(GetContentBlobsWithType))]
+        [ActiveIssue(-1, TestPlatforms.OSX)]
         public static void TestBlobContentType(string caseName, byte[] blob, X509ContentType contentType)
         {
             X509ContentType blobType = X509Certificate2.GetCertContentType(blob);
