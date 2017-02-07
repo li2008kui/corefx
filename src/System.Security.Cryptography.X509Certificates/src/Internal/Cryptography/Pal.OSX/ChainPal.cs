@@ -131,7 +131,11 @@ namespace Internal.Cryptography.Pal
             return certsArray;
         }
 
-        public void Execute(DateTime verificationTime, bool allowNetwork)
+        internal void Execute(
+            DateTime verificationTime,
+            bool allowNetwork,
+            OidCollection applicationPolicy,
+            OidCollection certificatePolicy)
         {
             int osStatus;
 
@@ -153,22 +157,31 @@ namespace Internal.Cryptography.Pal
             if (ret != 1)
                 throw new CryptographicUnexpectedOperationException($"ChainCreate: {ret}");
 
-            ParseResults();
+            Tuple<X509Certificate2, int>[] elements = ParseResults(_chainHandle);
+
+            if (!IsPolicyMatch(elements, applicationPolicy, certificatePolicy))
+            {
+                Tuple<X509Certificate2, int> currentValue = elements[0];
+
+                elements[0] = Tuple.Create(
+                    currentValue.Item1,
+                    currentValue.Item2 | (int)X509ChainStatusFlags.NotValidForUsage);
+            }
+
+            BuildAndSetProperties(elements);
         }
 
-        private void ParseResults()
+        private static Tuple<X509Certificate2,int>[] ParseResults(SafeX509ChainHandle chainHandle)
         {
-            long elementCount = Interop.AppleCrypto.X509ChainGetChainSize(_chainHandle);
-            X509ChainElement[] elements = new X509ChainElement[elementCount];
+            long elementCount = Interop.AppleCrypto.X509ChainGetChainSize(chainHandle);
+            var elements = new Tuple<X509Certificate2, int>[elementCount];
 
-            int allStatus = 0;
-
-            using (var trustResults = Interop.AppleCrypto.X509ChainGetTrustResults(_chainHandle))
+            using (var trustResults = Interop.AppleCrypto.X509ChainGetTrustResults(chainHandle))
             {
                 for (long elementIdx = 0; elementIdx < elementCount; elementIdx++)
                 {
                     IntPtr certHandle =
-                        Interop.AppleCrypto.X509ChainGetCertificateAtIndex(_chainHandle, elementIdx);
+                        Interop.AppleCrypto.X509ChainGetCertificateAtIndex(chainHandle, elementIdx);
 
                     int dwStatus;
                     int ret = Interop.AppleCrypto.X509ChainGetStatusAtIndex(trustResults, elementIdx, out dwStatus);
@@ -185,10 +198,60 @@ namespace Internal.Cryptography.Pal
 
                     FixupStatus(cert, ref dwStatus);
 
-                    allStatus |= dwStatus;
-                    X509ChainElement element = BuildElement(cert, dwStatus);
-                    elements[elementIdx] = element;
+                    elements[elementIdx] = Tuple.Create(cert, dwStatus);
                 }
+            }
+
+            return elements;
+        }
+
+        private bool IsPolicyMatch(
+            Tuple<X509Certificate2, int>[] elements,
+            OidCollection applicationPolicy,
+            OidCollection certificatePolicy)
+        {
+            if (applicationPolicy?.Count > 0 || certificatePolicy?.Count > 0)
+            {
+                List<X509Certificate2> certsToRead = new List<X509Certificate2>();
+
+                foreach (var element in elements)
+                {
+                    certsToRead.Add(element.Item1);
+                }
+
+                CertificatePolicyChain policyChain = new CertificatePolicyChain(certsToRead);
+
+                if (certificatePolicy?.Count > 0)
+                {
+                    if (!policyChain.MatchesCertificatePolicies(certificatePolicy))
+                    {
+                        return false;
+                    }
+                }
+
+                if (applicationPolicy?.Count > 0)
+                {
+                    if (!policyChain.MatchesApplicationPolicies(applicationPolicy))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        private void BuildAndSetProperties(Tuple<X509Certificate2, int>[] elementTuples)
+        {
+            X509ChainElement[] elements = new X509ChainElement[elementTuples.Length];
+            int allStatus = 0;
+
+            for (int i = 0; i < elementTuples.Length; i++)
+            {
+                Tuple<X509Certificate2, int> tuple = elementTuples[i];
+
+                elements[i] = BuildElement(tuple.Item1, tuple.Item2);
+                allStatus |= tuple.Item2;
             }
 
             ChainElements = elements;
@@ -404,7 +467,7 @@ namespace Internal.Cryptography.Pal
             try
             {
                 chainPal.OpenTrustHandle(cert, extraStore, checkRevocation);
-                chainPal.Execute(verificationTime, allowNetwork);
+                chainPal.Execute(verificationTime, allowNetwork, applicationPolicy, certificatePolicy);
             }
             catch
             {
