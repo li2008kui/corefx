@@ -44,6 +44,9 @@ namespace Internal.Cryptography.Pal
                 return new AppleCertificatePal(certHandle);
             }
 
+            certHandle.Dispose();
+            identityHandle.Dispose();
+
             if (throwOnFail)
             {
                 throw new ArgumentException(SR.Arg_InvalidHandle, nameof(handle));

@@ -447,11 +447,6 @@ namespace Internal.Cryptography.Pal
             DateTime verificationTime,
             TimeSpan timeout)
         {
-            //if (applicationPolicy != null && applicationPolicy.Count > 0)
-            //    throw new PlatformNotSupportedException(nameof(applicationPolicy));
-            //if (certificatePolicy != null && certificatePolicy.Count > 0)
-            //    throw new PlatformNotSupportedException(nameof(certificatePolicy));
-
             // If the time was given in Universal, it will stay Universal.
             // If the time was given in Local, it will be converted.
             // If the time was given in Unspecified, it will be assumed local, and converted.
