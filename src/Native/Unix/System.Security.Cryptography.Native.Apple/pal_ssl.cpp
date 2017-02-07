@@ -295,3 +295,43 @@ extern "C" int32_t AppleCryptoNative_SslShutdown(SSLContextRef sslContext)
 {
     return SSLClose(sslContext);
 }
+
+extern "C" int32_t AppleCryptoNative_SslGetProtocolVersion(SSLContextRef sslContext, PAL_SslProtocol* pProtocol)
+{
+    if (pProtocol != nullptr)
+        *pProtocol = 0;
+
+    if (sslContext == nullptr || pProtocol == nullptr)
+        return errSecParam;
+
+    SSLProtocol protocol = kSSLProtocolUnknown;
+    int osStatus = SSLGetNegotiatedProtocolVersion(sslContext, &protocol);
+
+    if (osStatus == noErr)
+    {
+        PAL_SslProtocol matchedProtocol = PAL_SslProtocol_None;
+
+        if (protocol == kTLSProtocol12)
+            matchedProtocol = PAL_SslProtocol_Tls12;
+        else if (protocol == kTLSProtocol11)
+            matchedProtocol = PAL_SslProtocol_Tls11;
+        else if (protocol == kTLSProtocol1)
+            matchedProtocol = PAL_SslProtocol_Tls10;
+        else if (protocol == kSSLProtocol3)
+            matchedProtocol = PAL_SslProtocol_Ssl3;
+        else if (protocol == kSSLProtocol2)
+            matchedProtocol = PAL_SslProtocol_Ssl2;
+
+        *pProtocol = matchedProtocol;
+    }
+
+    return osStatus;
+}
+
+extern "C" int32_t AppleCryptoNative_SslGetCipherSuite(SSLContextRef sslContext, uint32_t* pCipherSuiteOut)
+{
+    if (pCipherSuiteOut == nullptr)
+        *pCipherSuiteOut = 0;
+
+    return SSLGetNegotiatedCipher(sslContext, pCipherSuiteOut);
+}

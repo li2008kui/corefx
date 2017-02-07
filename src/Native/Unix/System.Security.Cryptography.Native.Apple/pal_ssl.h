@@ -24,3 +24,14 @@ enum
     PAL_TlsIo_ClosedGracefully = 3,
 };
 typedef int32_t PAL_TlsIo;
+
+enum
+{
+    PAL_SslProtocol_None = 0,
+    PAL_SslProtocol_Ssl2 = 12,
+    PAL_SslProtocol_Ssl3 = 48,
+    PAL_SslProtocol_Tls10 = 192,
+    PAL_SslProtocol_Tls11 = 768,
+    PAL_SslProtocol_Tls12 = 3072,
+};
+typedef int32_t PAL_SslProtocol;
