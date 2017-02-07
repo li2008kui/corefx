@@ -135,3 +135,34 @@ extern "C" uint64_t AppleCryptoNative_SecKeyGetSimpleKeySizeInBytes(SecKeyRef pu
 
     return SecKeyGetBlockSize(publicKey);
 }
+
+extern "C" int32_t AppleCryptoNative_SecKeychainItemCopyKeychain(SecKeychainItemRef item, SecKeychainRef* pKeychainOut)
+{
+    if (pKeychainOut != nullptr)
+        *pKeychainOut = nullptr;
+
+    if (item == nullptr)
+        return errSecNoSuchKeychain;
+
+    auto itemType = CFGetTypeID(item);
+
+    if (itemType == SecKeyGetTypeID() || itemType == SecIdentityGetTypeID() || itemType == SecCertificateGetTypeID())
+    {
+        return SecKeychainItemCopyKeychain(item, pKeychainOut);
+    }
+
+    return errSecParam;
+}
+
+extern "C" int32_t AppleCryptoNative_SecKeychainCreate(const char* pathName,
+                                                       uint32_t passphraseLength,
+                                                       const uint8_t* passphraseUtf8,
+                                                       SecKeychainRef* pKeychainOut)
+{
+    return SecKeychainCreate(pathName, passphraseLength, passphraseUtf8, false, nullptr, pKeychainOut);
+}
+
+extern "C" int32_t AppleCryptoNative_SecKeychainDelete(SecKeychainRef keychain)
+{
+    return SecKeychainDelete(keychain);
+}
