@@ -302,6 +302,10 @@ namespace Internal.Cryptography.Pal
 
         public RSA GetRSAPrivateKey()
         {
+            if (_identityHandle == null)
+                return null;
+
+            Debug.Assert(!_identityHandle.IsInvalid);
             SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.X509GetPublicKey(_certHandle);
             SafeSecKeyRefHandle privateKey = Interop.AppleCrypto.X509GetPrivateKeyFromIdentity(_identityHandle);
 
@@ -310,11 +314,19 @@ namespace Internal.Cryptography.Pal
 
         public DSA GetDSAPrivateKey()
         {
+            if (_identityHandle == null)
+                return null;
+
+            Debug.Assert(!_identityHandle.IsInvalid);
             throw new NotImplementedException();
         }
 
         public ECDsa GetECDsaPrivateKey()
         {
+            if (_identityHandle == null)
+                return null;
+
+            Debug.Assert(!_identityHandle.IsInvalid);
             SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.X509GetPublicKey(_certHandle);
             SafeSecKeyRefHandle privateKey = Interop.AppleCrypto.X509GetPrivateKeyFromIdentity(_identityHandle);
 
