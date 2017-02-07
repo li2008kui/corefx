@@ -21,7 +21,7 @@ internal static partial class Interop
             byte[] pbKeyBlob,
             int cbKeyBlob,
             SafeCreateHandle cfPfxPassphrase,
-            string tmpKeychainPath,
+            SafeTemporaryKeychainHandle tmpKeychain,
             out SafeSecCertificateHandle pCertOut,
             out SafeSecIdentityHandle pPrivateKeyOut,
             out int pOSStatus);
@@ -31,7 +31,7 @@ internal static partial class Interop
             byte[] pbKeyBlob,
             int cbKeyBlob,
             SafeCreateHandle cfPfxPassphrase,
-            string tmpKeychainPath,
+            SafeTemporaryKeychainHandle tmpKeychain,
             out SafeCFArrayHandle pCollectionOut,
             out int pOSStatus);
 
@@ -111,6 +111,12 @@ internal static partial class Interop
                 Path.GetTempPath(),
                 Guid.NewGuid().ToString("N") + ".keychain");
 
+            // Use a distinct GUID so that if a keychain is abandoned it isn't recoverable.
+            string tmpKeychainPassphrase = Guid.NewGuid().ToString("N");
+
+            SafeTemporaryKeychainHandle tmpKeychain =
+                SecKeychainCreateTemporary(tmpKeychainPath, tmpKeychainPassphrase);
+
             try
             {
                 if (!importPassword.IsInvalid)
@@ -128,13 +134,18 @@ internal static partial class Interop
                     bytes,
                     bytes.Length,
                     cfPassphrase,
-                    tmpKeychainPath,
+                    tmpKeychain,
                     out certHandle,
                     out identityHandle,
                     out osStatus);
+
+                SafeTemporaryKeychainHandle.TrackItem(certHandle);
+                SafeTemporaryKeychainHandle.TrackItem(identityHandle);
             }
             finally
             {
+                tmpKeychain.Dispose();
+
                 if (releasePassword)
                 {
                     importPassword.DangerousRelease();
@@ -144,10 +155,6 @@ internal static partial class Interop
                 {
                     cfPassphrase.Dispose();
                 }
-
-                Debug.Assert(
-                    !File.Exists(tmpKeychainPath),
-                    $"A temporary keychain was created at {tmpKeychainPath} and was not deleted");
             }
 
             if (ret == 1)
@@ -175,7 +182,7 @@ internal static partial class Interop
             }
         }
 
-        internal static SafeCFArrayHandle X509ImportCollection(
+        internal static Tuple<SafeCFArrayHandle, SafeTemporaryKeychainHandle> X509ImportCollection(
             byte[] bytes,
             SafePasswordHandle importPassword)
         {
@@ -190,6 +197,12 @@ internal static partial class Interop
                 Path.GetTempPath(),
                 Guid.NewGuid().ToString("N") + ".keychain");
 
+            // Use a distinct GUID so that if a keychain is abandoned it isn't recoverable.
+            string tmpKeychainPassphrase = Guid.NewGuid().ToString("N");
+
+            SafeTemporaryKeychainHandle tmpKeychain =
+                SecKeychainCreateTemporary(tmpKeychainPath, tmpKeychainPassphrase);
+            
             try
             {
                 if (!importPassword.IsInvalid)
@@ -207,9 +220,14 @@ internal static partial class Interop
                     bytes,
                     bytes.Length,
                     cfPassphrase,
-                    tmpKeychainPath,
+                    tmpKeychain,
                     out collectionHandle,
                     out osStatus);
+
+                if (ret == 1)
+                {
+                    return Tuple.Create(collectionHandle, tmpKeychain);
+                }
             }
             finally
             {
@@ -222,17 +240,9 @@ internal static partial class Interop
                 {
                     cfPassphrase.Dispose();
                 }
-
-                Debug.Assert(
-                    !File.Exists(tmpKeychainPath),
-                    $"A temporary keychain was created at {tmpKeychainPath} and was not deleted");
             }
 
-            if (ret == 1)
-            {
-                return collectionHandle;
-            }
-
+            tmpKeychain.Dispose();
             collectionHandle.Dispose();
 
             const int SeeOSStatus = 0;
@@ -257,6 +267,8 @@ internal static partial class Interop
             SafeSecCertificateHandle cert;
             int osStatus = AppleCryptoNative_X509CopyCertFromIdentity(identity, out cert);
 
+            SafeTemporaryKeychainHandle.TrackItem(cert);
+
             if (osStatus != 0)
             {
                 cert.Dispose();
@@ -276,6 +288,8 @@ internal static partial class Interop
         {
             SafeSecKeyRefHandle key;
             int osStatus = AppleCryptoNative_X509CopyPrivateKeyFromIdentity(identity, out key);
+
+            SafeTemporaryKeychainHandle.TrackItem(key);
 
             if (osStatus != 0)
             {
@@ -297,6 +311,8 @@ internal static partial class Interop
             SafeSecKeyRefHandle publicKey;
             int osStatus;
             int ret = AppleCryptoNative_X509GetPublicKey(cert, out publicKey, out osStatus);
+
+            SafeTemporaryKeychainHandle.TrackItem(publicKey);
 
             if (ret == 1)
             {
@@ -320,6 +336,9 @@ internal static partial class Interop
             out SafeSecIdentityHandle identityHandle)
         {
             int result = AppleCryptoNative_X509DemuxAndRetainHandle(handle, out certHandle, out identityHandle);
+
+            SafeTemporaryKeychainHandle.TrackItem(certHandle);
+            SafeTemporaryKeychainHandle.TrackItem(identityHandle);
 
             switch (result)
             {
@@ -437,35 +456,17 @@ internal static partial class Interop
 
 namespace System.Security.Cryptography.X509Certificates
 {
-    internal sealed class SafeSecIdentityHandle : SafeHandle
+    internal sealed class SafeSecIdentityHandle : SafeKeychainItemHandle
     {
         public SafeSecIdentityHandle()
-            : base(IntPtr.Zero, ownsHandle: true)
         {
         }
-
-        protected override bool ReleaseHandle()
-        {
-            Interop.CoreFoundation.CFRelease(handle);
-            return true;
-        }
-
-        public override bool IsInvalid => handle == IntPtr.Zero;
     }
 
-    internal sealed class SafeSecCertificateHandle : SafeHandle
+    internal sealed class SafeSecCertificateHandle : SafeKeychainItemHandle
     {
         public SafeSecCertificateHandle()
-            : base(IntPtr.Zero, ownsHandle: true)
         {
         }
-
-        protected override bool ReleaseHandle()
-        {
-            Interop.CoreFoundation.CFRelease(handle);
-            return true;
-        }
-
-        public override bool IsInvalid => handle == IntPtr.Zero;
     }
 }

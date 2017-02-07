@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics;
 using System.Security.Cryptography;
+using System.Security.Cryptography.Apple;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
 
@@ -21,8 +22,10 @@ namespace Internal.Cryptography.Pal
         {
             Debug.Assert(password != null);
 
-            SafeCFArrayHandle collectionHandle = Interop.AppleCrypto.X509ImportCollection(rawData, password);
-            return new AppleCertLoader(collectionHandle);
+            Tuple<SafeCFArrayHandle, SafeTemporaryKeychainHandle> tuple =
+                Interop.AppleCrypto.X509ImportCollection(rawData, password);
+
+            return new AppleCertLoader(tuple.Item1, tuple.Item2);
         }
 
         public static ILoaderPal FromFile(string fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
@@ -51,15 +54,18 @@ namespace Internal.Cryptography.Pal
         private sealed class AppleCertLoader : ILoaderPal
         {
             private readonly SafeCFArrayHandle _collectionHandle;
+            private readonly SafeTemporaryKeychainHandle _tmpKeychain;
 
-            public AppleCertLoader(SafeCFArrayHandle collectionHandle)
+            public AppleCertLoader(SafeCFArrayHandle collectionHandle, SafeTemporaryKeychainHandle tmpKeychain)
             {
                 _collectionHandle = collectionHandle;
+                _tmpKeychain = tmpKeychain;
             }
 
             public void Dispose()
             {
                 _collectionHandle.Dispose();
+                _tmpKeychain.Dispose();
             }
 
             public void MoveTo(X509Certificate2Collection collection)
