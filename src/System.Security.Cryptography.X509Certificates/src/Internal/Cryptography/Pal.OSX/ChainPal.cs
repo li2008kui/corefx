@@ -389,11 +389,11 @@ namespace Internal.Cryptography.Pal
             //if (certificatePolicy != null && certificatePolicy.Count > 0)
             //    throw new PlatformNotSupportedException(nameof(certificatePolicy));
 
-            if (verificationTime.Kind == DateTimeKind.Unspecified)
-            {
-                verificationTime = verificationTime.ToLocalTime();
-            }
-
+            // If the time was given in Universal, it will stay Universal.
+            // If the time was given in Local, it will be converted.
+            // If the time was given in Unspecified, it will be assumed local, and converted.
+            //
+            // This matches the "assume Local unless explicitly Universal" implicit contract.
             verificationTime = verificationTime.ToUniversalTime();
 
             bool allowNetwork = revocationMode == X509RevocationMode.Online;
