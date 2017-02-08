@@ -347,7 +347,6 @@ internal static partial class Interop
             SSL_RSA_WITH_3DES_EDE_CBC_MD5 = 0xFF83,
 
             SSL_NO_SUCH_CIPHERSUITE = 0xFFFF
-
         }
 
         [DllImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslCreateContext")]

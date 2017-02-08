@@ -12,6 +12,8 @@ namespace System.Net.Security
 {
     internal partial class SslConnectionInfo
     {
+        private const ExchangeAlgorithmType EcDheAlgorithm = (ExchangeAlgorithmType)44550;
+
         public SslConnectionInfo(SafeSslHandle sslContext)
         {
             SslProtocols protocol;
@@ -38,7 +40,7 @@ namespace System.Net.Security
 
             if (!s_tlsLookup.TryGetValue(cipherSuite, out mapping))
             {
-                //Debug.Fail($"No mapping found for cipherSuite {cipherSuite}");
+                Debug.Fail($"No mapping found for cipherSuite {cipherSuite}");
             }
 
             KeyExchangeAlg = (int)mapping.KeyExchangeAlgorithm;
@@ -57,47 +59,81 @@ namespace System.Net.Security
             internal int CipherAlgorithmStrength;
             internal HashAlgorithmType HashAlgorithm;
             internal int HashAlgorithmStrength;
+
+            internal static TlsMapping EcDhe(CipherAlgorithmType cipher, HashAlgorithmType hash)
+            {
+                int cipherSize;
+                int hashSize;
+
+                switch (cipher)
+                {
+                    case CipherAlgorithmType.Aes128:
+                        cipherSize = 128;
+                        break;
+                    case CipherAlgorithmType.Aes192:
+                        cipherSize = 192;
+                        break;
+                    case CipherAlgorithmType.Aes256:
+                        cipherSize = 256;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(cipher));
+                }
+
+                switch (hash)
+                {
+                    case HashAlgorithmType.Sha1:
+                        hashSize = 160;
+                        break;
+                    case HashAlgorithmType.Sha256:
+                        hashSize = 256;
+                        break;
+                    case HashAlgorithmType.Sha384:
+                        hashSize = 384;
+                        break;
+                    case HashAlgorithmType.Sha512:
+                        hashSize = 512;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(hash));
+                }
+
+                return new TlsMapping
+                {
+                    KeyExchangeAlgorithm = EcDheAlgorithm,
+                    CipherAlgorithm = cipher,
+                    CipherAlgorithmStrength = cipherSize,
+                    HashAlgorithm = hash,
+                    HashAlgorithmStrength = hashSize,
+                };
+            }
         }
 
         private static readonly Dictionary<TlsCipherSuite, TlsMapping> s_tlsLookup = new Dictionary<TlsCipherSuite, TlsMapping>
         {
             {
                 TlsCipherSuite.TLS_NULL_WITH_NULL_NULL,
+                new TlsMapping()
+            },
 
-                new TlsMapping
-                {
-                    KeyExchangeAlgorithm = ExchangeAlgorithmType.None,
-                    CipherAlgorithm = CipherAlgorithmType.None,
-                    CipherAlgorithmStrength = 0,
-                    HashAlgorithm = HashAlgorithmType.None,
-                    HashAlgorithmStrength = 0
-                }
+            {
+                TlsCipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
+                TlsMapping.EcDhe(CipherAlgorithmType.Aes256, HashAlgorithmType.Sha384)
+            },
+
+            {
+                TlsCipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+                TlsMapping.EcDhe(CipherAlgorithmType.Aes256, HashAlgorithmType.Sha384)
             },
 
             {
                 TlsCipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-
-                new TlsMapping
-                {
-                    KeyExchangeAlgorithm = ExchangeAlgorithmType.RsaKeyX,
-                    CipherAlgorithm = CipherAlgorithmType.Aes128,
-                    CipherAlgorithmStrength = 128,
-                    HashAlgorithm = HashAlgorithmType.Sha256,
-                    HashAlgorithmStrength = 256,
-                }
+                TlsMapping.EcDhe(CipherAlgorithmType.Aes128, HashAlgorithmType.Sha256)
             },
 
             {
                 TlsCipherSuite.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-
-                new TlsMapping
-                {
-                    KeyExchangeAlgorithm = ExchangeAlgorithmType.RsaKeyX,
-                    CipherAlgorithm = CipherAlgorithmType.Aes256,
-                    CipherAlgorithmStrength = 256,
-                    HashAlgorithm = HashAlgorithmType.Sha384,
-                    HashAlgorithmStrength = 384,
-                }
+                TlsMapping.EcDhe(CipherAlgorithmType.Aes256, HashAlgorithmType.Sha384)
             },
         };
     }
