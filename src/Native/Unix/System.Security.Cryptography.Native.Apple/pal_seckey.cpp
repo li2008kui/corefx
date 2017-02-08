@@ -148,7 +148,20 @@ extern "C" int32_t AppleCryptoNative_SecKeychainItemCopyKeychain(SecKeychainItem
 
     if (itemType == SecKeyGetTypeID() || itemType == SecIdentityGetTypeID() || itemType == SecCertificateGetTypeID())
     {
-        return SecKeychainItemCopyKeychain(item, pKeychainOut);
+        OSStatus status = SecKeychainItemCopyKeychain(item, pKeychainOut);
+
+        if (status == noErr)
+        {
+            return status;
+        }
+
+        // Acceptable error codes
+        if (status == errSecNoSuchKeychain || status == errSecInvalidItemRef)
+        {
+            return noErr;
+        }
+
+        return status;
     }
 
     return errSecParam;
