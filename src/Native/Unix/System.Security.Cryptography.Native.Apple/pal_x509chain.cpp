@@ -4,6 +4,15 @@
 
 #include "pal_x509chain.h"
 
+#ifndef DEBUG_CHAIN
+static int not_printf(const char* format, ...)
+{
+    (void)format;
+    return 0;
+}
+#define printf not_printf
+#endif
+
 extern "C" SecPolicyRef AppleCryptoNative_X509ChainCreateDefaultPolicy()
 {
     return SecPolicyCreateBasicX509();
