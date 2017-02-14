@@ -719,8 +719,7 @@ namespace Internal.Cryptography.Pal
                 DerSequenceReader version = tbsCertificate.ReadSequence();
                 Version = version.ReadInteger();
             }
-            else if (tbsCertificate.PeekTag() !=
-                     (DerSequenceReader.ConstructedFlag | (byte)DerSequenceReader.DerTag.Sequence))
+            else if (tbsCertificate.PeekTag() != (byte)DerSequenceReader.DerTag.Integer)
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
