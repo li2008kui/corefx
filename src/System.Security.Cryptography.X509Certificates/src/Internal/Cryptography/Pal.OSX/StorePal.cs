@@ -134,15 +134,22 @@ namespace Internal.Cryptography.Pal
 
                     if (Interop.AppleCrypto.X509DemuxAndRetainHandle(handle, out certHandle, out identityHandle))
                     {
+                        X509Certificate2 cert;
+
                         if (certHandle.IsInvalid)
                         {
                             certHandle.Dispose();
-                            collection.Add(new X509Certificate2(new AppleCertificatePal(identityHandle)));
+                            cert = new X509Certificate2(new AppleCertificatePal(identityHandle));
                         }
                         else
                         {
                             identityHandle.Dispose();
-                            collection.Add(new X509Certificate2(new AppleCertificatePal(certHandle)));
+                            cert = new X509Certificate2(new AppleCertificatePal(certHandle));
+                        }
+
+                        if (!collection.Add(cert))
+                        {
+                            cert.Dispose();
                         }
                     }
                 }
