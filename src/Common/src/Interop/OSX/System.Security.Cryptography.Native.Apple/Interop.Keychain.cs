@@ -7,7 +7,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Security.Cryptography.Apple;
+using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
@@ -27,6 +29,26 @@ internal static partial class Interop
 
         [DllImport(Libraries.AppleCryptoNative)]
         private static extern int AppleCryptoNative_SecKeychainDelete(IntPtr keychain);
+
+        [DllImport(Libraries.AppleCryptoNative)]
+        private static extern int AppleCryptoNative_SecKeychainCopyDefault(out SafeKeychainHandle keychain);
+
+        [DllImport(Libraries.AppleCryptoNative)]
+        private static extern int AppleCryptoNative_SecKeychainOpen(
+            string keychainPath,
+            out SafeKeychainHandle keychain);
+
+        [DllImport(Libraries.AppleCryptoNative)]
+        private static extern int AppleCryptoNative_SecKeychainEnumerateCerts(
+            SafeKeychainHandle keychain,
+            out SafeCFArrayHandle matches,
+            out int pOSStatus);
+
+        [DllImport(Libraries.AppleCryptoNative)]
+        private static extern int AppleCryptoNative_SecKeychainEnumerateIdentities(
+            SafeKeychainHandle keychain,
+            out SafeCFArrayHandle matches,
+            out int pOSStatus);
 
         internal static SafeKeychainHandle SecKeychainItemCopyKeychain(SafeKeychainItemHandle item)
         {
@@ -53,6 +75,74 @@ internal static partial class Interop
             }
 
             throw CreateExceptionForOSStatus(osStatus);
+        }
+
+        internal static SafeKeychainHandle SecKeychainCopyDefault()
+        {
+            SafeKeychainHandle keychain;
+            int osStatus = AppleCryptoNative_SecKeychainCopyDefault(out keychain);
+
+            if (osStatus == 0)
+            {
+                return keychain;
+            }
+
+            keychain.Dispose();
+            throw CreateExceptionForOSStatus(osStatus);
+        }
+
+        internal static SafeKeychainHandle SecKeychainOpen(string keychainPath)
+        {
+            SafeKeychainHandle keychain;
+            int osStatus = AppleCryptoNative_SecKeychainOpen(keychainPath, out keychain);
+
+            if (osStatus == 0)
+            {
+                return keychain;
+            }
+
+            keychain.Dispose();
+            throw CreateExceptionForOSStatus(osStatus);
+        }
+
+        internal static SafeCFArrayHandle KeychainEnumerateCerts(SafeKeychainHandle keychainHandle)
+        {
+            SafeCFArrayHandle matches;
+            int osStatus;
+            int result = AppleCryptoNative_SecKeychainEnumerateCerts(keychainHandle, out matches, out osStatus);
+
+            if (result == 1)
+            {
+                return matches;
+            }
+
+            matches.Dispose();
+
+            if (result == 0)
+                throw CreateExceptionForOSStatus(osStatus);
+
+            Debug.Fail($"Unexpected result from AppleCryptoNative_SecKeychainEnumerateCerts: {result}");
+            throw new CryptographicException();
+        }
+
+        internal static SafeCFArrayHandle KeychainEnumerateIdentities(SafeKeychainHandle keychainHandle)
+        {
+            SafeCFArrayHandle matches;
+            int osStatus;
+            int result = AppleCryptoNative_SecKeychainEnumerateIdentities(keychainHandle, out matches, out osStatus);
+
+            if (result == 1)
+            {
+                return matches;
+            }
+
+            matches.Dispose();
+
+            if (result == 0)
+                throw CreateExceptionForOSStatus(osStatus);
+
+            Debug.Fail($"Unexpected result from AppleCryptoNative_SecKeychainEnumerateCerts: {result}");
+            throw new CryptographicException();
         }
 
         internal static SafeTemporaryKeychainHandle CreateTemporaryKeychain()
