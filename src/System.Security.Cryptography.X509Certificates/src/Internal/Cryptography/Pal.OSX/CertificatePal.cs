@@ -710,6 +710,10 @@ namespace Internal.Cryptography.Pal
 
         internal CertificateData(byte[] rawData)
         {
+#if DEBUG
+        try
+        {
+#endif
             DerSequenceReader reader = new DerSequenceReader(rawData);
 
             DerSequenceReader tbsCertificate = reader.ReadSequence();
@@ -832,6 +836,35 @@ namespace Internal.Cryptography.Pal
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
 
             RawData = rawData;
+#if DEBUG
         }
+        catch (Exception e)
+        {
+            throw new CryptographicException(
+                $"Error in reading certificate:{Environment.NewLine}{PemPrintCert(rawData)}",
+                e);
+        }
+#endif
+        }
+
+#if DEBUG
+        private static string PemPrintCert(byte[] rawData)
+        {
+            const string PemHeader = "-----BEGIN CERTIFICATE-----";
+            const string PemFooter = "-----END CERTIFICATE-----";
+
+            StringBuilder builder = new StringBuilder(PemHeader.Length + PemFooter.Length + rawData.Length * 2);
+            builder.Append(PemHeader);
+            builder.AppendLine();
+            
+            builder.Append(Convert.ToBase64String(rawData, Base64FormattingOptions.InsertLineBreaks));
+            builder.AppendLine();
+        
+            builder.Append(PemFooter);
+            builder.AppendLine();
+
+            return builder.ToString();
+        }
+#endif
     }
 }
