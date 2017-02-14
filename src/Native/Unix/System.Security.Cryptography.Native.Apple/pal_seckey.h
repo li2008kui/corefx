@@ -88,3 +88,54 @@ Delete a keychain, including the file on disk.
 Returns the result of SecKeychainDelete
 */
 extern "C" int32_t AppleCryptoNative_SecKeychainDelete(SecKeychainRef keychain);
+
+/*
+Open the default keychain.
+This is usually login.keychain, but can be adjusted by the user.
+
+Returns the result of SecKeychainCopyDefault.
+
+Output:
+pKeyChainOut: Receives the SecKeychainRef for the default keychain.
+*/
+extern "C" int32_t AppleCryptoNative_SecKeychainCopyDefault(SecKeychainRef* pKeychainOut)
+
+    /*
+    Open the named keychain (full path to the file).
+
+    Returns the result of SecKeychainOpen.
+
+    Output:
+    pKeychainOut: Receives the SecKeychainRef for the named keychain.
+    */
+    extern "C" int32_t AppleCryptoNative_SecKeychainOpen(const char* pszKeychainPath, SecKeychainRef* pKeychainOut);
+
+/*
+Enumerate the certificate objects within the given keychain.
+
+Returns 1 on success (including "no certs found"), 0 on failure, any other value for invalid state.
+
+Output:
+pCertsOut: When the return value is not 1, NULL. Otherwise NULL on "no certs found", or a CFArrayRef for the matches
+(including a single match).
+pOSStatus: Receives the last OSStatus value.
+*/
+extern "C" int32_t
+AppleCryptoNative_SecKeychainEnumerateCerts(SecKeychainRef keychain, CFArrayRef* pCertsOut, int32_t* pOSStatus);
+
+/*
+Enumerate the certificate objects within the given keychain.
+
+Returns 1 on success (including "no certs found"), 0 on failure, any other value for invalid state.
+
+Note that any identity will also necessarily be returned as a certificate with no private key by
+SecKeychainEnumerateCerts.  De-duplication of values is the responsibility of the caller.
+
+Output:
+pCertsOut: When the return value is not 1, NULL. Otherwise NULL on "no certs found", or a CFArrayRef for the matches
+(including a single match).
+pOSStatus: Receives the last OSStatus value.
+*/
+extern "C" int32_t AppleCryptoNative_SecKeychainEnumerateIdentities(SecKeychainRef keychain,
+                                                                    CFArrayRef* pIdentitiesOut,
+                                                                    int32_t* pOSStatus)
