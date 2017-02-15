@@ -97,7 +97,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(-1, TestPlatforms.OSX)]
         public static void ExportAsPfxWithPrivateKey()
         {
             using (X509Certificate2 cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.Exportable))
@@ -126,12 +125,16 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                     using (RSA origPub = cert.GetRSAPublicKey())
                     {
-                        Assert.True(origPub.VerifyData(pfxBytes, copySign, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1), "oPub v copySig");
+                        Assert.True(
+                            origPub.VerifyData(pfxBytes, copySign, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1),
+                            "oPub v copySig");
                     }
 
                     using (RSA copyPub = fromPfx.GetRSAPublicKey())
                     {
-                        Assert.True(copyPub.VerifyData(pfxBytes, origSign, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1), "copyPub v oSig");
+                        Assert.True(
+                            copyPub.VerifyData(pfxBytes, origSign, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1),
+                            "copyPub v oSig");
                     }
                 }
             }

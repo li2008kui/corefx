@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
@@ -10,7 +9,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
     public class X509StoreTests
     {
         [Fact]
-        [ActiveIssue(-1, TestPlatforms.OSX)]
         public static void OpenMyStore()
         {
             using (X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
@@ -21,7 +19,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
 #if netstandard17
         [Fact]
-        [ActiveIssue(-1, TestPlatforms.OSX)]
         public static void Constructor_DefaultStoreName()
         {
             using (X509Store store = new X509Store(StoreLocation.CurrentUser))
@@ -31,7 +28,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(-1, TestPlatforms.OSX)]
         public static void Constructor_DefaultStoreLocation()
         {
             using (X509Store store = new X509Store(StoreName.My))
@@ -45,8 +41,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
         [Fact]
+        [ActiveIssue(-1, TestPlatforms.OSX)]
         public static void Constructor_StoreHandle()
         {
             using (X509Store store1 = new X509Store(StoreName.My, StoreLocation.CurrentUser))
@@ -71,9 +68,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.OSX)]
         [Fact]
-        [ActiveIssue(-1, TestPlatforms.OSX)]
         public static void Constructor_StoreHandle_Unix()
         {
             using (X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
@@ -87,7 +83,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [PlatformSpecific(TestPlatforms.Windows)]
         [Fact]
-        [ActiveIssue(-1, TestPlatforms.OSX)]
         public static void TestDispose()
         {
             X509Store store;
@@ -102,7 +97,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 #endif
 
         [Fact]
-        [ActiveIssue(-1, TestPlatforms.OSX)]
         public static void ReadMyCertificates()
         {
             using (X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
@@ -233,7 +227,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         */
 
         [Fact]
-        [ActiveIssue(-1, TestPlatforms.OSX)]
         public static void EnumerateClosedIsEmpty()
         {
             using (X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
@@ -244,7 +237,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(-1, TestPlatforms.OSX)]
         public static void AddClosedThrows()
         {
             using (X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
@@ -255,7 +247,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(-1, TestPlatforms.OSX)]
         public static void RemoveClosedThrows()
         {
             using (X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
@@ -266,7 +257,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
         public static void OpenMachineMyStore_Supported()
         {
             using (X509Store store = new X509Store(StoreName.My, StoreLocation.LocalMachine))
@@ -276,8 +267,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ActiveIssue(-1, TestPlatforms.OSX)]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.OSX)]
         public static void OpenMachineMyStore_NotSupported()
         {
             using (X509Store store = new X509Store(StoreName.My, StoreLocation.LocalMachine))
@@ -309,7 +299,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(-1, TestPlatforms.OSX)]
         public static void MachineRootStore_NonEmpty()
         {
             // This test will fail on systems where the administrator has gone out of their
