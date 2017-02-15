@@ -41,8 +41,8 @@ namespace Internal.Cryptography.Pal
                 {
                     case X509ContentType.Cert:
                         return ExportX509Der();
-                    case X509ContentType.Pfx:
-                        return ExportPfx(password);
+                    case X509ContentType.Pkcs12:
+                        return ExportPkcs12(password);
                     case X509ContentType.Pkcs7:
                         return ExportPkcs7();
                     case X509ContentType.SerializedCert:
@@ -72,9 +72,8 @@ namespace Internal.Cryptography.Pal
                 return _certs[0].RawData;
             }
 
-            private byte[] ExportPfx(SafePasswordHandle password)
+            private byte[] ExportPkcs12(SafePasswordHandle password)
             {
-#if LATER
                 IntPtr[] certHandles;
 
                 if (_singleCertPal != null)
@@ -92,9 +91,6 @@ namespace Internal.Cryptography.Pal
                 }
 
                 return Interop.AppleCrypto.X509ExportPfx(certHandles, password);
-#else
-                throw new NotImplementedException();
-#endif
             }
 
             private byte[] ExportPkcs7()

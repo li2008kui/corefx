@@ -330,8 +330,10 @@ internal static partial class Interop
             }
         }
 
-        internal static byte[] X509ExportPkcs7(IntPtr[] certHandles)
+        private static byte[] X509Export(X509ContentType contentType, SafeCreateHandle cfPassphrase, IntPtr[] certHandles)
         {
+            Debug.Assert(contentType == X509ContentType.Pkcs7 || contentType == X509ContentType.Pkcs12);
+
             using (SafeCreateHandle handlesArray = CoreFoundation.CFArrayCreate(certHandles, (UIntPtr)certHandles.Length))
             {
                 SafeCFDataHandle exportData;
@@ -339,43 +341,42 @@ internal static partial class Interop
 
                 int result = AppleCryptoNative_X509ExportData(
                     handlesArray,
-                    X509ContentType.Pkcs7,
-                    s_nullExportString,
+                    contentType,
+                    cfPassphrase,
                     out exportData,
                     out osStatus);
 
-                if (result != 1 || exportData.IsInvalid)
-                {
-                    Debug.Assert(!exportData.IsInvalid, "Successful export yielded no data");
-                    exportData.Dispose();
-
-                    if (result == 0)
-                    {
-                        throw CreateExceptionForOSStatus(osStatus);
-                    }
-
-                    Debug.Fail($"Unexpected result from AppleCryptoNative_X509ExportData: {result}");
-                    throw new CryptographicException();
-                }
-
                 using (exportData)
                 {
+                    if (result != 1)
+                    {
+                        if (result == 0)
+                        {
+                            throw CreateExceptionForOSStatus(osStatus);
+                        }
+
+                        Debug.Fail($"Unexpected result from AppleCryptoNative_X509ExportData: {result}");
+                        throw new CryptographicException();
+                    }
+
+                    Debug.Assert(!exportData.IsInvalid, "Successful export yielded no data");
                     return CoreFoundation.CFGetData(exportData);
                 }
             }
         }
 
+        internal static byte[] X509ExportPkcs7(IntPtr[] certHandles)
+        {
+            return X509Export(X509ContentType.Pkcs7, s_nullExportString, certHandles);
+        }
+
         internal static byte[] X509ExportPfx(IntPtr[] certHandles, SafePasswordHandle exportPassword)
         {
-            SafeCreateHandle handlesArray = null;
             SafeCreateHandle cfPassphrase = s_emptyExportString;
-            SafeCFDataHandle exportData = null;
             bool releasePassword = false;
 
             try
             {
-                handlesArray = CoreFoundation.CFArrayCreate(certHandles, (UIntPtr)certHandles.Length);
-
                 if (!exportPassword.IsInvalid)
                 {
                     exportPassword.DangerousAddRef(ref releasePassword);
@@ -387,35 +388,10 @@ internal static partial class Interop
                     }
                 }
 
-                int osStatus;
-
-                int result = AppleCryptoNative_X509ExportData(
-                    handlesArray,
-                    X509ContentType.Pkcs12,
-                    cfPassphrase,
-                    out exportData,
-                    out osStatus);
-
-                if (result != 1 || exportData.IsInvalid)
-                {
-                    Debug.Assert(!exportData.IsInvalid, "Successful export yielded no data");
-                    exportData.Dispose();
-
-                    if (result == 0)
-                    {
-                        throw CreateExceptionForOSStatus(osStatus);
-                    }
-
-                    Debug.Fail($"Unexpected result from AppleCryptoNative_X509ExportData: {result}");
-                    throw new CryptographicException();
-                }
-
-                return CoreFoundation.CFGetData(exportData);
+                return X509Export(X509ContentType.Pkcs12, cfPassphrase, certHandles);
             }
             finally
             {
-                exportData?.Dispose();
-
                 if (releasePassword)
                 {
                     exportPassword.DangerousRelease();
@@ -425,8 +401,6 @@ internal static partial class Interop
                 {
                     cfPassphrase.Dispose();
                 }
-
-                handlesArray?.Dispose();
             }
         }
     }
