@@ -16,42 +16,56 @@ namespace System.Net.Http
         {
             internal static void SetSslOptions(EasyRequest easy, ClientCertificateOption clientCertOption)
             {
-                Debug.Assert(clientCertOption == ClientCertificateOption.Automatic || clientCertOption == ClientCertificateOption.Manual);
+                Debug.Assert(
+                    clientCertOption == ClientCertificateOption.Automatic ||
+                    clientCertOption == ClientCertificateOption.Manual);
 
                 // Create a client certificate provider if client certs may be used.
                 X509Certificate2Collection clientCertificates = easy._handler._clientCertificates;
 
                 if (clientCertOption != ClientCertificateOption.Manual || clientCertificates?.Count > 0)
                 {
-                    throw new NotImplementedException("Can't handle client certs yet");
+                    // libcurl does not have an option of accepting a SecIdentityRef via an input option,
+                    // only via writing it to a file and letting it load the PFX.
+                    // This would require that a) we write said file, and b) that it contaminate the default
+                    // keychain (because their PFX loader loads to the default keychain).
+                    throw new PlatformNotSupportedException(
+                        SR.Format(
+                            SR.net_http_libcurl_clientcerts_notsupported,
+                            CurlVersionDescription,
+                            CurlSslVersionDescription));
                 }
-
-                SetSslVersion(easy);
 
                 if (easy._handler.ServerCertificateValidationCallback != null)
                 {
-                    // If the caller gives no callback things are easy, we just let things happen.
-                    // If they give one and the OS call succeeds we could let the callback abort.
-                    // The trouble comes if the OS call fails.
-                    //  * Disabling VERIFYPEER will allow the chain to be built, so that could be fine.
-                    //  * Disabling VERIFYHOST would allow the localhost cert override, but ALSO disables SNI.
+                    // libcurl (as of 7.49.1) does not have any callback which can be registered which fires
+                    // between the time that a TLS/SSL handshake has offered up the server certificate and the
+                    // time that the HTTP request headers are written.  Were there any callback, the option
+                    // CURLINFO_TLS_SSL_PTR could be queried (and the backend identifier validated to be
+                    // CURLSSLBACKEND_DARWINSSL). Then the SecTrustRef could be extracted to build the chain,
+                    // a la SslStream.
                     //
-                    // So, a "if it fails, disable an option and try again" means that disabling VERIFYHOST could
-                    // change the matched cert (SNI disabled), but VERIFYPEER would work.
+                    // Without the callback the matrix looks like:
+                    // * If default-trusted and callback-would-trust: No difference (except side effects, like logging).
+                    // * If default-trusted and callback-would-block: Data would have been sent in violation of user trust.
+                    // * If not-default-trusted and callback-would-not-trust: No difference (except side effects).
+                    // * If not-default-trusted and callback-would-trust: No data sent, which doesn't match user desires.
                     //
-                    // Also, if we disable VERIFYPEER for all server cert vallbacks we'd have a chance to have
-                    // no callback fail (OS check) and custom callback report no errors; because the OS did
-                    // something we didn't.
+                    // Of the two "different" cases, sending when we shouldn't is worse, so that's the direction we
+                    // have to cater to. So we'll use default trust, and throw on any custom callback.
                     //
-                    // It's a real pickle.
-                    //
-                    // Allowing a true to become a false is possible by registering for the WRITE callback,
-                    // and querying CURLINFO_TLS_SSL_PTR.  (Be sure to check that it's CURLSSLBACKEND_DARWINSSL)
-                    throw new NotImplementedException("Intercept the WRITE callback and allow a sniff or success->fail callback.");
+                    // The situation where system trust fails can be remedied by including the certificate into the
+                    // user's keychain and setting the SSL policy trust for it to "Always Trust".
+                    // Similarly, the "block this" could be attained by setting the SSL policy for a cert in the
+                    // keychain to "Never Trust".
+                    throw new PlatformNotSupportedException(
+                        SR.Format(
+                            SR.net_http_libcurl_callback_notsupported,
+                            CurlVersionDescription,
+                            CurlSslVersionDescription));
                 }
 
-                // Curl doesn't expose an option to disable revocation checking for Secure Transport/darwinssl,
-                // execpt (perhaps) for disabling VERIFYPEER.
+                SetSslVersion(easy);
             }
 
             private static void SetSslVersion(EasyRequest easy)
