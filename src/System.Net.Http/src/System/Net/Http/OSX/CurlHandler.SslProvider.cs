@@ -65,6 +65,19 @@ namespace System.Net.Http
                             CurlSslVersionDescription));
                 }
 
+                // Revocation checking is always on for darwinssl (SecureTransport).
+                // If any other backend is used and revocation is requested, we can't guarantee
+                // that assertion.
+                if (easy._handler.CheckCertificateRevocationList &&
+                    !CurlSslVersionDescription.Equals("SecureTransport"))
+                {
+                    throw new PlatformNotSupportedException(
+                    SR.Format(
+                        SR.net_http_libcurl_revocation_notsupported,
+                        CurlVersionDescription,
+                        CurlSslVersionDescription));
+                }
+
                 SetSslVersion(easy);
             }
 
