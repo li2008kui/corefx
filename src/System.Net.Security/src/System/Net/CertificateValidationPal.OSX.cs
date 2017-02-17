@@ -48,12 +48,29 @@ namespace System.Net
         //
         // Extracts a remote certificate upon request.
         //
+        internal static X509Certificate2 GetRemoteCertificate(SafeDeleteContext securityContext)
+        {
+            return GetRemoteCertificate(securityContext, null);
+        }
+
         internal static X509Certificate2 GetRemoteCertificate(
             SafeDeleteContext securityContext,
             out X509Certificate2Collection remoteCertificateStore)
         {
-            remoteCertificateStore = null;
+            if (securityContext == null)
+            {
+                remoteCertificateStore = null;
+                return null;
+            }
 
+            remoteCertificateStore = new X509Certificate2Collection();
+            return GetRemoteCertificate(securityContext, remoteCertificateStore);
+        }
+
+        private static X509Certificate2 GetRemoteCertificate(
+            SafeDeleteContext securityContext,
+            X509Certificate2Collection remoteCertificateStore)
+        {
             if (securityContext == null)
             {
                 return null;
@@ -73,20 +90,23 @@ namespace System.Net
             using (SafeX509ChainHandle chainHandle = Interop.AppleCrypto.SslCopyCertChain(sslContext))
             {
                 long chainSize = Interop.AppleCrypto.X509ChainGetChainSize(chainHandle);
-                X509Certificate2Collection collection = new X509Certificate2Collection();
 
-                for (int i = 0; i < chainSize; i++)
+                if (remoteCertificateStore != null)
                 {
-                    IntPtr certHandle = Interop.AppleCrypto.X509ChainGetCertificateAtIndex(chainHandle, i);
-                    collection.Add(new X509Certificate2(certHandle));
+                    for (int i = 0; i < chainSize; i++)
+                    {
+                        IntPtr certHandle = Interop.AppleCrypto.X509ChainGetCertificateAtIndex(chainHandle, i);
+                        remoteCertificateStore.Add(new X509Certificate2(certHandle));
+                    }
                 }
 
+                // This will be a distinct object than remoteCertificateStore[0] (if applicable),
+                // to match what the Windows and Unix PALs do.
                 if (chainSize > 0)
                 {
-                    result = collection[0];
+                    IntPtr certHandle = Interop.AppleCrypto.X509ChainGetCertificateAtIndex(chainHandle, 0);
+                    result = new X509Certificate2(certHandle);
                 }
-
-                remoteCertificateStore = collection;
             }
 
             if (NetEventSource.IsEnabled)

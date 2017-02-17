@@ -29,9 +29,27 @@ namespace System.Net
         //
         // Extracts a remote certificate upon request.
         //
-        internal static X509Certificate2 GetRemoteCertificate(SafeDeleteContext securityContext, out X509Certificate2Collection remoteCertificateStore)
+        internal static X509Certificate2 GetRemoteCertificate(SafeDeleteContext securityContext)
         {
-            remoteCertificateStore = null;
+            return GetRemoteCertificate(securityContext, null);
+        }
+
+        internal static X509Certificate2 GetRemoteCertificate(
+            SafeDeleteContext securityContext,
+            out X509Certificate2Collection remoteCertificateStore)
+        {
+            if (securityContext == null)
+            {
+                remoteCertificateStore = null;
+                return null;
+            }
+
+            remoteCertificateStore = new X509Certificate2Collection();
+            return GetRemoteCertificate(securityContext, remoteCertificateStore);
+        }
+
+        private static X509Certificate2 GetRemoteCertificate(SafeDeleteContext securityContext, X509Certificate2Collection remoteCertificateStore)
+        {
             bool gotReference = false;
 
             if (securityContext == null)
@@ -53,24 +71,25 @@ namespace System.Net
                     result = new X509Certificate2(remoteContext.DangerousGetHandle());
                 }
 
-                remoteCertificateStore = new X509Certificate2Collection();
-
-                using (SafeSharedX509StackHandle chainStack =
-                    Interop.OpenSsl.GetPeerCertificateChain(((SafeDeleteSslContext)securityContext).SslContext))
+                if (remoteCertificateStore != null)
                 {
-                    if (!chainStack.IsInvalid)
+                    using (SafeSharedX509StackHandle chainStack =
+                        Interop.OpenSsl.GetPeerCertificateChain(((SafeDeleteSslContext)securityContext).SslContext))
                     {
-                        int count = Interop.Crypto.GetX509StackFieldCount(chainStack);
-
-                        for (int i = 0; i < count; i++)
+                        if (!chainStack.IsInvalid)
                         {
-                            IntPtr certPtr = Interop.Crypto.GetX509StackField(chainStack, i);
+                            int count = Interop.Crypto.GetX509StackFieldCount(chainStack);
 
-                            if (certPtr != IntPtr.Zero)
+                            for (int i = 0; i < count; i++)
                             {
-                                // X509Certificate2(IntPtr) calls X509_dup, so the reference is appropriately tracked.
-                                X509Certificate2 chainCert = new X509Certificate2(certPtr);
-                                remoteCertificateStore.Add(chainCert);
+                                IntPtr certPtr = Interop.Crypto.GetX509StackField(chainStack, i);
+
+                                if (certPtr != IntPtr.Zero)
+                                {
+                                    // X509Certificate2(IntPtr) calls X509_dup, so the reference is appropriately tracked.
+                                    X509Certificate2 chainCert = new X509Certificate2(certPtr);
+                                    remoteCertificateStore.Add(chainCert);
+                                }
                             }
                         }
                     }

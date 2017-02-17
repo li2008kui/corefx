@@ -190,6 +190,21 @@ namespace System.Net.Security
             SafeDeleteContext securityContext,
             ChannelBindingKind attribute)
         {
+            switch (attribute)
+            {
+                case ChannelBindingKind.Endpoint:
+                    return BuildEndpointChannelBinding(securityContext);
+            }
+
+            // SecureTransport doesn't expose the Finished messages, so a Unique binding token
+            // cannot be built.
+            //
+            // Windows/netfx compat says to return null for not supported kinds (including unmapped enum values).
+            return null;
+        }
+
+        private static ChannelBinding BuildEndpointChannelBinding(SafeDeleteContext securityContext)
+        {
             throw new NotImplementedException();
         }
 
