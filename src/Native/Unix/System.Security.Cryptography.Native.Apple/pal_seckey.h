@@ -98,7 +98,7 @@ Returns the result of SecKeychainCopyDefault.
 Output:
 pKeyChainOut: Receives the SecKeychainRef for the default keychain.
 */
-extern "C" int32_t AppleCryptoNative_SecKeychainCopyDefault(SecKeychainRef* pKeychainOut)
+extern "C" int32_t AppleCryptoNative_SecKeychainCopyDefault(SecKeychainRef* pKeychainOut);
 
     /*
     Open the named keychain (full path to the file).
@@ -138,4 +138,4 @@ pOSStatus: Receives the last OSStatus value.
 */
 extern "C" int32_t AppleCryptoNative_SecKeychainEnumerateIdentities(SecKeychainRef keychain,
                                                                     CFArrayRef* pIdentitiesOut,
-                                                                    int32_t* pOSStatus)
+                                                                    int32_t* pOSStatus);
