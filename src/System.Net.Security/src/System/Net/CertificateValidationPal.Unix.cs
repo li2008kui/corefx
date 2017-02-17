@@ -2,19 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using Microsoft.Win32.SafeHandles;
 using System.Net.Security;
-using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.Threading;
 
 namespace System.Net
 {   
     internal static partial class CertificateValidationPal
     {
-        private static readonly object s_lockObject = new object();
-        private static X509Store s_userCertStore;
-
         internal static SslPolicyErrors VerifyCertificateProperties(
             SafeDeleteContext securityContext,
             X509Chain chain,
@@ -150,49 +146,22 @@ namespace System.Net
             }
         }
 
-        internal static X509Store EnsureStoreOpened(bool isMachineStore)
+        static partial void CheckSupportsStore(StoreLocation storeLocation, ref bool hasSupport)
         {
-            if (isMachineStore)
-            {
-                // There's not currently a LocalMachine\My store on Unix, so don't bother trying
-                // and having to deal with the exception.
-                //
-                // https://github.com/dotnet/corefx/issues/3690 tracks the lack of this store.
-                return null;
-            }
-
-            return EnsureStoreOpened(ref s_userCertStore, StoreLocation.CurrentUser);
+            // There's not currently a LocalMachine\My store on Unix, so don't bother trying
+            // and having to deal with the exception.
+            //
+            // https://github.com/dotnet/corefx/issues/3690 tracks the lack of this store.
+            if (storeLocation == StoreLocation.LocalMachine)
+                hasSupport = false;
         }
 
-        private static X509Store EnsureStoreOpened(ref X509Store storeField, StoreLocation storeLocation)
+        private static X509Store OpenStore(StoreLocation storeLocation)
         {
-            X509Store store = Volatile.Read(ref storeField);
+            Debug.Assert(storeLocation == StoreLocation.CurrentUser);
 
-            if (store == null)
-            {
-                lock (s_lockObject)
-                {
-                    store = Volatile.Read(ref storeField);
-
-                    if (store == null)
-                    {
-                        try
-                        {
-                            store = new X509Store(StoreName.My, storeLocation);
-                            store.Open(OpenFlags.ReadOnly);
-
-                            Volatile.Write(ref storeField, store);
-
-                            if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"storeLocation: {storeLocation} returned store {store}");
-                        }
-                        catch (CryptographicException e)
-                        {
-                            NetEventSource.Fail(null, $"Failed to open cert store, location: {storeLocation} exception {e}");
-                            throw;
-                        }
-                    }
-                }
-            }
+            X509Store store = new X509Store(StoreName.My, storeLocation);
+            store.Open(OpenFlags.ReadOnly);
 
             return store;
         }

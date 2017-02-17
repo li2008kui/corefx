@@ -17,6 +17,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System\PinnableBufferCache.cs" />
+    <Compile Include="System\Net\CertificateValidationPal.cs" />
     <Compile Include="System\Net\FixedSizeReader.cs" />
     <Compile Include="System\Net\HelperAsyncResults.cs" />
     <Compile Include="System\Net\SslStreamContext.cs" />

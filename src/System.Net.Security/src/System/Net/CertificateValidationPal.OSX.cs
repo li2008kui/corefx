@@ -157,9 +157,11 @@ namespace System.Net
             }
         }
 
-        internal static X509Store EnsureStoreOpened(bool isMachineStore)
+        private static X509Store OpenStore(StoreLocation storeLocation)
         {
-            return null;
+            X509Store store = new X509Store(StoreName.My, storeLocation);
+            store.Open(OpenFlags.ReadOnly);
+            return store;
         }
     }
 }
