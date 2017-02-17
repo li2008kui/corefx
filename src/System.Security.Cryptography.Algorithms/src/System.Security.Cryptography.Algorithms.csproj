@@ -375,6 +375,9 @@
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.CoreFoundation.cs">
       <Link>Common\Interop\OSX\Interop.CoreFoundation.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.CoreFoundation.CFArray.cs">
+      <Link>Common\Interop\OSX\Interop.CoreFoundation.CFArray.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.CoreFoundation.CFData.cs">
       <Link>Common\Interop\OSX\Interop.CoreFoundation.CFData.cs</Link>
     </Compile>
