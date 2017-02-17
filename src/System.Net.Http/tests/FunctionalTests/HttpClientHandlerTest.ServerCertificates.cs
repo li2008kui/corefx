@@ -300,9 +300,25 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        private static bool BackendSupportsCustomCertificateHandling =>
-            RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
-            (CurlSslVersionDescription()?.StartsWith("OpenSSL") ?? false);
+        internal static bool BackendSupportsCustomCertificateHandling
+        {
+            get
+            {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    return true;
+                }
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    return false;
+                }
+
+                // For other Unix-based systems it's true if (and only if) the openssl backend
+                // is used with libcurl.
+                return (CurlSslVersionDescription()?.StartsWith("OpenSSL") ?? false);
+            }
+        }
 
         private static bool BackendDoesNotSupportCustomCertificateHandling => !BackendSupportsCustomCertificateHandling;
 
