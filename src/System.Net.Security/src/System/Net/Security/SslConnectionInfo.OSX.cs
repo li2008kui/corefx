@@ -117,6 +117,11 @@ namespace System.Net.Security
             },
 
             {
+                TlsCipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+                TlsMapping.EcDhe(CipherAlgorithmType.Aes256, HashAlgorithmType.Sha1)
+            },
+
+            {
                 TlsCipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
                 TlsMapping.EcDhe(CipherAlgorithmType.Aes256, HashAlgorithmType.Sha384)
             },
