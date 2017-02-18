@@ -168,11 +168,12 @@ namespace System.Net.Security
                         switch (status)
                         {
                             case PAL_TlsIo.Success:
-                                return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
                             case PAL_TlsIo.WouldBlock:
-                                return new SecurityStatusPal(SecurityStatusPalErrorCode.Renegotiate);
+                                return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
                             case PAL_TlsIo.ClosedGracefully:
                                 return new SecurityStatusPal(SecurityStatusPalErrorCode.ContextExpired);
+                            case PAL_TlsIo.Renegotiate:
+                                return new SecurityStatusPal(SecurityStatusPalErrorCode.Renegotiate);
                             default:
                                 Debug.Fail($"Unknown status value: {status}");
                                 return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError);

@@ -39,6 +39,7 @@ internal static partial class Interop
             Success,
             WouldBlock,
             ClosedGracefully,
+            Renegotiate,
         }
 
         // These come from the various SSL/TLS RFCs.

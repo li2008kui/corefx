@@ -226,6 +226,17 @@ AppleCryptoNative_SslRead(SSLContextRef sslContext, uint8_t* buf, uint32_t bufLe
     OSStatus status = SSLRead(sslContext, buf, bufSize, &writtenSize);
     *written = static_cast<uint32_t>(writtenSize);
 
+    if (writtenSize == 0 && status == errSSLWouldBlock)
+    {
+        SSLSessionState state = {};
+        OSStatus localStatus = SSLGetSessionState(sslContext, &state);
+
+        if (localStatus == noErr && state == kSSLHandshake)
+        {
+            return PAL_TlsIo_Renegotiate;
+        }
+    }
+
     return OSStatusToPAL_TlsIo(status);
 }
 

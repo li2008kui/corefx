@@ -22,6 +22,7 @@ enum
     PAL_TlsIo_Success = 1,
     PAL_TlsIo_WouldBlock = 2,
     PAL_TlsIo_ClosedGracefully = 3,
+    PAL_TlsIo_Renegotiate = 4,
 };
 typedef int32_t PAL_TlsIo;
 
