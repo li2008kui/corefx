@@ -14,8 +14,6 @@ namespace Internal.Cryptography.Pal
 {
     internal sealed class SecTrustChainPal : IChainPal
     {
-        private static readonly DateTime s_cfDateEpoch = new DateTime(2001, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-
         private Stack<SafeHandle> _extraHandles;
         private SafeX509ChainHandle _chainHandle;
         public X509ChainElement[] ChainElements { get; private set; }
@@ -146,14 +144,18 @@ namespace Internal.Cryptography.Pal
         {
             int osStatus;
 
-            double epochDeltaSeconds = (verificationTime - s_cfDateEpoch).TotalSeconds;
+            // Save the time code for determining which message to load for NotTimeValid.
             _verificationTime = verificationTime;
+            int ret;
 
-            int ret = Interop.AppleCrypto.AppleCryptoNative_X509ChainEvaluate(
-                _chainHandle,
-                epochDeltaSeconds,
-                allowNetwork,
-                out osStatus);
+            using (SafeCFDateHandle cfEvaluationTime = Interop.CoreFoundation.CFDateCreate(verificationTime))
+            {
+                ret = Interop.AppleCrypto.AppleCryptoNative_X509ChainEvaluate(
+                    _chainHandle,
+                    cfEvaluationTime,
+                    allowNetwork,
+                    out osStatus);
+            }
 
             if (ret == 0)
                 throw Interop.AppleCrypto.CreateExceptionForOSStatus(osStatus);

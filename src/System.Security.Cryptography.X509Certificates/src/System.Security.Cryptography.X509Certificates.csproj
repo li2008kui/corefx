@@ -293,6 +293,9 @@
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.CoreFoundation.CFData.cs">
       <Link>Common\Interop\OSX\Interop.CoreFoundation.CFData.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.CoreFoundation.CFDate.cs">
+      <Link>Common\Interop\OSX\Interop.CoreFoundation.CFDate.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.CoreFoundation.CFError.cs">
       <Link>Common\Interop\OSX\Interop.CoreFoundation.CFError.cs</Link>
     </Compile>

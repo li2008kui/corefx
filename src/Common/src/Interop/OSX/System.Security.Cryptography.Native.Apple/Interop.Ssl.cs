@@ -410,7 +410,10 @@ internal static partial class Interop
         internal static extern unsafe PAL_TlsIo SslRead(SafeSslHandle sslHandle, byte* writeFrom, int count, out int bytesWritten);
 
         [DllImport(Interop.Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_SslIsHostnameMatch(SafeSslHandle handle, SafeCreateHandle cfHostname);
+        private static extern int AppleCryptoNative_SslIsHostnameMatch(
+            SafeSslHandle handle,
+            SafeCreateHandle cfHostname,
+            SafeCFDateHandle cfValidTime);
 
         [DllImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslShutdown")]
         internal static extern int SslShutdown(SafeSslHandle sslHandle);
@@ -569,7 +572,7 @@ internal static partial class Interop
             throw new SslException();
         }
 
-        public static bool SslCheckHostnameMatch(SafeSslHandle handle, string hostName)
+        public static bool SslCheckHostnameMatch(SafeSslHandle handle, string hostName, DateTime notBefore)
         {
             int result;
             // The IdnMapping converts Unicode input into the IDNA punycode sequence.
@@ -584,9 +587,10 @@ internal static partial class Interop
             // It was verified as supporting case invariant match as of 10.12.1 (Sierra).
             string matchName = new System.Globalization.IdnMapping().GetAscii(hostName);
 
+            using (SafeCFDateHandle cfNotBefore = CoreFoundation.CFDateCreate(notBefore))
             using (SafeCreateHandle cfHostname = CoreFoundation.CFStringCreateWithCString(matchName))
             {
-                result = AppleCryptoNative_SslIsHostnameMatch(handle, cfHostname);
+                result = AppleCryptoNative_SslIsHostnameMatch(handle, cfHostname, cfNotBefore);
             }
 
             switch (result)

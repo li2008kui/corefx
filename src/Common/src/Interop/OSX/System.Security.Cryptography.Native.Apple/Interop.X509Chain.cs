@@ -28,7 +28,7 @@ internal static partial class Interop
         [DllImport(Libraries.AppleCryptoNative)]
         internal static extern int AppleCryptoNative_X509ChainEvaluate(
             SafeX509ChainHandle chain,
-            double epochDeltaSeconds,
+            SafeCFDateHandle cfEvaluationTime,
             bool allowNetwork,
             out int pOSStatus);
 

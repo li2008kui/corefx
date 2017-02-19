@@ -35,7 +35,7 @@ namespace System.Net
                 {
                     SafeDeleteSslContext sslContext = (SafeDeleteSslContext)securityContext;
 
-                    if (!Interop.AppleCrypto.SslCheckHostnameMatch(sslContext.SslContext, hostName))
+                    if (!Interop.AppleCrypto.SslCheckHostnameMatch(sslContext.SslContext, hostName, remoteCertificate.NotBefore))
                     {
                         errors |= SslPolicyErrors.RemoteCertificateNameMismatch;
                     }
