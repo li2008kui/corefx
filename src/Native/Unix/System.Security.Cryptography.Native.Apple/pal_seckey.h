@@ -100,15 +100,15 @@ pKeyChainOut: Receives the SecKeychainRef for the default keychain.
 */
 extern "C" int32_t AppleCryptoNative_SecKeychainCopyDefault(SecKeychainRef* pKeychainOut);
 
-    /*
-    Open the named keychain (full path to the file).
+/*
+Open the named keychain (full path to the file).
 
-    Returns the result of SecKeychainOpen.
+Returns the result of SecKeychainOpen.
 
-    Output:
-    pKeychainOut: Receives the SecKeychainRef for the named keychain.
-    */
-    extern "C" int32_t AppleCryptoNative_SecKeychainOpen(const char* pszKeychainPath, SecKeychainRef* pKeychainOut);
+Output:
+pKeychainOut: Receives the SecKeychainRef for the named keychain.
+*/
+extern "C" int32_t AppleCryptoNative_SecKeychainOpen(const char* pszKeychainPath, SecKeychainRef* pKeychainOut);
 
 /*
 Enumerate the certificate objects within the given keychain.
