@@ -77,9 +77,6 @@ AppleCryptoNative_X509ChainCreate(CFTypeRef certs, CFTypeRef policies, SecTrustR
 /*
 Evaluate a certificate chain.
 
-epochDeltaSeconds represents the number of seconds since (or, for negative numbers, before) the
-CFDate epoch of 2001-01-01T00:00:00Z.
-
 allowNetwork set to true enables fetching of CRL and AIA records
 
 Returns 1 if the chain built successfully, 0 if chain building failed, any other value for invalid
@@ -88,8 +85,10 @@ state.  Note that an untrusted chain building successfully still returns 1.
 Output:
 pOSStatus: Receives the result of SecTrustEvaluate
 */
-extern "C" int32_t
-AppleCryptoNative_X509ChainEvaluate(SecTrustRef chain, double epochDeltaSeconds, bool allowNetwork, int32_t* pOSStatus);
+extern "C" int32_t AppleCryptoNative_X509ChainEvaluate(SecTrustRef chain,
+                                                       CFDateRef cfEvaluationTime,
+                                                       bool allowNetwork,
+                                                       int32_t* pOSStatus);
 
 /*
 Gets the number of certificates in the chain.

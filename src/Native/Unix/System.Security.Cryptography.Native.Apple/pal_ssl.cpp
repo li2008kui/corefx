@@ -240,9 +240,10 @@ AppleCryptoNative_SslRead(SSLContextRef sslContext, uint8_t* buf, uint32_t bufLe
     return OSStatusToPAL_TlsIo(status);
 }
 
-extern "C" int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringRef cfHostname)
+extern "C" int32_t
+AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringRef cfHostname, CFDateRef notBefore)
 {
-    if (sslContext == nullptr)
+    if (sslContext == nullptr || notBefore == nullptr)
         return -1;
     if (cfHostname == nullptr)
         return -2;
@@ -296,6 +297,11 @@ extern "C" int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext
     if (osStatus == noErr)
     {
         osStatus = SecTrustSetAnchorCertificates(trust, anchors);
+    }
+
+    if (osStatus == noErr)
+    {
+        osStatus = SecTrustSetVerifyDate(trust, notBefore);
     }
 
     if (osStatus == noErr)

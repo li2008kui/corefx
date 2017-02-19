@@ -37,8 +37,10 @@ AppleCryptoNative_X509ChainCreate(CFTypeRef certs, CFTypeRef policies, SecTrustR
     return *pOSStatus == noErr;
 }
 
-extern "C" int32_t
-AppleCryptoNative_X509ChainEvaluate(SecTrustRef chain, double epochDeltaSeconds, bool allowNetwork, int32_t* pOSStatus)
+extern "C" int32_t AppleCryptoNative_X509ChainEvaluate(SecTrustRef chain,
+                                                       CFDateRef cfEvaluationTime,
+                                                       bool allowNetwork,
+                                                       int32_t* pOSStatus)
 {
     if (pOSStatus != nullptr)
         *pOSStatus = noErr;
@@ -46,9 +48,7 @@ AppleCryptoNative_X509ChainEvaluate(SecTrustRef chain, double epochDeltaSeconds,
     if (chain == nullptr || pOSStatus == nullptr)
         return -1;
 
-    CFDateRef cfEvaluationTime = CFDateCreate(kCFAllocatorDefault, epochDeltaSeconds);
     *pOSStatus = SecTrustSetVerifyDate(chain, cfEvaluationTime);
-    CFRelease(cfEvaluationTime);
 
     if (*pOSStatus != noErr)
     {
