@@ -23,6 +23,15 @@ namespace System.Net
             if (cert != null)
             {
                 Debug.Assert(cert.HasPrivateKey, "cert.HasPrivateKey");
+
+                // Make a defensive copy of the certificate. In some async cases the
+                // certificate can have been disposed before being provided to the handshake.
+                //
+                // This meshes with the Unix (OpenSSL) PAL, because it extracts the private key
+                // and cert handle (which get up-reffed) to match the API expectations.
+                cert = new X509Certificate2(cert);
+
+                Debug.Assert(cert.HasPrivateKey, "cert clone.HasPrivateKey");
             }
 
             Certificate = cert;
@@ -40,6 +49,7 @@ namespace System.Net
 
         protected override bool ReleaseHandle()
         {
+            Certificate?.Dispose();
             return true;
         }
     }
