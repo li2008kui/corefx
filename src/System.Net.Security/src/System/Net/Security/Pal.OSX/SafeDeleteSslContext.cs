@@ -129,11 +129,14 @@ namespace System.Net
             ulong toWrite = (ulong)*dataLength;
             byte* readFrom = data;
 
-            while (toWrite > 0)
+            lock (_toConnection)
             {
-                _toConnection.Enqueue(*readFrom);
-                readFrom++;
-                toWrite--;
+                while (toWrite > 0)
+                {
+                    _toConnection.Enqueue(*readFrom);
+                    readFrom++;
+                    toWrite--;
+                }
             }
 
             // Since we can enqueue everything, no need to re-assign *dataLength.
@@ -150,23 +153,30 @@ namespace System.Net
 
             if (toRead == 0)
             {
+
                 return noErr;
             }
 
-            if (_fromConnection.Count == 0)
-            {
-                *dataLength = (void*)0;
-                return errSSLWouldBlock;
-            }
-
             uint transferred = 0;
-            byte* writePos = data;
 
-            while (transferred < toRead && _fromConnection.Count > 0)
+            lock (_fromConnection)
             {
-                *writePos = _fromConnection.Dequeue();
-                writePos++;
-                transferred++;
+
+                if (_fromConnection.Count == 0)
+                {
+
+                    *dataLength = (void*)0;
+                    return errSSLWouldBlock;
+                }
+
+                byte* writePos = data;
+
+                while (transferred < toRead && _fromConnection.Count > 0)
+                {
+                    *writePos = _fromConnection.Dequeue();
+                    writePos++;
+                    transferred++;
+                }
             }
 
             *dataLength = (void*)transferred;
@@ -180,24 +190,33 @@ namespace System.Net
             Debug.Assert(count >= 0);
             Debug.Assert(count <= buf.Length - offset);
 
-            for (int i = 0; i < count; i++)
+
+            lock (_fromConnection)
             {
-                _fromConnection.Enqueue(buf[offset + i]);
+                for (int i = 0; i < count; i++)
+                {
+                    _fromConnection.Enqueue(buf[offset + i]);
+                }
             }
+
         }
 
         internal int BytesReadyForConnection => _toConnection.Count;
 
         internal byte[] ReadPendingWrites()
         {
-            if (_toConnection.Count == 0)
+            lock (_toConnection)
             {
-                return null;
-            }
+                if (_toConnection.Count == 0)
+                {
+                    return null;
+                }
 
-            byte[] data = _toConnection.ToArray();
-            _toConnection.Clear();
-            return data;
+                byte[] data = _toConnection.ToArray();
+                _toConnection.Clear();
+
+                return data;
+            }
         }
 
         internal int ReadPendingWrites(byte[] buf, int offset, int count)
@@ -207,14 +226,17 @@ namespace System.Net
             Debug.Assert(count >= 0);
             Debug.Assert(count <= buf.Length - offset);
 
-            int limit = Math.Min(count, _toConnection.Count);
-
-            for (int i = 0; i < limit; i++)
+            lock (_toConnection)
             {
-                buf[offset + i] = _toConnection.Dequeue();
-            }
+                int limit = Math.Min(count, _toConnection.Count);
 
-            return limit;
+                for (int i = 0; i < limit; i++)
+                {
+                    buf[offset + i] = _toConnection.Dequeue();
+                }
+
+                return limit;
+            }
         }
 
         private static void SetProtocols(SafeSslHandle sslContext, SslProtocols protocols)
