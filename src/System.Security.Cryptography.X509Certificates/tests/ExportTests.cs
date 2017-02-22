@@ -97,6 +97,27 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void ExportAsPfxWithPrivateKeyVerifyPassword()
+        {
+            using (var cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.Exportable))
+            {
+                Assert.True(cert.HasPrivateKey, "cert.HasPrivateKey");
+
+                const string password = "Cotton";
+
+                byte[] pfx = cert.Export(X509ContentType.Pkcs12, password);
+
+                Assert.ThrowsAny<CryptographicException>(() => new X509Certificate2(pfx, "WRONGPASSWORD"));
+
+                using (var cert2 = new X509Certificate2(pfx, password))
+                {
+                    Assert.Equal(cert, cert2);
+                    Assert.True(cert2.HasPrivateKey, "cert2.HasPrivateKey");
+                }
+            }
+        }
+
+        [Fact]
         public static void ExportAsPfxWithPrivateKey()
         {
             using (X509Certificate2 cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.Exportable))
