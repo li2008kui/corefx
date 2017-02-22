@@ -62,21 +62,62 @@ namespace Internal.Cryptography.Pal
             return FromHandle(cert.Handle);
         }
 
-        public static ICertificatePal FromBlob(byte[] rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
+        public static ICertificatePal FromBlob(
+            byte[] rawData,
+            SafePasswordHandle password,
+            X509KeyStorageFlags keyStorageFlags)
         {
             Debug.Assert(password != null);
 
-            SafeSecIdentityHandle identityHandle;
+            X509ContentType contentType = X509Certificate2.GetCertContentType(rawData);
 
-            using (SafeTemporaryKeychainHandle tmpKeychain = Interop.AppleCrypto.CreateTemporaryKeychain())
+            if (contentType == X509ContentType.Pkcs7)
             {
-                SafeSecCertificateHandle certHandle =
-                    Interop.AppleCrypto.X509ImportCertificate(rawData, password, tmpKeychain, out identityHandle);
+                // In single mode for a PKCS#7 signed or signed-and-enveloped file we're supposed to return
+                // the certificate which signed the PKCS#7 file.
+                // 
+                // X509Certificate2Collection::Export(X509ContentType.Pkcs7) claims to be a signed PKCS#7,
+                // but doesn't emit a signature block. So this is hard to test.
+                //
+                // TODO(2910): Figure out how to extract the signing certificate, when it's present.
+                throw new CryptographicException(SR.Cryptography_X509_PKCS7_NoSigner);
+            }
+
+            SafeTemporaryKeychainHandle tmpKeychain;
+
+            if (contentType == X509ContentType.Pkcs12)
+            {
+                tmpKeychain = Interop.AppleCrypto.CreateTemporaryKeychain();
+            }
+            else
+            {
+                tmpKeychain = SafeTemporaryKeychainHandle.InvalidHandle;
+                password = SafePasswordHandle.InvalidHandle;
+            }
+
+            using (tmpKeychain)
+            {
+                SafeSecIdentityHandle identityHandle;
+                SafeSecCertificateHandle certHandle = Interop.AppleCrypto.X509ImportCertificate(
+                    rawData,
+                    contentType,
+                    password,
+                    tmpKeychain,
+                    out identityHandle);
 
                 if (identityHandle.IsInvalid)
                 {
                     identityHandle.Dispose();
                     return new AppleCertificatePal(certHandle);
+                }
+
+                if (contentType != X509ContentType.Pkcs12)
+                {
+                    Debug.Fail("Non-PKCS12 import produced an identity handle");
+
+                    identityHandle.Dispose();
+                    certHandle.Dispose();
+                    throw new CryptographicException();
                 }
 
                 Debug.Assert(certHandle.IsInvalid);

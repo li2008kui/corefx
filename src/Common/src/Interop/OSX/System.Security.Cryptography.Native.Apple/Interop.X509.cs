@@ -19,6 +19,7 @@ internal static partial class Interop
         private static extern int AppleCryptoNative_X509ImportCertificate(
             byte[] pbKeyBlob,
             int cbKeyBlob,
+            X509ContentType contentType,
             SafeCreateHandle cfPfxPassphrase,
             SafeTemporaryKeychainHandle tmpKeychain,
             out SafeSecCertificateHandle pCertOut,
@@ -29,6 +30,7 @@ internal static partial class Interop
         private static extern int AppleCryptoNative_X509ImportCollection(
             byte[] pbKeyBlob,
             int cbKeyBlob,
+            X509ContentType contentType,
             SafeCreateHandle cfPfxPassphrase,
             SafeTemporaryKeychainHandle tmpKeychain,
             out SafeCFArrayHandle pCollectionOut,
@@ -93,6 +95,7 @@ internal static partial class Interop
 
         internal static SafeSecCertificateHandle X509ImportCertificate(
             byte[] bytes,
+            X509ContentType contentType,
             SafePasswordHandle importPassword,
             SafeTemporaryKeychainHandle tmpKeychain,
             out SafeSecIdentityHandle identityHandle)
@@ -120,6 +123,7 @@ internal static partial class Interop
                 ret = AppleCryptoNative_X509ImportCertificate(
                     bytes,
                     bytes.Length,
+                    contentType,
                     cfPassphrase,
                     tmpKeychain,
                     out certHandle,
@@ -151,8 +155,8 @@ internal static partial class Interop
             identityHandle.Dispose();
 
             const int SeeOSStatus = 0;
-            const int ImportReturnedNull = -1;
             const int ImportReturnedEmpty = -2;
+            const int ImportReturnedNull = -3;
 
             switch (ret)
             {
@@ -169,6 +173,7 @@ internal static partial class Interop
 
         internal static SafeCFArrayHandle X509ImportCollection(
             byte[] bytes,
+            X509ContentType contentType,
             SafePasswordHandle importPassword,
             SafeTemporaryKeychainHandle tmpKeychain)
         {
@@ -195,6 +200,7 @@ internal static partial class Interop
                 ret = AppleCryptoNative_X509ImportCollection(
                     bytes,
                     bytes.Length,
+                    contentType,
                     cfPassphrase,
                     tmpKeychain,
                     out collectionHandle,
@@ -221,8 +227,8 @@ internal static partial class Interop
             collectionHandle.Dispose();
 
             const int SeeOSStatus = 0;
-            const int ImportReturnedNull = -1;
             const int ImportReturnedEmpty = -2;
+            const int ImportReturnedNull = -3;
 
             switch (ret)
             {

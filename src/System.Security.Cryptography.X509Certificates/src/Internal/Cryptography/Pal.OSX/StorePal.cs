@@ -24,11 +24,24 @@ namespace Internal.Cryptography.Pal
         {
             Debug.Assert(password != null);
 
-            SafeTemporaryKeychainHandle tmpKeychain = Interop.AppleCrypto.CreateTemporaryKeychain();
+            X509ContentType contentType = X509Certificate2.GetCertContentType(rawData);
 
+            SafeTemporaryKeychainHandle tmpKeychain;
+
+            if (contentType == X509ContentType.Pkcs12)
+            {
+                tmpKeychain = Interop.AppleCrypto.CreateTemporaryKeychain();
+            }
+            else
+            {
+                tmpKeychain = SafeTemporaryKeychainHandle.InvalidHandle;
+                password = SafePasswordHandle.InvalidHandle;
+            }
+
+            // Only dispose tmpKeychain on the exception path, otherwise it's managed by AppleCertLoader.
             try
             {
-                SafeCFArrayHandle certs = Interop.AppleCrypto.X509ImportCollection(rawData, password, tmpKeychain);
+                SafeCFArrayHandle certs = Interop.AppleCrypto.X509ImportCollection(rawData, contentType, password, tmpKeychain);
                 return new AppleCertLoader(certs, tmpKeychain);
             }
             catch

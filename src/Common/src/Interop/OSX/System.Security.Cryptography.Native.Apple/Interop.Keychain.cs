@@ -244,6 +244,19 @@ namespace System.Security.Cryptography.Apple
             return base.ReleaseHandle();
         }
 
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && SafeHandleCache<SafeTemporaryKeychainHandle>.IsCachedInvalidHandle(this))
+            {
+                return;
+            }
+
+            base.Dispose(disposing);
+        }
+
+        public static SafeTemporaryKeychainHandle InvalidHandle =>
+            SafeHandleCache<SafeTemporaryKeychainHandle>.GetInvalidHandle(() => new SafeTemporaryKeychainHandle());
+
         internal static void TrackKeychain(SafeTemporaryKeychainHandle toTrack)
         {
             if (toTrack.IsInvalid)
