@@ -22,6 +22,8 @@ namespace System.Security.Cryptography
         internal const byte ContextSpecificConstructedTag1 = ContextSpecificConstructedTag0 | 1;
         internal const byte ContextSpecificConstructedTag2 = ContextSpecificConstructedTag0 | 2;
         internal const byte ContextSpecificConstructedTag3 = ContextSpecificConstructedTag0 | 3;
+        internal const byte ConstructedSequence = ConstructedFlag | (byte)DerTag.Sequence;
+
         internal const byte TagNumberMask = 0x1F;
 
         internal static DateTimeFormatInfo s_validityDateTimeFormatInfo;
@@ -86,6 +88,19 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
 
             return _data[_position];
+        }
+
+        internal bool HasTag(DerTag expectedTag)
+        {
+            return HasTag((byte)expectedTag);
+        }
+
+        internal bool HasTag(byte expectedTag)
+        {
+            if (!HasData)
+                return false;
+
+            return _data[_position] == expectedTag;
         }
 
         internal void SkipValue()
@@ -422,7 +437,7 @@ namespace System.Security.Cryptography
             }
 
             byte relevant = (byte)(actual & TagNumberMask);
-            byte expectedByte = (byte)expected;
+            byte expectedByte = (byte)((byte)expected & TagNumberMask);
 
             if (expectedByte != relevant)
             {

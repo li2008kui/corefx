@@ -360,6 +360,10 @@
     <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.ExportPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.LoaderPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\X509Pal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\X509Pal.ContentType.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\X509Pal.ContentType.Pkcs12.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\X509Pal.ContentType.Pkcs7.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\X509Pal.ContentType.X509.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\X500NameEncoder.ManagedDecode.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">

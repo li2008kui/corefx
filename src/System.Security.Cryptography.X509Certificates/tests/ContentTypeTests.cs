@@ -22,7 +22,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Theory]
         [MemberData(nameof(GetContentBlobsWithType))]
-        [ActiveIssue(-1, TestPlatforms.OSX)]
         public static void TestBlobContentType(string caseName, byte[] blob, X509ContentType contentType)
         {
             X509ContentType blobType = X509Certificate2.GetCertContentType(blob);
@@ -35,8 +34,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 new object[] { "MsCertificate", TestData.MsCertificate, X509ContentType.Cert },
                 new object[] { "MsCertificatePem", TestData.MsCertificatePemBytes, X509ContentType.Cert },
-                new object[] { "Pkcs7ChainPem", TestData.Pkcs7ChainDerBytes, X509ContentType.Pkcs7 },
-                new object[] { "Pkcs7ChainDer", TestData.Pkcs7ChainPemBytes, X509ContentType.Pkcs7 },
+                new object[] { "Pkcs7ChainDer", TestData.Pkcs7ChainDerBytes, X509ContentType.Pkcs7 },
+                new object[] { "Pkcs7ChainPem", TestData.Pkcs7ChainPemBytes, X509ContentType.Pkcs7 },
                 new object[] { "Pkcs7EmptyDer", TestData.Pkcs7EmptyDerBytes, X509ContentType.Pkcs7 },
                 new object[] { "Pkcs7EmptyPem", TestData.Pkcs7EmptyPemBytes, X509ContentType.Pkcs7 },
                 new object[] { "Pkcs7SingleDer", TestData.Pkcs7SingleDerBytes, X509ContentType.Pkcs7 },
