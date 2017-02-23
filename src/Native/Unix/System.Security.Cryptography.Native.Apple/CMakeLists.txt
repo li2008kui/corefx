@@ -20,6 +20,7 @@ set(NATIVECRYPTO_SOURCES
     pal_signverify.cpp
     pal_ssl.cpp
     pal_symmetric.cpp
+    pal_trust.cpp
     pal_x509.cpp
     pal_x509chain.cpp
 )
