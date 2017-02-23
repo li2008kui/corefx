@@ -53,6 +53,100 @@ AppleCryptoNative_X509GetPublicKey(SecCertificateRef cert, SecKeyRef* pPublicKey
     return (*pOSStatusOut == noErr);
 }
 
+extern "C" PAL_X509ContentType AppleCryptoNative_X509GetContentType(uint8_t* pbData, int32_t cbData)
+{
+    if (pbData == nullptr || cbData < 0)
+        return PAL_X509Unknown;
+
+    CFDataRef cfData = CFDataCreateWithBytesNoCopy(nullptr, pbData, cbData, kCFAllocatorNull);
+
+    if (cfData == nullptr)
+        return PAL_X509Unknown;
+
+    // The sniffing order is:
+    // * X509 DER
+    // * PKCS7 PEM/DER
+    // * PKCS12 DER (or PEM if Apple has non-standard support for that)
+    // * X509 PEM (or DER, but that already matched)
+    //
+    // If the X509 PEM check is done first SecItemImport will erroneously match
+    // some PKCS#7 blobs and say they were certificates.
+    //
+    // Likewise, if the X509 DER check isn't done first, Apple will report it as
+    // being a PKCS#7.
+    SecCertificateRef certref = SecCertificateCreateWithData(nullptr, cfData);
+
+    if (certref != nullptr)
+    {
+        CFRelease(certref);
+        return PAL_Certificate;
+    }
+
+    SecExternalFormat dataFormat = kSecFormatPKCS7;
+    SecExternalFormat actualFormat = dataFormat;
+    SecExternalItemType itemType = kSecItemTypeAggregate;
+    SecExternalItemType actualType = itemType;
+
+    OSStatus osStatus = SecItemImport(cfData, nullptr, &actualFormat, &actualType, 0, nullptr, nullptr, nullptr);
+
+    if (osStatus == noErr)
+    {
+        if (actualType == itemType && actualFormat == dataFormat)
+        {
+            return PAL_Pkcs7;
+        }
+    }
+
+    dataFormat = kSecFormatPKCS12;
+    actualFormat = dataFormat;
+    itemType = kSecItemTypeAggregate;
+    actualType = itemType;
+
+    osStatus = SecItemImport(cfData, nullptr, &actualFormat, &actualType, 0, nullptr, nullptr, nullptr);
+
+    if (osStatus == errSecPassphraseRequired)
+    {
+        dataFormat = kSecFormatPKCS12;
+        actualFormat = dataFormat;
+        itemType = kSecItemTypeAggregate;
+        actualType = itemType;
+
+        SecItemImportExportKeyParameters importParams = {};
+        importParams.version = SEC_KEY_IMPORT_EXPORT_PARAMS_VERSION;
+        importParams.passphrase = CFSTR("");
+
+        osStatus = SecItemImport(cfData, nullptr, &actualFormat, &actualType, 0, &importParams, nullptr, nullptr);
+
+        CFRelease(importParams.passphrase);
+        importParams.passphrase = nullptr;
+    }
+
+    if (osStatus == noErr || osStatus == errSecPkcs12VerifyFailure)
+    {
+        if (actualType == itemType && actualFormat == dataFormat)
+        {
+            return PAL_Pkcs12;
+        }
+    }
+
+    dataFormat = kSecFormatX509Cert;
+    actualFormat = dataFormat;
+    itemType = kSecItemTypeCertificate;
+    actualType = itemType;
+
+    osStatus = SecItemImport(cfData, nullptr, &actualFormat, &actualType, 0, nullptr, nullptr, nullptr);
+
+    if (osStatus == noErr)
+    {
+        if (actualType == itemType && actualFormat == dataFormat)
+        {
+            return PAL_Certificate;
+        }
+    }
+
+    return PAL_X509Unknown;
+}
+
 static int32_t ProcessCertificateTypeReturn(CFArrayRef items, SecCertificateRef* pCertOut, SecIdentityRef* pIdentityOut)
 {
     assert(pCertOut != nullptr && *pCertOut == nullptr);
