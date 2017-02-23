@@ -485,6 +485,10 @@ namespace System.Security.Cryptography
             if (bytesConsumed > data.Length - offset)
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
 
+            // CER indefinite length is not supported.
+            if (bytesConsumed == 1)
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+
             int end = offset + bytesConsumed;
             int accum = 0;
             
