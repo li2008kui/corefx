@@ -74,6 +74,7 @@ namespace Internal.Cryptography.Pal
         {
             StringComparer ordinalIgnoreCase = StringComparer.OrdinalIgnoreCase;
 
+            // TODO: This should say "Access is denied", not that the store is (already) opened readonly.
             if ((openFlags & OpenFlags.ReadWrite) == OpenFlags.ReadWrite)
                 throw new CryptographicException(SR.Cryptography_X509_StoreReadOnly);
 
@@ -82,13 +83,15 @@ namespace Internal.Cryptography.Pal
                 case StoreLocation.CurrentUser:
                     if (ordinalIgnoreCase.Equals("My", storeName))
                         return AppleKeychainStore.OpenDefaultKeychain();
+                    if (ordinalIgnoreCase.Equals("Root", storeName))
+                        return new AppleTrustStore(storeLocation);
 
                     break;
                 case StoreLocation.LocalMachine:
                     if (ordinalIgnoreCase.Equals("My", storeName))
                         return AppleKeychainStore.OpenSystemSharedKeychain();
                     if (ordinalIgnoreCase.Equals("Root", storeName))
-                        return AppleKeychainStore.OpenSystemRootsKeychain();
+                        return new AppleTrustStore(storeLocation);
 
                     break;
             }
@@ -101,6 +104,48 @@ namespace Internal.Cryptography.Pal
                     SR.Cryptography_X509_StoreCannotCreate,
                     storeName,
                     storeLocation));
+        }
+
+        private sealed class AppleTrustStore : IStorePal
+        {
+            private readonly StoreLocation _location;
+
+            public AppleTrustStore(StoreLocation location)
+            {
+                _location = location;
+            }
+
+            public void Dispose()
+            {
+                // Nothing to do.
+            }
+
+            public void CloneTo(X509Certificate2Collection collection)
+            {
+                HashSet<X509Certificate2> dedupedCerts = new HashSet<X509Certificate2>();
+
+                using (SafeCFArrayHandle certs = Interop.AppleCrypto.StoreEnumerateRoot(_location))
+                {
+                    ReadCollection(certs, dedupedCerts);
+                }
+
+                foreach (X509Certificate2 cert in dedupedCerts)
+                {
+                    collection.Add(cert);
+                }
+            }
+
+            public void Add(ICertificatePal cert)
+            {
+                throw new CryptographicException(SR.Cryptography_X509_StoreReadOnly);
+            }
+
+            public void Remove(ICertificatePal cert)
+            {
+                throw new CryptographicException(SR.Cryptography_X509_StoreReadOnly);
+            }
+
+            public SafeHandle SafeHandle => null;
         }
 
         private sealed class AppleKeychainStore : IStorePal
@@ -140,45 +185,6 @@ namespace Internal.Cryptography.Pal
                 }
             }
 
-            private static void ReadCollection(SafeCFArrayHandle matches, HashSet<X509Certificate2> collection)
-            {
-                if (matches.IsInvalid)
-                {
-                    return;
-                }
-
-                long count = Interop.CoreFoundation.CFArrayGetCount(matches);
-
-                for (int i = 0; i < count; i++)
-                {
-                    IntPtr handle = Interop.CoreFoundation.CFArrayGetValueAtIndex(matches, i);
-
-                    SafeSecCertificateHandle certHandle;
-                    SafeSecIdentityHandle identityHandle;
-
-                    if (Interop.AppleCrypto.X509DemuxAndRetainHandle(handle, out certHandle, out identityHandle))
-                    {
-                        X509Certificate2 cert;
-
-                        if (certHandle.IsInvalid)
-                        {
-                            certHandle.Dispose();
-                            cert = new X509Certificate2(new AppleCertificatePal(identityHandle));
-                        }
-                        else
-                        {
-                            identityHandle.Dispose();
-                            cert = new X509Certificate2(new AppleCertificatePal(certHandle));
-                        }
-
-                        if (!collection.Add(cert))
-                        {
-                            cert.Dispose();
-                        }
-                    }
-                }
-            }
-
             public void Add(ICertificatePal cert)
             {
                 throw new NotImplementedException();
@@ -213,6 +219,45 @@ namespace Internal.Cryptography.Pal
             private static AppleKeychainStore OpenKeychain(string keychainPath)
             {
                 return new AppleKeychainStore(Interop.AppleCrypto.SecKeychainOpen(keychainPath));
+            }
+        }
+
+        private static void ReadCollection(SafeCFArrayHandle matches, HashSet<X509Certificate2> collection)
+        {
+            if (matches.IsInvalid)
+            {
+                return;
+            }
+
+            long count = Interop.CoreFoundation.CFArrayGetCount(matches);
+
+            for (int i = 0; i < count; i++)
+            {
+                IntPtr handle = Interop.CoreFoundation.CFArrayGetValueAtIndex(matches, i);
+
+                SafeSecCertificateHandle certHandle;
+                SafeSecIdentityHandle identityHandle;
+
+                if (Interop.AppleCrypto.X509DemuxAndRetainHandle(handle, out certHandle, out identityHandle))
+                {
+                    X509Certificate2 cert;
+
+                    if (certHandle.IsInvalid)
+                    {
+                        certHandle.Dispose();
+                        cert = new X509Certificate2(new AppleCertificatePal(identityHandle));
+                    }
+                    else
+                    {
+                        identityHandle.Dispose();
+                        cert = new X509Certificate2(new AppleCertificatePal(certHandle));
+                    }
+
+                    if (!collection.Add(cert))
+                    {
+                        cert.Dispose();
+                    }
+                }
             }
         }
     }
