@@ -701,7 +701,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(-1, TestPlatforms.OSX /* It correctly exports as PKCS#7, but then GetContentType says Cert*/)]
         public static void ExportPkcs7()
         {
             TestExportStore(X509ContentType.Pkcs7);

@@ -45,6 +45,9 @@ internal static partial class Interop
         [DllImport(Libraries.AppleCryptoNative)]
         private static extern int AppleCryptoNative_X509GetPublicKey(SafeSecCertificateHandle cert, out SafeSecKeyRefHandle publicKey, out int pOSStatus);
 
+        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_X509GetContentType")]
+        internal static extern X509ContentType X509GetContentType(byte[] pbData, int cbData);
+
         [DllImport(Libraries.AppleCryptoNative)]
         private static extern int AppleCryptoNative_X509CopyCertFromIdentity(
             SafeSecIdentityHandle identity,

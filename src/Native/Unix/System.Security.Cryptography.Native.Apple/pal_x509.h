@@ -47,6 +47,13 @@ extern "C" int32_t
 AppleCryptoNative_X509GetPublicKey(SecCertificateRef cert, SecKeyRef* pPublicKeyOut, int32_t* pOSStatusOut);
 
 /*
+Determines the data type of the provided input.
+
+Returns the data (format) type of the provided input, PAL_X509Unknown if it cannot be determined.
+*/
+extern "C" PAL_X509ContentType AppleCryptoNative_X509GetContentType(uint8_t* pbData, int32_t cbData);
+
+/*
 Extract a SecCertificateRef for the certificate from an identity handle.
 
 Returns the result of SecIdentityCopyCertificate.

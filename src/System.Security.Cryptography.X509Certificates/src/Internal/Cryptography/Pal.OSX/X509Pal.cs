@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Apple;
 using System.Security.Cryptography.X509Certificates;
@@ -96,83 +97,8 @@ namespace Internal.Cryptography.Pal
                 {
                     return X509ContentType.Unknown;
                 }
-
-                // All legitimate payloads start with one of the following values:
-                // 0x30: DER-encoded (CONSTRUCTED SEQUENCE)
-                // '-': PEM-encoded
-                // 'M': Base64-encoded DER.  (PEM without the armor).
-
-                byte[] derData = null;
-
-                switch (rawData[0])
-                {
-                    case DerSequenceReader.ConstructedSequence:
-                        derData = rawData;
-                        break;
-                    case (byte)'-':
-                        derData = PemToDer(rawData);
-                        break;
-                    case (byte)'M':
-                        derData = ConvertBase64(rawData);
-                        break;
-                    default:
-                    {
-                        // Skip over any whitespace, if appropriate.
-                        // In this mode only the textual representations are valid.
-                        int idx = 0;
-
-                        while (idx < rawData.Length && char.IsWhiteSpace((char)rawData[idx]))
-                        {
-                            idx++;
-                        }
-
-                        if (idx < rawData.Length)
-                        {
-                            switch (rawData[idx])
-                            {
-                                case (byte)'-':
-                                    derData = PemToDer(rawData);
-                                    break;
-                                case (byte)'M':
-                                    derData = ConvertBase64(rawData);
-                                    break;
-                            }
-                        }
-
-                        break;
-                    }
-                }
-
-                // Everything now should be in DER form, where it should start with
-                // CONSTRUCTED SEQUENCE
-
-                if (derData == null ||
-                    derData.Length == 0 ||
-                    derData[0] != DerSequenceReader.ConstructedSequence)
-                {
-                    return X509ContentType.Unknown;
-                }
-
-                try
-                {
-                    if (ScanPkcs12(derData))
-                        return X509ContentType.Pkcs12;
-
-                    if (ScanPkcs7(derData))
-                        return X509ContentType.Pkcs7;
-
-                    if (ScanCertificate(derData))
-                        return X509ContentType.Cert;
-                }
-                catch (CryptographicException)
-                {
-                    // In the event that the blob has an invalid length value.
-                    //
-                    // Since all DER is DER, any exception (aside from failure to safely peek
-                    // a tag before reading it) means that this isn't any known form.
-                }
-
-                return X509ContentType.Unknown;
+                
+                return Interop.AppleCrypto.X509GetContentType(rawData, rawData.Length);
             }
 
             public X509ContentType GetCertContentType(string fileName)
