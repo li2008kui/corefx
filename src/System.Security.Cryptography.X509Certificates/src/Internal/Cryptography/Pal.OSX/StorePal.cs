@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Security.Cryptography.Apple;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
@@ -73,6 +74,9 @@ namespace Internal.Cryptography.Pal
         {
             StringComparer ordinalIgnoreCase = StringComparer.OrdinalIgnoreCase;
 
+            if ((openFlags & OpenFlags.ReadWrite) == OpenFlags.ReadWrite)
+                throw new CryptographicException(SR.Cryptography_X509_StoreReadOnly);
+
             switch (storeLocation)
             {
                 case StoreLocation.CurrentUser:
@@ -89,7 +93,14 @@ namespace Internal.Cryptography.Pal
                     break;
             }
 
-            throw new NotImplementedException();
+            if ((openFlags & OpenFlags.OpenExistingOnly) == OpenFlags.OpenExistingOnly)
+                throw new CryptographicException(SR.Cryptography_X509_StoreNotFound);
+
+            throw new PlatformNotSupportedException(
+                SR.Format(
+                    SR.Cryptography_X509_StoreCannotCreate,
+                    storeName,
+                    storeLocation));
         }
 
         private sealed class AppleKeychainStore : IStorePal
