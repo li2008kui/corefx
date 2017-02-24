@@ -43,7 +43,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
         [Fact]
-        [ActiveIssue(-1, TestPlatforms.OSX)]
         public static void Constructor_StoreHandle()
         {
             using (X509Store store1 = new X509Store(StoreName.My, StoreLocation.CurrentUser))

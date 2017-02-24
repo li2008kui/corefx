@@ -259,6 +259,11 @@ namespace System.Security.Cryptography.Apple
         {
         }
 
+        internal SafeKeychainHandle(IntPtr handle)
+            : base(handle, ownsHandle: true)
+        {
+        }
+
         protected override bool ReleaseHandle()
         {
             Interop.CoreFoundation.CFRelease(handle);

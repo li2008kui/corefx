@@ -17,7 +17,13 @@ namespace Internal.Cryptography.Pal
     {
         public static IStorePal FromHandle(IntPtr storeHandle)
         {
-            throw new PlatformNotSupportedException();
+            if (storeHandle == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(storeHandle));
+
+            var keychainHandle = new SafeKeychainHandle(storeHandle);
+            Interop.CoreFoundation.CFRetain(storeHandle);
+
+            return new AppleKeychainStore(keychainHandle, OpenFlags.MaxAllowed);
         }
 
         public static ILoaderPal FromBlob(byte[] rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)

@@ -20,7 +20,7 @@ namespace Internal.Cryptography.Pal
             private SafeKeychainHandle _keychainHandle;
             private readonly bool _readonly;
 
-            private AppleKeychainStore(SafeKeychainHandle keychainHandle, OpenFlags openFlags)
+            internal AppleKeychainStore(SafeKeychainHandle keychainHandle, OpenFlags openFlags)
             {
                 Debug.Assert(keychainHandle != null && !keychainHandle.IsInvalid);
 
