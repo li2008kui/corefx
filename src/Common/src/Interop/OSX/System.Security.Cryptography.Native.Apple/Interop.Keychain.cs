@@ -51,16 +51,6 @@ internal static partial class Interop
             out SafeCFArrayHandle matches,
             out int pOSStatus);
 
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_StoreEnumerateUserRoot(
-            out SafeCFArrayHandle pCertsOut,
-            out int pOSStatusOut);
-
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_StoreEnumerateMachineRoot(
-            out SafeCFArrayHandle pCertsOut,
-            out int pOSStatusOut);
-
         internal static SafeKeychainHandle SecKeychainItemCopyKeychain(SafeKeychainItemHandle item)
         {
             var handle = SecKeychainItemCopyKeychain(item.DangerousGetHandle());
@@ -194,40 +184,6 @@ internal static partial class Interop
             {
                 throw CreateExceptionForOSStatus(osStatus);
             }
-        }
-
-        internal static SafeCFArrayHandle StoreEnumerateRoot(StoreLocation location)
-        {
-            int result;
-            SafeCFArrayHandle matches;
-            int osStatus;
-
-            if (location == StoreLocation.CurrentUser)
-            {
-                result = AppleCryptoNative_StoreEnumerateUserRoot(out matches, out osStatus);
-            }
-            else if (location == StoreLocation.LocalMachine)
-            {
-                result = AppleCryptoNative_StoreEnumerateMachineRoot(out matches, out osStatus);
-            }
-            else
-            {
-                Debug.Fail($"Unrecognized StoreLocation value: {location}");
-                throw new CryptographicException();
-            }
-
-            if (result == 1)
-            {
-                return matches;
-            }
-
-            matches.Dispose();
-
-            if (result == 0)
-                throw CreateExceptionForOSStatus(osStatus);
-
-            Debug.Fail($"Unexpected result from AppleCryptoNative_StoreEnumerateRoot: {result}");
-            throw new CryptographicException();
         }
     }
 }
