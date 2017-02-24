@@ -56,7 +56,7 @@ namespace Internal.Cryptography.Pal
         {
             Debug.Assert(password != null);
 
-            byte[] fileBytes = System.IO.File.ReadAllBytes(fileName);
+            byte[] fileBytes = File.ReadAllBytes(fileName);
             return FromBlob(fileBytes, password, keyStorageFlags);
         }
 
@@ -74,24 +74,20 @@ namespace Internal.Cryptography.Pal
         {
             StringComparer ordinalIgnoreCase = StringComparer.OrdinalIgnoreCase;
 
-            // TODO: This should say "Access is denied", not that the store is (already) opened readonly.
-            if ((openFlags & OpenFlags.ReadWrite) == OpenFlags.ReadWrite)
-                throw new CryptographicException(SR.Cryptography_X509_StoreReadOnly);
-
             switch (storeLocation)
             {
                 case StoreLocation.CurrentUser:
                     if (ordinalIgnoreCase.Equals("My", storeName))
-                        return AppleKeychainStore.OpenDefaultKeychain();
+                        return AppleKeychainStore.OpenDefaultKeychain(openFlags);
                     if (ordinalIgnoreCase.Equals("Root", storeName))
-                        return new AppleTrustStore(storeLocation);
+                        return AppleTrustStore.OpenStore(storeLocation, openFlags);
 
                     break;
                 case StoreLocation.LocalMachine:
                     if (ordinalIgnoreCase.Equals("My", storeName))
-                        return AppleKeychainStore.OpenSystemSharedKeychain();
+                        return AppleKeychainStore.OpenSystemSharedKeychain(openFlags);
                     if (ordinalIgnoreCase.Equals("Root", storeName))
-                        return new AppleTrustStore(storeLocation);
+                        return AppleTrustStore.OpenStore(storeLocation, openFlags);
 
                     break;
             }
@@ -110,7 +106,7 @@ namespace Internal.Cryptography.Pal
         {
             private readonly StoreLocation _location;
 
-            public AppleTrustStore(StoreLocation location)
+            private AppleTrustStore(StoreLocation location)
             {
                 _location = location;
             }
@@ -146,17 +142,28 @@ namespace Internal.Cryptography.Pal
             }
 
             public SafeHandle SafeHandle => null;
+
+            internal static AppleTrustStore OpenStore(StoreLocation location, OpenFlags openFlags)
+            {
+                if ((openFlags & OpenFlags.ReadWrite) == OpenFlags.ReadWrite)
+                    throw new CryptographicException(SR.Security_AccessDenied);
+
+                return new AppleTrustStore(location);
+            }
         }
 
         private sealed class AppleKeychainStore : IStorePal
         {
             private SafeKeychainHandle _keychainHandle;
+            private readonly bool _readonly;
 
-            public AppleKeychainStore(SafeKeychainHandle keychainHandle)
+            private AppleKeychainStore(SafeKeychainHandle keychainHandle, OpenFlags openFlags)
             {
                 Debug.Assert(keychainHandle != null && !keychainHandle.IsInvalid);
 
                 _keychainHandle = keychainHandle;
+
+                _readonly = (openFlags & (OpenFlags.ReadWrite | OpenFlags.MaxAllowed)) == 0;
             }
 
             public void Dispose()
@@ -187,38 +194,36 @@ namespace Internal.Cryptography.Pal
 
             public void Add(ICertificatePal cert)
             {
+                if (_readonly)
+                    throw new CryptographicException(SR.Cryptography_X509_StoreReadOnly);
+
                 throw new NotImplementedException();
             }
 
             public void Remove(ICertificatePal cert)
             {
+                if (_readonly)
+                    throw new CryptographicException(SR.Cryptography_X509_StoreReadOnly);
+
                 throw new NotImplementedException();
             }
 
             public SafeHandle SafeHandle => _keychainHandle;
 
-            public static AppleKeychainStore OpenDefaultKeychain()
+            public static AppleKeychainStore OpenDefaultKeychain(OpenFlags openFlags)
             {
-                return new AppleKeychainStore(Interop.AppleCrypto.SecKeychainCopyDefault());
+                return new AppleKeychainStore(Interop.AppleCrypto.SecKeychainCopyDefault(), openFlags);
             }
 
-            public static AppleKeychainStore OpenSystemSharedKeychain()
+            public static AppleKeychainStore OpenSystemSharedKeychain(OpenFlags openFlags)
             {
                 const string SharedSystemKeychainPath = "/Library/Keychains/System.keychain";
-                return OpenKeychain(SharedSystemKeychainPath);
+                return OpenKeychain(SharedSystemKeychainPath, openFlags);
             }
 
-            public static AppleKeychainStore OpenSystemRootsKeychain()
+            private static AppleKeychainStore OpenKeychain(string keychainPath, OpenFlags openFlags)
             {
-                const string SystemRootKeychainPath =
-                    "/System/Library/Keychains/SystemRootCertificates.keychain";
-
-                return OpenKeychain(SystemRootKeychainPath);
-            }
-
-            private static AppleKeychainStore OpenKeychain(string keychainPath)
-            {
-                return new AppleKeychainStore(Interop.AppleCrypto.SecKeychainOpen(keychainPath));
+                return new AppleKeychainStore(Interop.AppleCrypto.SecKeychainOpen(keychainPath), openFlags);
             }
         }
 
