@@ -55,8 +55,7 @@ extern "C" int32_t AppleCryptoNative_X509ChainEvaluate(SecTrustRef chain,
         return -2;
     }
 
-    //*pOSStatus = SecTrustSetNetworkFetchAllowed(chain, allowNetwork);
-    (void)allowNetwork;
+    *pOSStatus = SecTrustSetNetworkFetchAllowed(chain, allowNetwork);
 
     if (*pOSStatus != noErr)
     {
