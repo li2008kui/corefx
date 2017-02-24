@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Apple;
 using System.Security.Cryptography.X509Certificates;
@@ -100,131 +99,6 @@ namespace Internal.Cryptography.Pal
                     SR.Cryptography_X509_StoreCannotCreate,
                     storeName,
                     storeLocation));
-        }
-
-        private sealed class AppleTrustStore : IStorePal
-        {
-            private readonly StoreLocation _location;
-
-            private AppleTrustStore(StoreLocation location)
-            {
-                _location = location;
-            }
-
-            public void Dispose()
-            {
-                // Nothing to do.
-            }
-
-            public void CloneTo(X509Certificate2Collection collection)
-            {
-                HashSet<X509Certificate2> dedupedCerts = new HashSet<X509Certificate2>();
-
-                using (SafeCFArrayHandle certs = Interop.AppleCrypto.StoreEnumerateRoot(_location))
-                {
-                    ReadCollection(certs, dedupedCerts);
-                }
-
-                foreach (X509Certificate2 cert in dedupedCerts)
-                {
-                    collection.Add(cert);
-                }
-            }
-
-            public void Add(ICertificatePal cert)
-            {
-                throw new CryptographicException(SR.Cryptography_X509_StoreReadOnly);
-            }
-
-            public void Remove(ICertificatePal cert)
-            {
-                throw new CryptographicException(SR.Cryptography_X509_StoreReadOnly);
-            }
-
-            public SafeHandle SafeHandle => null;
-
-            internal static AppleTrustStore OpenStore(StoreLocation location, OpenFlags openFlags)
-            {
-                if ((openFlags & OpenFlags.ReadWrite) == OpenFlags.ReadWrite)
-                    throw new CryptographicException(SR.Security_AccessDenied);
-
-                return new AppleTrustStore(location);
-            }
-        }
-
-        private sealed class AppleKeychainStore : IStorePal
-        {
-            private SafeKeychainHandle _keychainHandle;
-            private readonly bool _readonly;
-
-            private AppleKeychainStore(SafeKeychainHandle keychainHandle, OpenFlags openFlags)
-            {
-                Debug.Assert(keychainHandle != null && !keychainHandle.IsInvalid);
-
-                _keychainHandle = keychainHandle;
-
-                _readonly = (openFlags & (OpenFlags.ReadWrite | OpenFlags.MaxAllowed)) == 0;
-            }
-
-            public void Dispose()
-            {
-                _keychainHandle?.Dispose();
-                _keychainHandle = null;
-            }
-
-            public void CloneTo(X509Certificate2Collection collection)
-            {
-                HashSet<X509Certificate2> dedupedCerts = new HashSet<X509Certificate2>();
-
-                using (SafeCFArrayHandle identities = Interop.AppleCrypto.KeychainEnumerateIdentities(_keychainHandle))
-                {
-                    ReadCollection(identities, dedupedCerts);
-                }
-
-                using (SafeCFArrayHandle certs = Interop.AppleCrypto.KeychainEnumerateCerts(_keychainHandle))
-                {
-                    ReadCollection(certs, dedupedCerts);
-                }
-
-                foreach (X509Certificate2 cert in dedupedCerts)
-                {
-                    collection.Add(cert);
-                }
-            }
-
-            public void Add(ICertificatePal cert)
-            {
-                if (_readonly)
-                    throw new CryptographicException(SR.Cryptography_X509_StoreReadOnly);
-
-                throw new NotImplementedException();
-            }
-
-            public void Remove(ICertificatePal cert)
-            {
-                if (_readonly)
-                    throw new CryptographicException(SR.Cryptography_X509_StoreReadOnly);
-
-                throw new NotImplementedException();
-            }
-
-            public SafeHandle SafeHandle => _keychainHandle;
-
-            public static AppleKeychainStore OpenDefaultKeychain(OpenFlags openFlags)
-            {
-                return new AppleKeychainStore(Interop.AppleCrypto.SecKeychainCopyDefault(), openFlags);
-            }
-
-            public static AppleKeychainStore OpenSystemSharedKeychain(OpenFlags openFlags)
-            {
-                const string SharedSystemKeychainPath = "/Library/Keychains/System.keychain";
-                return OpenKeychain(SharedSystemKeychainPath, openFlags);
-            }
-
-            private static AppleKeychainStore OpenKeychain(string keychainPath, OpenFlags openFlags)
-            {
-                return new AppleKeychainStore(Interop.AppleCrypto.SecKeychainOpen(keychainPath), openFlags);
-            }
         }
 
         private static void ReadCollection(SafeCFArrayHandle matches, HashSet<X509Certificate2> collection)
