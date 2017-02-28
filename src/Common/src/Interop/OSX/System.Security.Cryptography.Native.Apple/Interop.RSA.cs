@@ -77,6 +77,7 @@ internal static partial class Interop
                 {
                     pPublicKey = keychainPublic;
                     pPrivateKey = keychainPrivate;
+                    return;
                 }
 
                 using (keychainPrivate)
