@@ -9,6 +9,12 @@ Users who have requirements to use FIPS-validated algorithm implementations also
 libraries are FIPS-validated, of course).The biggest con is that not all system libraries offer the same capabilities.
 While the core capabilities are present across the various platforms, there are some rough edges.
 
+### Versioning
+
+In .NET Core 1.0 and .NET Core 1.1 the macOS implementation of the cryptography classes was based on OpenSSL.
+In .NET Core 2.0 the dependency was changed to use Apple's Security.framework.
+Within this document "macOS" should use the values for "Linux" if running .NET Core 1.x.
+
 ## Hash Algorithms
 
 Hash algorithms, and HMAC algorithms, are very standard bytes-in-bytes-out operations.
@@ -22,8 +28,14 @@ In the future there is a possibility that new hash algorithms may be added to .N
 
 The underlying ciphers and chaining are performed by the system libraries.
 
-AES, TripleDES, and DES are supported on all platforms.
-CBC and ECB are supported on all platforms.
+| Cipher + Mode | Windows | Linux | macOS |
+|---------------|---------|-------|-------|
+| AES-CBC | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| AES-ECB | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| 3DES-CBC | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| 3DES-ECB | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| DES-CBC | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| DES-ECB | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 
 In the future there is a possibility that new ciphers may be added to .NET Core before one (or more) supported platforms have system support for it.
 This would result in a `PlatformNotSupportedException` when invoking the `.Create()` method for the algorithm.
@@ -54,8 +66,6 @@ Not all platforms support the same padding options.
 Windows CNG is used on Windows whenever `RSA.Create()` or `new RSACng()` is used, as well as the `.GetRSAPublicKey()` extension method for `X509Certificate2` and when possible for the `.GetRSAPrivateKey()` extension method for `X509Certificate2`.
 Windows CAPI is used on Windows whenever `new RSACryptoServiceProvider()` is used, as well as the `GetRSAPrivateKey()` extension method when the private key is not able to be opened with CNG (which requires a hardware-backed key with no CNG-capable driver).
 
-macOS should refer to the Linux (OpenSSL) column for .NET Core versions 1.0 and 1.1.
-
 Windows CAPI is capable of PKCS1 signature with a SHA-2 algorithm, but the individual RSA object may be loaded in a CSP which does not support it.
 
 ## ECDSA
@@ -69,3 +79,14 @@ ECDSA key curves are defined by the system libraries, and are subject to the lim
 | NIST P-384 (secp384r1) | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 | NIST P-521 (secp521r1) | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 | brainpool curves (as named curves) | :white_check_mark: | :question: | :x: | :x: |
+| other named curves | :question: | :question: | :x: | :x: |
+| explicit curves | :white_check_mark: | :white_check_mark: | :x: | :x: |
+| Export or import as explicit | :white_check_mark: | :white_check_mark: | :x: | :x: |
+
+Support for named curves was added to Windows CNG in Windows 10, and is not available in prior OSes, with the exception of the three curves which had special support in Windows 7.
+See [CNG Named Elliptic Curves](https://msdn.microsoft.com/en-us/library/windows/desktop/mt632245(v=vs.85).aspx) for the expected support.
+
+Not all Linux distributions have support for the same named curves.
+
+Exporting with explicit curve parameters requires system library support which is not available on macOS or older versions of Windows.
+
