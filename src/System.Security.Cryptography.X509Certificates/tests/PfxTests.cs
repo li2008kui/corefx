@@ -124,7 +124,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void TestPrivateKeyProperty()
         {
-            using (var c = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.EphemeralKeySet))
+            using (var c = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, Cert.EphemeralIfPossible))
             {
                 bool hasPrivateKey = c.HasPrivateKey;
                 Assert.True(hasPrivateKey);
@@ -184,7 +184,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void ECDsaPrivateKeyProperty_WindowsPfx()
         {
-            using (var cert = new X509Certificate2(TestData.ECDsaP256_DigitalSignature_Pfx_Windows, "Test", X509KeyStorageFlags.EphemeralKeySet))
+            using (var cert = new X509Certificate2(TestData.ECDsaP256_DigitalSignature_Pfx_Windows, "Test", Cert.EphemeralIfPossible))
             {
                 AsymmetricAlgorithm alg = cert.PrivateKey;
                 Assert.NotNull(alg);
@@ -361,6 +361,74 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Fact]
+        [OuterLoop("Modifies system state")]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public static void PersistKeySet_OSX()
+        {
+            using (var store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
+            using (var cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.DefaultKeySet))
+            {
+                store.Open(OpenFlags.ReadWrite);
+
+                // Defensive removal.
+                store.Remove(cert);
+
+                using (ImportedCollection coll = new ImportedCollection(store.Certificates))
+                {
+                    bool found = false;
+
+                    foreach (X509Certificate2 storeCert in coll.Collection)
+                    {
+                        if (cert.Equals(storeCert))
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    Assert.False(found, "PtxData certificate was found on pre-condition");
+                }
+
+                // Opening this as persisted has now added it to login.keychain, aka CU\My.
+                using (var persistedCert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.PersistKeySet))
+                using (ImportedCollection coll = new ImportedCollection(store.Certificates))
+                {
+                    bool found = false;
+
+                    foreach (X509Certificate2 storeCert in coll.Collection)
+                    {
+                        if (cert.Equals(storeCert))
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    Assert.True(found, "PtxData certificate was found upon PersistKeySet import");
+                }
+
+                // And ensure it didn't get removed when the certificate got disposed.
+                using (ImportedCollection coll = new ImportedCollection(store.Certificates))
+                {
+                    bool found = false;
+
+                    foreach (X509Certificate2 storeCert in coll.Collection)
+                    {
+                        if (cert.Equals(storeCert))
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    Assert.True(found, "PtxData certificate was found after PersistKeySet Dispose");
+                }
+
+                store.Remove(cert);
+            }
+        }
+
         // Keep the ECDsaCng-ness contained within this helper method so that it doesn't trigger a
         // FileNotFoundException on Unix.
         private static void AssertEccAlgorithm(ECDsa ecdsa, string algorithmId)
@@ -373,17 +441,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        public static IEnumerable<object[]> StorageFlags
-        {
-            get
-            {
-                yield return new object[] { X509KeyStorageFlags.DefaultKeySet };
-
-#if netcoreapp11
-                yield return new object[] { X509KeyStorageFlags.EphemeralKeySet };
-#endif
-            }
-        }
+        public static IEnumerable<object[]> StorageFlags => CollectionImportTests.StorageFlags;
 
         private static X509Certificate2 Rewrap(this X509Certificate2 c)
         {

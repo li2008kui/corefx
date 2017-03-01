@@ -1485,17 +1485,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        public static IEnumerable<object[]> StorageFlags
-        {
-            get
-            {
-                yield return new object[] { X509KeyStorageFlags.DefaultKeySet };
-
-#if netcoreapp11
-                yield return new object[] { X509KeyStorageFlags.EphemeralKeySet };
-#endif
-            }
-        }
+        public static IEnumerable<object[]> StorageFlags => CollectionImportTests.StorageFlags;
 
         private static X509Certificate2[] ToArray(this X509Certificate2Collection col)
         {
