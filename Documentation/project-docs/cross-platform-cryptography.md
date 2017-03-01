@@ -233,3 +233,14 @@ macOS does not support Offline CRL utilization, so `X509RevocationMode.Offline` 
 macOS does not support a user-initiated timeout on CRL/OCSP/AIA downloading, so `X509ChainPolicy.UrlRetrievalTimeout` is ignored.
 
 OCSP is not supported on Linux, CRLs are required for `X509RevocationMode.Offline` or `X509RevocationMode.Online`.
+
+### X509Certificate.Handle, new X509Certificate2(IntPtr)
+
+On Windows the `X509Certificate.Handle` value represents a Crypt32 `PCERT_CONTEXT`, which may be a public-only certificate or a public-private pair.
+The IntPtr certificate constructor only operates on PCERT_CONTEXT values.
+
+On Linux the `X509Certificate.Handle` value represents a libcrypto `X509*`, even when a private key is known to the instance.
+`new X509Certificate2(cert.Handle)` will lose the private key association because the `X509*` cannot return to the private key.
+
+On macOS the `X509Certificate.Handle` value represents a SecIdentityRef when a public-private pair is represented, or a SecCertificateRef when a public-only value is held.
+The IntPtr certificate constructor operates on either SecIdentityRef values or SecCertificateRef values.
