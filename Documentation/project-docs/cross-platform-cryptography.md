@@ -163,6 +163,11 @@ All certificates are required to be loaded by the underlying system library to b
 | Multiple certificates, no private keys | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 | Multiple certificates, one private key | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 | Multiple certificates, multiple private keys | :white_check_mark: | :x: | :white_check_mark: |
+| Ephemeral loading | :white_check_mark: | :white_check_mark: | :x: |
+
+macOS cannot load certificate private keys without a keychain object, which requires writing to disk.
+Keychains are created automatically for PFX loading, and are deleted when no longer in use.
+Since the `X509KeyStorageFlags.EphemeralKeySet` option means that the private key should not be written to disk, asserting that flag on macOS results in a `PlatformNotSupportedException`.
 
 ### Writing a PKCS12/PFX
 
@@ -174,11 +179,6 @@ All certificates are required to be loaded by the underlying system library to b
 | Multiple certificates, no private keys | :white_check_mark: | :white_check_mark: | :x: |
 | Multiple certificates, one private key | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 | Multiple certificates, multiple private keys | :white_check_mark: | :x: | :white_check_mark: |
-| Ephemeral loading | :white_check_mark: | :white_check_mark: | :x: |
-
-macOS cannot load certificate private keys without a keychain object, which requires writing to disk.
-Keychains are created automatically for PFX loading, and are deleted when no longer in use.
-Since the `X509KeyStorageFlags.EphemeralKeySet` option means that the private key should not be written to disk, asserting that flag on macOS results in a `PlatformNotSupportedException`.
 
 ### Writing a PKCS7 certificate collection
 
