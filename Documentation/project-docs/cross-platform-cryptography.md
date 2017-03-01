@@ -46,7 +46,9 @@ This would result in a `PlatformNotSupportedException` when invoking the `.Creat
 In the future there is a possiblity that new cipher/chaining modes may be added to .NET Core which do not apply to all symmetric algorithms.
 This would likely result in a `NotSupportedException` when using the set-accessor of the `.Mode` property on the `SymmetricAlgorithm` object, but this prediction is subject to change.
 
-## RSA
+## Asymmetric Cryptography
+
+### RSA
 
 RSA key generation is performed by the system libraries, and is subject to size limitations and performance characteristics thereof.
 RSA key operations are performed by the system libraries, and the types of key that may be loaded are subject to system requirements.
@@ -59,8 +61,8 @@ Not all platforms support the same padding options.
 | PKCS1 Encryption | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 | OAEP - SHA-1 | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 | OAEP - SHA-2 (SHA256, SHA384, SHA512) | :white_check_mark: | :x: | :x: | :x: |
-| PKCS1 Signature (MD5, SHA-1) |  :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
-| PKCS1 Signature (SHA-2) |  :white_check_mark: | :white_check_mark: | :white_check_mark: | :question: |
+| PKCS1 Signature (MD5, SHA-1) | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| PKCS1 Signature (SHA-2) | :white_check_mark: | :white_check_mark: | :white_check_mark: | :question: |
 | PSS |  :white_check_mark: | :x: | :x: | :x: |
 
 Windows CNG is used on Windows whenever `RSA.Create()` or `new RSACng()` is used, as well as the `.GetRSAPublicKey()` extension method for `X509Certificate2` and when possible for the `.GetRSAPrivateKey()` extension method for `X509Certificate2`.
@@ -68,7 +70,20 @@ Windows CAPI is used on Windows whenever `new RSACryptoServiceProvider()` is use
 
 Windows CAPI is capable of PKCS1 signature with a SHA-2 algorithm, but the individual RSA object may be loaded in a CSP which does not support it.
 
-## ECDSA
+#### Native Interop
+
+.NET Core exposes types to allow programs to interoperate with the system libraries upon which the .NET cryptography code is layered.
+The types involved do not translate between platforms, and should only be directly used when necessary.
+
+| Type | Windows | Linux | macOS |
+|------|---------|-------|-------|
+| RSACryptoServiceProvider | :white_check_mark: | :x: | :x: |
+| RSACng | :white_check_mark: | :x: | :x: |
+| RSAOpenSsl | :x: | :white_check_mark: | :question: |
+
+RSAOpenSsl on macOS works if OpenSSL is installed in the system and an appropriate libcrypto dylib can be found via dynamic library loading, otherwise exceptions will be raised.
+
+### ECDSA
 
 ECDSA key generation is performed by the system libraries, and is subject to size limitations and performance characteristics thereof.
 ECDSA key curves are defined by the system libraries, and are subject to the limitations thereof.
@@ -90,3 +105,131 @@ Not all Linux distributions have support for the same named curves.
 
 Exporting with explicit curve parameters requires system library support which is not available on macOS or older versions of Windows.
 
+#### Native Interop
+
+.NET Core exposes types to allow programs to interoperate with the system libraries upon which the .NET cryptography code is layered.
+The types involved do not translate between platforms, and should only be directly used when necessary.
+
+| Type | Windows | Linux | macOS |
+|------|---------|-------|-------|
+| ECDsaCng | :white_check_mark: | :x: | :x: |
+| ECDsaOpenSsl | :x: | :white_check_mark: | :question: |
+
+ECDsaOpenSsl on macOS works if OpenSSL is installed in the system and an appropriate libcrypto dylib can be found via dynamic library loading, otherwise exceptions will be raised.
+
+### DSA
+
+DSA key generation is performed by the system libraries, and is subject to size limitations and performance characteristics thereof.
+
+| Function | Windows CNG | Linux | macOS | Windows CAPI |
+|----------|-------------|-------|-------|--------------|
+| Key creation (<= 1024 bits) | :white_check_mark: | :white_check_mark: | :x: | :white_check_mark: |
+| Key creation (> 1024 bits) | :white_check_mark: | :white_check_mark: | :x: | :x: |
+| Loading keys (<= 1024 bits) | :white_check_mark: | :white_check_mark:  | :white_check_mark: | :white_check_mark: |
+| Loading keys (> 1024 bits) | :white_check_mark: | :white_check_mark: | :question: | :x: |
+| FIPS 186-2 | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| FIPS 186-3 (SHA-2 signatures) | :white_check_mark: | :white_check_mark: | :x: | :x: |
+
+Windows CNG is used on Windows whenever `DSA.Create()` or `new DSACng()` is used, as well as the `.GetDSAPublicKey()` extension method for `X509Certificate2` and when possible for the `.GetDSAPrivateKey()` extension method for `X509Certificate2`.
+Windows CAPI is used on Windows whenever `new DSACryptoServiceProvider()` is used, as well as the `GetDSAPrivateKey()` extension method when the private key is not able to be opened with CNG (which requires a hardware-backed key with no CNG-capable driver).
+
+macOS seems to be capable of loading DSA keys whose size exceeds 1024-bit, but does not perform FIPS 186-3 behaviors with those keys, so the behavior of those keys is undefined.
+
+#### Native Interop
+
+.NET Core exposes types to allow programs to interoperate with the system libraries upon which the .NET cryptography code is layered.
+The types involved do not translate between platforms, and should only be directly used when necessary.
+
+| Type | Windows | Linux | macOS |
+|------|---------|-------|-------|
+| DSACryptoServiceProvider | :white_check_mark: | :x: | :x: |
+| DSACng | :white_check_mark: | :x: | :x: |
+| DSAOpenSsl | :x: | :white_check_mark: | :question: |
+
+DSAOpenSsl on macOS works if OpenSSL is installed in the system and an appropriate libcrypto dylib can be found via dynamic library loading, otherwise exceptions will be raised.
+
+## X.509 Certificates
+
+The majority of support for X.509 certificates in .NET Core comes from system libraries.
+All certificates are required to be loaded by the underlying system library to be loaded into an `X509Certificate2` instance in .NET Core (or an `X509Certificate` instance).
+
+### Reading a PKCS12/PFX
+
+| Scenario | Windows | Linux | macOS |
+|----------|---------|-------|-------|
+| Empty | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| One certificate, no private key | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| One certificate, with private key | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Multiple certificates, no private keys | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Multiple certificates, one private key | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Multiple certificates, multiple private keys | :white_check_mark: | :x: | :white_check_mark: |
+
+### Writing a PKCS12/PFX
+
+| Scenario | Windows | Linux | macOS |
+|----------|---------|-------|-------|
+| Empty | :white_check_mark: | :white_check_mark: | :x: |
+| One certificate, no private key | :white_check_mark: | :white_check_mark: | :x: |
+| One certificate, with private key | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Multiple certificates, no private keys | :white_check_mark: | :white_check_mark: | :x: |
+| Multiple certificates, one private key | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Multiple certificates, multiple private keys | :white_check_mark: | :x: | :white_check_mark: |
+| Ephemeral loading | :white_check_mark: | :white_check_mark: | :x: |
+
+macOS cannot load certificate private keys without a keychain object, which requires writing to disk.
+Keychains are created automatically for PFX loading, and are deleted when no longer in use.
+Since the `X509KeyStorageFlags.EphemeralKeySet` option means that the private key should not be written to disk, asserting that flag on macOS results in a `PlatformNotSupportedException`.
+
+### Writing a PKCS7 certificate collection
+
+Windows and Linux both emit DER-encoded PKCS7 blobs. macOS emits indefinite-length-CER-encoded PKCS7 blobs.
+
+### X509Store
+
+On Windows the X509Store class is a representation of the Windows Certificate Store APIs, and work the same as they did on .NET Framework.
+On Linux the X509Store class is a projection of system trust decisions (read-only), user trust decisions (read-write), and user key storage (read-write).
+On macOS the X509Store class is a projection of system trust decisions (read-only), user trust decisions (read-only), and user key storage (read-write).
+
+| Scenario | Windows | Linux | macOS |
+|----------|---------|-------|-------|
+| Open CurrentUser\My (ReadOnly) | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Open CurrentUser\My (ReadWrite) | :white_check_mark: | :white_check_mark:  | :white_check_mark: |
+| Open CurrentUser\My (ExistingOnly) | :white_check_mark: | :question: | :white_check_mark: |
+| Open LocalMachine\My | :white_check_mark: | `PlatformNotSupportedException` | :white_check_mark: |
+| Open CurrentUser\Root (ReadOnly) | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Open CurrentUser\Root (ReadWrite) | :white_check_mark: | :white_check_mark: | `PlatformNotSupportedException` |
+| Open CurrentUser\Root (ExistingOnly) | :white_check_mark: | :question: | :white_check_mark: (if ReadOnly) |
+| Open LocalMachine\Root (ReadOnly) | :white_check_mark:  | :white_check_mark:  | :white_check_mark: |
+| Open LocalMachine\Root (ReadWrite) | :white_check_mark: | `PlatformNotSupportedException` | `PlatformNotSupportedException` |
+| Open LocalMachine\Root (ExistingOnly) | :white_check_mark: | :question: | :white_check_mark:  (if ReadOnly) |
+| Open CurrentUser\Disallowed (ReadOnly) | :white_check_mark: | :question: | :white_check_mark: |
+| Open CurrentUser\Disallowed (ReadWrite) | :white_check_mark: | :question: | `PlatformNotSupportedException` |
+| Open CurrentUser\Disallowed (ExistingOnly) | :white_check_mark: | :question: | :white_check_mark: (if ReadOnly) |
+| Open LocalMachine\Disallowed (ReadOnly) | :white_check_mark: | :question: | :white_check_mark: |
+| Open LocalMachine\Disallowed (ReadWrite) | :white_check_mark: | :question: | `PlatformNotSupportedException` |
+| Open LocalMachine\Disallowed (ExistingOnly) | :white_check_mark: | :question: | :white_check_mark: (if ReadOnly) |
+| Open non-existant store (ExistingOnly) | `CryptographicException` | `CryptographicException` | `CryptographicException` |
+| Open CurrentUser non-existant store (ReadWrite)  | :white_check_mark: | :white_check_mark: | `PlatformNotSupportedException` |
+| Open LocalMachine non-existant store (ReadWrite)  | :white_check_mark: | `PlatformNotSupportedException` | `PlatformNotSupportedException` |
+
+
+On Linux the Disallowed store has no impact, and stores are created on first-write.
+No user stores exist on Linux by default.
+The LocalMachnie\Root store on Linux is an interpretation of the CA bundle in the default path for OpenSSL.
+The LocalMachine\Intermediate store on Linux is an interpretation of the CA bundle in the default path for OpenSSL.
+The CurrentUser\Intermediate store on Linux is used as a cache when downloading intermediate CAs by their Authority Information Access records on successful X509Chain builds.
+
+On macOS the CurrentUser\My store is the user's default keychain (login.keychain, by default).
+The LocalMachine\My store is System.keychain.
+The CurrentUser\Root store on macOS is an interpretation of the SecTrustSettings results for the user trust domain.
+The LocalMachine\Root store on macOS is an interpretation of the SecTrustSettings results for the admin and system trust domains.
+The CurrentUser\Disallowed and LocalMachine\Disallowed stores are interpretations of the appropriate SecTrustSettings results for certificates whose trust is set to Always Deny.
+Keychain creation on macOS requires more input than is captured with the X509Store API, so attempting to create a new store will fail with a `PlatformNotSupportedException`.
+If a keychain is opened by P/Invoke to SecKeychainOpen, the resulting `IntPtr` can be passed to `new X509Store(IntPtr)`to obtain a read/write-capable store (subject to the current user's permissions).
+
+### X509Chain
+
+macOS does not support Offline CRL utilization, so `X509RevocationMode.Offline` is treated as `X509RevocationMode.Online`.
+macOS does not support a user-initiated timeout on CRL/OCSP/AIA downloading, so `X509ChainPolicy.UrlRetrievalTimeout` is ignored.
+
+OCSP is not supported on Linux, CRLs are required for `X509RevocationMode.Offline` or `X509RevocationMode.Online`.
