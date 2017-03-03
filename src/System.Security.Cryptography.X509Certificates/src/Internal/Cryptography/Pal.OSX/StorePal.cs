@@ -105,15 +105,18 @@ namespace Internal.Cryptography.Pal
                     if (ordinalIgnoreCase.Equals("My", storeName))
                         return AppleKeychainStore.OpenDefaultKeychain(openFlags);
                     if (ordinalIgnoreCase.Equals("Root", storeName))
-                        return AppleTrustStore.OpenStore(storeLocation, openFlags);
+                        return AppleTrustStore.OpenStore(StoreName.Root, storeLocation, openFlags);
+                    if (ordinalIgnoreCase.Equals("Disallowed", storeName))
+                        return AppleTrustStore.OpenStore(StoreName.Disallowed, storeLocation, openFlags);
 
                     break;
                 case StoreLocation.LocalMachine:
                     if (ordinalIgnoreCase.Equals("My", storeName))
                         return AppleKeychainStore.OpenSystemSharedKeychain(openFlags);
                     if (ordinalIgnoreCase.Equals("Root", storeName))
-                        return AppleTrustStore.OpenStore(storeLocation, openFlags);
-
+                        return AppleTrustStore.OpenStore(StoreName.Root, storeLocation, openFlags);
+                    if (ordinalIgnoreCase.Equals("Disallowed", storeName))
+                        return AppleTrustStore.OpenStore(StoreName.Disallowed, storeLocation, openFlags);
                     break;
             }
 
