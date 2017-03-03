@@ -425,6 +425,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     Assert.True(found, "PtxData certificate was found after PersistKeySet Dispose");
                 }
 
+                // Cleanup.
                 store.Remove(cert);
             }
         }
