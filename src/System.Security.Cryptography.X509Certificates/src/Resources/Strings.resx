@@ -306,4 +306,10 @@
   <data name="Cryptography_X509_NoEphemeralPfx" xml:space="preserve">
     <value>This platform does not support loading with EphemeralKeySet. Remove the flag to allow keys to be temporarily created on disk.</value>
   </data>
+  <data name="Cryptography_X509Store_WouldModifyUserTrust" xml:space="preserve">
+    <value>Removing the requested certificate would modify user trust settings, and has been denied.</value>
+  </data>
+  <data name="Cryptography_X509Store_WouldModifyAdminTrust" xml:space="preserve">
+    <value>Removing the requested certificate would modify admin trust settings, and has been denied.</value>
+  </data>
 </root>

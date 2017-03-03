@@ -68,7 +68,9 @@ namespace Internal.Cryptography.Pal
                 if (_readonly)
                     throw new CryptographicException(SR.Cryptography_X509_StoreReadOnly);
 
-                throw new NotImplementedException();
+                AppleCertificatePal applePal = (AppleCertificatePal)cert;
+
+                Interop.AppleCrypto.X509StoreRemoveCertificate(applePal.CertificateHandle, _keychainHandle);
             }
 
             public SafeHandle SafeHandle => _keychainHandle;
