@@ -52,6 +52,12 @@ internal static partial class Interop
             out int pOSStatus);
 
         [DllImport(Libraries.AppleCryptoNative)]
+        private static extern int AppleCryptoNative_X509StoreAddCertificate(
+            SafeKeychainItemHandle cert,
+            SafeKeychainHandle keychain,
+            out int pOSStatus);
+
+        [DllImport(Libraries.AppleCryptoNative)]
         private static extern int AppleCryptoNative_X509StoreRemoveCertificate(
             SafeSecCertificateHandle cert,
             SafeKeychainHandle keychain,
@@ -201,6 +207,23 @@ internal static partial class Interop
             if (throwOnError && osStatus != 0)
             {
                 throw CreateExceptionForOSStatus(osStatus);
+            }
+        }
+
+        internal static void X509StoreAddCertificate(SafeKeychainItemHandle certOrIdentity, SafeKeychainHandle keychain)
+        {
+            int osStatus;
+            int ret = AppleCryptoNative_X509StoreAddCertificate(certOrIdentity, keychain, out osStatus);
+
+            if (ret == 0)
+            {
+                throw CreateExceptionForOSStatus(osStatus);
+            }
+
+            if (ret != 1)
+            {
+                Debug.Fail($"Unexpected result from AppleCryptoNative_X509StoreAddCertificate: {ret}");
+                throw new CryptographicException();
             }
         }
 
