@@ -320,5 +320,23 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 }
             }
         }
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
+        [InlineData(StoreLocation.CurrentUser)]
+        [InlineData(StoreLocation.LocalMachine)]
+        public static void EnumerateDisallowedStore(StoreLocation location)
+        {
+            using (X509Store store = new X509Store(StoreName.Disallowed, location))
+            {
+                store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
+
+                using (var storeCerts = new ImportedCollection(store.Certificates))
+                {
+                    // That's all.  We enumerated it.
+                    // There might not even be data in it.
+                }
+            }
+        }
     }
 }
