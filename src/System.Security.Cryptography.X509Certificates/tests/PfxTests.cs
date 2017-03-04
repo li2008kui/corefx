@@ -197,6 +197,28 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Throws<PlatformNotSupportedException>(() => cert.PrivateKey = alg);
             }
         }
+
+        [Fact]
+        public static void DsaPrivateKeyProperty()
+        {
+            using (var cert = new X509Certificate2(TestData.Dsa1024Pfx, TestData.Dsa1024PfxPassword, Cert.EphemeralIfPossible))
+            {
+                AsymmetricAlgorithm alg = cert.PrivateKey;
+                Assert.NotNull(alg);
+                Assert.Same(alg, cert.PrivateKey);
+                Assert.IsAssignableFrom<DSA>(alg);
+
+                DSA dsa = (DSA)alg;
+                byte[] data = { 1, 2, 3, 4, 5 };
+                byte[] sig = dsa.SignData(data, HashAlgorithmName.SHA1);
+
+                Assert.True(dsa.VerifyData(data, sig, HashAlgorithmName.SHA1), "Key verifies signature");
+
+                data[0] ^= 0xFF;
+
+                Assert.False(dsa.VerifyData(data, sig, HashAlgorithmName.SHA1), "Key verifies tampered data signature");
+            }
+        }
 #endif
 
         private static void Verify_ECDsaPrivateKey_WindowsPfx(ECDsa ecdsa)

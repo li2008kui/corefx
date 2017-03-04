@@ -391,7 +391,10 @@ namespace Internal.Cryptography.Pal
                 return null;
 
             Debug.Assert(!_identityHandle.IsInvalid);
-            throw new NotImplementedException();
+            SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.X509GetPublicKey(_certHandle);
+            SafeSecKeyRefHandle privateKey = Interop.AppleCrypto.X509GetPrivateKeyFromIdentity(_identityHandle);
+
+            return new DSAImplementation.DSASecurityTransforms(publicKey, privateKey);
         }
 
         public ECDsa GetECDsaPrivateKey()
