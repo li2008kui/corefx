@@ -295,6 +295,64 @@ namespace Internal.Cryptography.Pal
             return new ECDsaOpenSsl(_privateKey);
         }
 
+        private ICertificatePal CreateCopyWithPrivateKey(SafeEvpPKeyHandle privateKey)
+        {
+            // This could be X509Duplicate for a full clone, but since OpenSSL certificates
+            // are functionally immutable (unlike Windows ones) an UpRef is sufficient.
+            SafeX509Handle certHandle = Interop.Crypto.X509UpRef(_cert);
+            OpenSslX509CertificateReader duplicate = new OpenSslX509CertificateReader(certHandle);
+
+            duplicate.SetPrivateKey(privateKey);
+            return duplicate;
+        }
+
+        public ICertificatePal CreateCopyWithPrivateKey(DSA privateKey)
+        {
+            DSAOpenSsl typedKey = privateKey as DSAOpenSsl;
+
+            if (typedKey != null)
+            {
+                return CreateCopyWithPrivateKey(typedKey.DuplicateKeyHandle());
+            }
+
+            using (typedKey = new DSAOpenSsl(privateKey.ExportParameters(true)))
+            {
+                return CreateCopyWithPrivateKey(typedKey.DuplicateKeyHandle());
+            }
+        }
+
+        public ICertificatePal CreateCopyWithPrivateKey(ECDsa privateKey)
+        {
+            ECDsaOpenSsl typedKey = privateKey as ECDsaOpenSsl;
+
+            if (typedKey != null)
+            {
+                return CreateCopyWithPrivateKey(typedKey.DuplicateKeyHandle());
+            }
+
+            using (typedKey = new ECDsaOpenSsl())
+            {
+                typedKey.ImportParameters(privateKey.ExportParameters(true));
+
+                return CreateCopyWithPrivateKey(typedKey.DuplicateKeyHandle());
+            }
+        }
+
+        public ICertificatePal CreateCopyWithPrivateKey(RSA privateKey)
+        {
+            RSAOpenSsl typedKey = privateKey as RSAOpenSsl;
+
+            if (typedKey != null)
+            {
+                return CreateCopyWithPrivateKey(typedKey.DuplicateKeyHandle());
+            }
+
+            using (typedKey = new RSAOpenSsl(privateKey.ExportParameters(true)))
+            {
+                return CreateCopyWithPrivateKey(typedKey.DuplicateKeyHandle());
+            }
+        }
+
         public string GetNameInfo(X509NameType nameType, bool forIssuer)
         {
             using (SafeBioHandle bioHandle = Interop.Crypto.GetX509NameInfo(_cert, (int)nameType, forIssuer))

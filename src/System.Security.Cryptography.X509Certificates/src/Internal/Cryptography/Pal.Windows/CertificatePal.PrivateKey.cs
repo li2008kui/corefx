@@ -80,6 +80,104 @@ namespace Internal.Cryptography.Pal
             );
         }
 
+        public ICertificatePal CreateCopyWithPrivateKey(DSA dsa)
+        {
+            DSACng dsaCng = dsa as DSACng;
+            ICertificatePal clone = null;
+
+            if (dsaCng != null)
+            {
+                clone = CloneWithPersistedCngKey(dsaCng.Key);
+
+                if (clone != null)
+                {
+                    return clone;
+                }
+            }
+
+            DSACryptoServiceProvider dsaCsp = dsa as DSACryptoServiceProvider;
+
+            if (dsaCsp != null)
+            {
+                clone = CloneWithPersistedCapiKey(dsaCsp.CspKeyContainerInfo);
+
+                if (clone != null)
+                {
+                    return clone;
+                }
+            }
+
+            DSAParameters privateParameters = dsa.ExportParameters(true);
+
+            using (DSACng clonedKey = new DSACng())
+            {
+                clonedKey.ImportParameters(privateParameters);
+
+                return CloneWithEphemeralKey(clonedKey.Key);
+            }
+        }
+
+        public ICertificatePal CreateCopyWithPrivateKey(ECDsa ecdsa)
+        {
+            ECDsaCng ecdsaCng = ecdsa as ECDsaCng;
+
+            if (ecdsaCng != null)
+            {
+                ICertificatePal clone = CloneWithPersistedCngKey(ecdsaCng.Key);
+
+                if (clone != null)
+                {
+                    return clone;
+                }
+            }
+
+            ECParameters privateParameters = ecdsa.ExportParameters(true);
+
+            using (ECDsaCng clonedKey = new ECDsaCng())
+            {
+                clonedKey.ImportParameters(privateParameters);
+
+                return CloneWithEphemeralKey(clonedKey.Key);
+            }
+        }
+
+        public ICertificatePal CreateCopyWithPrivateKey(RSA rsa)
+        {
+            RSACng rsaCng = rsa as RSACng;
+            ICertificatePal clone = null;
+
+            if (rsaCng != null)
+            {
+                clone = CloneWithPersistedCngKey(rsaCng.Key);
+
+                if (clone != null)
+                {
+                    return clone;
+                }
+            }
+
+            RSACryptoServiceProvider rsaCsp = rsa as RSACryptoServiceProvider;
+
+            if (rsaCsp != null)
+            {
+                clone = CloneWithPersistedCapiKey(rsaCsp.CspKeyContainerInfo);
+
+                if (clone != null)
+                {
+                    return clone;
+                }
+            }
+
+            RSAParameters privateParameters = rsa.ExportParameters(true);
+
+            using (RSACng clonedKey = new RSACng())
+            {
+                clonedKey.ImportParameters(privateParameters);
+
+                return CloneWithEphemeralKey(clonedKey.Key);
+            }
+        }
+
         private T GetPrivateKey<T>(Func<CspParameters, T> createCsp, Func<CngKey, T> createCng) where T : AsymmetricAlgorithm
         {
             CngKeyHandleOpenOptions cngHandleOptions;
@@ -238,6 +336,100 @@ namespace Internal.Cryptography.Pal
                     return cspParameters;
                 }
             }
+        }
+
+
+        private unsafe ICertificatePal CloneWithPersistedCngKey(CngKey cngKey)
+        {
+            if (string.IsNullOrEmpty(cngKey.KeyName))
+            {
+                return null;
+            }
+
+            // Make a new pal from bytes.
+            CertificatePal pal = (CertificatePal)FromBlob(RawData, SafePasswordHandle.InvalidHandle, 0);
+
+            CRYPT_KEY_PROV_INFO keyProvInfo = new CRYPT_KEY_PROV_INFO();
+
+            fixed (char* keyName = cngKey.KeyName)
+            fixed (char* provName = cngKey.Provider.Provider)
+            {
+                keyProvInfo.pwszContainerName = keyName;
+                keyProvInfo.pwszProvName = provName;
+                keyProvInfo.dwFlags = cngKey.IsMachineKey ? CryptAcquireContextFlags.CRYPT_MACHINE_KEYSET : 0;
+
+                if (!Interop.crypt32.CertSetCertificateContextProperty(
+                    pal._certContext,
+                    CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID,
+                    CertSetPropertyFlags.None,
+                    &keyProvInfo))
+                {
+                    pal.Dispose();
+                    throw Marshal.GetLastWin32Error().ToCryptographicException();
+                }
+            }
+
+            Console.WriteLine("CWCngK: Success");
+            return pal;
+        }
+
+        private unsafe ICertificatePal CloneWithPersistedCapiKey(CspKeyContainerInfo keyContainerInfo)
+        {
+            if (string.IsNullOrEmpty(keyContainerInfo.KeyContainerName))
+            {
+                return null;
+            }
+
+            // Make a new pal from bytes.
+            CertificatePal pal = (CertificatePal)FromBlob(RawData, SafePasswordHandle.InvalidHandle, 0);
+            CRYPT_KEY_PROV_INFO keyProvInfo = new CRYPT_KEY_PROV_INFO();
+
+            fixed (char* keyName = keyContainerInfo.KeyContainerName)
+            fixed (char* provName = keyContainerInfo.ProviderName)
+            {
+                keyProvInfo.pwszContainerName = keyName;
+                keyProvInfo.pwszProvName = provName;
+                keyProvInfo.dwFlags = keyContainerInfo.MachineKeyStore ? CryptAcquireContextFlags.CRYPT_MACHINE_KEYSET : 0;
+                keyProvInfo.dwProvType = keyContainerInfo.ProviderType;
+                keyProvInfo.dwKeySpec = (int)keyContainerInfo.KeyNumber;
+
+                if (!Interop.crypt32.CertSetCertificateContextProperty(
+                    pal._certContext,
+                    CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID,
+                    CertSetPropertyFlags.None,
+                    &keyProvInfo))
+                {
+                    pal.Dispose();
+                    throw Marshal.GetLastWin32Error().ToCryptographicException();
+                }
+            }
+
+            Console.WriteLine("CWCapiK: Success");
+            return pal;
+        }
+
+        private unsafe ICertificatePal CloneWithEphemeralKey(CngKey cngKey)
+        {
+            Debug.Assert(string.IsNullOrEmpty(cngKey.KeyName));
+
+            SafeNCryptKeyHandle handle = cngKey.Handle;
+
+            // Make a new pal from bytes.
+            CertificatePal pal = (CertificatePal)FromBlob(RawData, SafePasswordHandle.InvalidHandle, 0);
+
+            if (!Interop.crypt32.CertSetCertificateContextProperty(
+                pal._certContext,
+                CertContextPropId.CERT_NCRYPT_KEY_HANDLE_PROP_ID,
+                CertSetPropertyFlags.CERT_SET_PROPERTY_INHIBIT_PERSIST_FLAG,
+                handle))
+            {
+                pal.Dispose();
+                throw Marshal.GetLastWin32Error().ToCryptographicException();
+            }
+
+            // The value was transferred to the certificate.
+            handle.SetHandleAsInvalid();
+            return pal;
         }
     }
 }

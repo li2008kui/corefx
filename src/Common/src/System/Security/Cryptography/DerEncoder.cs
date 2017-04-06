@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Numerics;
 using System.Text;
 
@@ -105,6 +107,80 @@ namespace System.Security.Cryptography
             };
         }
 
+        internal static byte[][] SegmentedEncodeInteger(long value)
+        {
+            byte[] valueBytes = BitConverter.GetBytes(value);
+
+            int neededBytes = valueBytes.Length;
+
+            // Trim off the unnecessary leading 0x00 bytes.
+            // (One byte is still necessary for the number 0.)
+            // Since we're Little Endian right now, the padding bytes are at high indexes.
+            while (neededBytes > 1 && valueBytes[neededBytes - 1] == 0)
+            {
+                neededBytes--;
+            }
+
+            // Trim down the array (if needed)
+            Array.Resize(ref valueBytes, neededBytes);
+
+            // Little Endian -> Big Endian
+            Array.Reverse(valueBytes);
+
+            return new[]
+            {
+                new[] { (byte)DerSequenceReader.DerTag.Integer },
+                EncodeLength(valueBytes.Length),
+                valueBytes,
+            };
+        }
+
+        internal static byte[][] SegmentedEncodeInteger(byte[] bigEndianBytes)
+        {
+            Debug.Assert(bigEndianBytes != null);
+
+            int offset = 0;
+            int end = bigEndianBytes.Length;
+            byte[] valueBytes;
+
+            if (end == 0)
+            {
+                // Array.Empty<byte>() => 0.
+                // It isn't standard, but it's intuitive and unambiguous.
+                valueBytes = new byte[1];
+            }
+            else
+            {
+                // Skip past all leading 0x00s.
+                while (offset < end && bigEndianBytes[offset] == 0)
+                {
+                    offset++;
+                }
+                
+                // If it was all leading 0x00s copy the last byte.
+                if (offset == end)
+                {
+                    offset--;
+                }
+
+                // If the input value had a zero-padding byte to avoid a sign bit, put it back.
+                if (bigEndianBytes[offset] >= 0x80 && offset > 0)
+                {
+                    offset--;
+                }
+
+                valueBytes = new byte[end - offset];
+                Buffer.BlockCopy(bigEndianBytes, offset, valueBytes, 0, valueBytes.Length);
+            }
+
+            return new[]
+            {
+                new[] { (byte)DerSequenceReader.DerTag.Integer },
+                EncodeLength(valueBytes.Length),
+                valueBytes,
+            };
+        }
+
         /// <summary>
         /// Encode the segments { tag, length, value } of an unsigned integer.
         /// </summary>
@@ -172,6 +248,19 @@ namespace System.Security.Cryptography
                 EncodeLength(dataBytes.Length),
                 dataBytes,
             };
+        }
+
+        /// <summary>
+        /// Encode a BIT STRING which is wrapped over other DER-encoded data.
+        /// </summary>
+        /// <param name="childSegments"></param>
+        /// <remarks>
+        /// Despite containing other DER-encoded data this does not get the constructed bit,
+        /// because it doesn't when encoding public keys in SubjectPublicKeyInfo
+        /// </remarks>
+        internal static byte[] EncodeBitString(params byte[][][] childSegments)
+        {
+            return ConcatenateArrays(SegmentedEncodeBitString(childSegments));
         }
 
         /// <summary>
@@ -384,6 +473,32 @@ namespace System.Security.Cryptography
             };
         }
 
+        internal static byte[][] SegmentedEncodeOctetString(byte[][] taggedData)
+        {
+            Debug.Assert(taggedData != null);
+
+            return SegmentedEncodeOctetString(ConcatenateArrays(taggedData));
+        }
+
+        internal static byte[][] SegmentedEncodeNull()
+        {
+            return new byte[][]
+            {
+                new byte[] { (byte)DerSequenceReader.DerTag.Null },
+                EncodeLength(0),
+                Array.Empty<byte>(),
+            };
+        }
+
+        /// <summary>
+        /// Encode an object identifier (Oid).
+        /// </summary>
+        /// <returns>The encoded OID</returns>
+        internal static byte[] EncodeOid(string oidValue)
+        {
+            return ConcatenateArrays(SegmentedEncodeOid(oidValue));
+        }
+
         /// <summary>
         /// Encode the segments { tag, length, value } of an object identifier (Oid).
         /// </summary>
@@ -396,6 +511,19 @@ namespace System.Security.Cryptography
             // how they'd come back from Desktop/Windows, since it was a non-success result of calling
             // CryptEncodeObject.
             string oidValue = oid.Value;
+
+            return SegmentedEncodeOid(oidValue);
+        }
+
+        /// <summary>
+        /// Encode the segments { tag, length, value } of an object identifier (Oid).
+        /// </summary>
+        /// <returns>The encoded segments { tag, length, value }</returns>
+        internal static byte[][] SegmentedEncodeOid(string oidValue)
+        {
+            // All exceptions herein should just be "CryptographicException", because that's
+            // how they'd come back from Desktop/Windows, since it was a non-success result of calling
+            // CryptEncodeObject.
 
             if (string.IsNullOrEmpty(oidValue))
                 throw new CryptographicException(SR.Argument_InvalidOidValue);
@@ -464,6 +592,18 @@ namespace System.Security.Cryptography
         /// </summary>
         /// <param name="chars">The characters to be encoded.</param>
         /// <returns>The encoded segments { tag, length, value }</returns>
+        internal static byte[] EncodeUtf8String(char[] chars)
+        {
+            Debug.Assert(chars != null);
+
+            return ConcatenateArrays(SegmentedEncodeUtf8String(chars, 0, chars.Length));
+        }
+
+        /// <summary>
+        /// Encode a character string as a UTF8String value.
+        /// </summary>
+        /// <param name="chars">The characters to be encoded.</param>
+        /// <returns>The encoded segments { tag, length, value }</returns>
         internal static byte[][] SegmentedEncodeUtf8String(char[] chars)
         {
             Debug.Assert(chars != null);
@@ -510,6 +650,11 @@ namespace System.Security.Cryptography
         /// <returns>The encoded segments { tag, length, value }</returns>
         internal static byte[][] ConstructSegmentedSequence(params byte[][][] items)
         {
+            return ConstructSegmentedSequence((IEnumerable<byte[][]>)items);
+        }
+
+        internal static byte[][] ConstructSegmentedSequence(IEnumerable<byte[][]> items)
+        {
             Debug.Assert(items != null);
 
             byte[] data = ConcatenateArrays(items);
@@ -551,12 +696,47 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
+        /// Make a constructed SET of the byte-triplets of the contents.
+        /// </summary>
+        /// <param name="items">Series of Tag-Length-Value triplets to build into one set.</param>
+        /// <returns>The encoded SET.</returns>
+        internal static byte[] ConstructSet(params byte[][][] items)
+        {
+            byte[][] segmented = ConstructSegmentedSet(items);
+            return ConcatenateArrays(new[] { segmented });
+        }
+
+        /// <summary>
         /// Make a constructed SET of the byte-triplets of the contents, but leave
         /// the value in a segmented form (to be included in a larger SEQUENCE).
         /// </summary>
         /// <param name="items">Series of Tag-Length-Value triplets to build into one set.</param>
         /// <returns>The encoded segments { tag, length, value }</returns>
         internal static byte[][] ConstructSegmentedSet(params byte[][][] items)
+        {
+            Debug.Assert(items != null);
+
+            byte[][][] sortedItems = (byte[][][])items.Clone();
+            Array.Sort(sortedItems, AsnSetValueComparer.Instance);
+            byte[] data = ConcatenateArrays(sortedItems);
+
+            return new byte[][]
+            {
+                new byte[] { ConstructedSetTag },
+                EncodeLength(data.Length),
+                data,
+            };
+        }
+
+        /// <summary>
+        /// Make a constructed SET of the byte-triplets of the contents, but leave
+        /// the value in a segmented form (to be included in a larger SEQUENCE).
+        /// 
+        /// This method assumes that the data is presorted, and writes it as-is.
+        /// </summary>
+        /// <param name="items">Series of Tag-Length-Value triplets to build into one set.</param>
+        /// <returns>The encoded segments { tag, length, value }</returns>
+        internal static byte[][] ConstructSegmentedPresortedSet(params byte[][][] items)
         {
             Debug.Assert(items != null);
 
@@ -616,6 +796,16 @@ namespace System.Security.Cryptography
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Encode a character string as a PrintableString value.
+        /// </summary>
+        /// <param name="chars">The characters to be encoded.</param>
+        /// <returns>The compacted encoding of the string</returns>
+        internal static byte[] EncodePrintableString(char[] chars)
+        {
+            return ConcatenateArrays(SegmentedEncodePrintableString(chars));
         }
 
         /// <summary>
@@ -723,6 +913,109 @@ namespace System.Security.Cryptography
             };
         }
 
+        internal static byte[][] SegmentedEncodeUtcTime(DateTime utcTime)
+        {
+            Debug.Assert(utcTime.Kind == DateTimeKind.Utc);
+
+            // Low-allocating encoding of YYMMDDHHmmssZ
+            byte[] asciiDateBytes = new byte[13];
+
+            int year = utcTime.Year;
+            int month = utcTime.Month;
+            int day = utcTime.Day;
+            int hour = utcTime.Hour;
+            int minute = utcTime.Minute;
+            int second = utcTime.Second;
+
+            const byte Char0 = (byte)'0';
+
+            asciiDateBytes[1] = (byte)(Char0 + (year % 10));
+            year /= 10;
+            asciiDateBytes[0] = (byte)(Char0 + (year % 10));
+
+            asciiDateBytes[3] = (byte)(Char0 + (month % 10));
+            month /= 10;
+            asciiDateBytes[2] = (byte)(Char0 + (month % 10));
+
+            asciiDateBytes[5] = (byte)(Char0 + (day % 10));
+            day /= 10;
+            asciiDateBytes[4] = (byte)(Char0 + (day % 10));
+
+            asciiDateBytes[7] = (byte)(Char0 + (hour % 10));
+            hour /= 10;
+            asciiDateBytes[6] = (byte)(Char0 + (hour % 10));
+
+            asciiDateBytes[9] = (byte)(Char0 + (minute % 10));
+            minute /= 10;
+            asciiDateBytes[8] = (byte)(Char0 + (minute % 10));
+
+            asciiDateBytes[11] = (byte)(Char0 + (second % 10));
+            second /= 10;
+            asciiDateBytes[10] = (byte)(Char0 + (second % 10));
+
+            asciiDateBytes[12] = (byte)'Z';
+
+            return new[]
+            {
+                new byte[] { (byte)DerSequenceReader.DerTag.UTCTime },
+                EncodeLength(asciiDateBytes.Length),
+                asciiDateBytes,
+            };
+        }
+
+        internal static byte[][] SegmentedEncodeGeneralizedTime(DateTime utcTime)
+        {
+            Debug.Assert(utcTime.Kind == DateTimeKind.Utc);
+
+            // Low-allocating encoding of YYYYMMDDHHmmssZ
+            byte[] asciiDateBytes = new byte[15];
+
+            int year = utcTime.Year;
+            int month = utcTime.Month;
+            int day = utcTime.Day;
+            int hour = utcTime.Hour;
+            int minute = utcTime.Minute;
+            int second = utcTime.Second;
+
+            const byte Char0 = (byte)'0';
+
+            asciiDateBytes[3] = (byte)(Char0 + (year % 10));
+            year /= 10;
+            asciiDateBytes[2] = (byte)(Char0 + (year % 10));
+            year /= 10;
+            asciiDateBytes[1] = (byte)(Char0 + (year % 10));
+            year /= 10;
+            asciiDateBytes[0] = (byte)(Char0 + (year % 10));
+
+            asciiDateBytes[5] = (byte)(Char0 + (month % 10));
+            month /= 10;
+            asciiDateBytes[4] = (byte)(Char0 + (month % 10));
+
+            asciiDateBytes[7] = (byte)(Char0 + (day % 10));
+            day /= 10;
+            asciiDateBytes[6] = (byte)(Char0 + (day % 10));
+
+            asciiDateBytes[9] = (byte)(Char0 + (hour % 10));
+            hour /= 10;
+            asciiDateBytes[8] = (byte)(Char0 + (hour % 10));
+
+            asciiDateBytes[11] = (byte)(Char0 + (minute % 10));
+            minute /= 10;
+            asciiDateBytes[10] = (byte)(Char0 + (minute % 10));
+
+            asciiDateBytes[13] = (byte)(Char0 + (second % 10));
+            second /= 10;
+            asciiDateBytes[12] = (byte)(Char0 + (second % 10));
+
+            asciiDateBytes[14] = (byte)'Z';
+
+            return new[]
+            {
+                new byte[] { (byte)DerSequenceReader.DerTag.GeneralizedTime },
+                EncodeLength(asciiDateBytes.Length),
+                asciiDateBytes,
+            };
+        }
 
         /// <summary>
         /// Make a constructed SEQUENCE of the byte-triplets of the contents.
@@ -884,7 +1177,12 @@ namespace System.Security.Cryptography
             return false;
         }
 
-        private static byte[] ConcatenateArrays(byte[][][] segments)
+        private static byte[] ConcatenateArrays(params byte[][][] segments)
+        {
+            return ConcatenateArrays((IEnumerable<byte[][]>)segments);
+        }
+
+        private static byte[] ConcatenateArrays(IEnumerable<byte[][]> segments)
         {
             int length = 0;
 
@@ -910,6 +1208,79 @@ namespace System.Security.Cryptography
             }
 
             return concatenated;
+        }
+
+        private class AsnSetValueComparer : IComparer<byte[][]>, IComparer
+        {
+            public static AsnSetValueComparer Instance { get; } = new AsnSetValueComparer();
+
+            public int Compare(byte[][] x, byte[][] y)
+            {
+                Debug.Assert(x != null && y != null, "Comparing one more more null values");
+                Debug.Assert(x.Length == 3, $"x.Length is {x.Length} when it should be 3");
+                Debug.Assert(y.Length == 3, $"y.Length is {y.Length} when it should be 3");
+
+                // ITU-T X.690 11.6 Set-of components (CER/DER)
+                // The encodings of the component values of a set-of value shall appear in
+                // ascending order, the encodings being compared as octet strings with the
+                // shorter components being padded at their trailing end with 0-octets.
+                //
+                // ITU-T X.690 10.3 Set components (DER)
+                // The encodings of the component values of a set value shall appear in an
+                // order determined by their tags as specified in 8.6 of
+                // Rec. ITU-T X.680 | ISO/IEC 8824-1.
+                //
+                // ITU-T X.680 8.6
+                // The canonical order for tags is based on the outermost tag of each type
+                // and is defined as follows:
+                // a) those elements or alternatives with universal class tags shall appear
+                //    first, followed by those with application class tags, followed by those
+                //    with context-specific tags, followed by those with private class tags;
+                // b) within each class of tags, the elements or alternatives shall appear
+                //    in ascending order of their tag numbers.
+                //
+                // ITU-T X.690 8.1.2.2 says:
+                //   Universal:        0b00xxxxxx
+                //   Application:      0b01xxxxxx
+                //   Context-Specific: 0b10xxxxxx
+                //   Private:          0b11xxxxxx
+                //
+                // The net result is that the DER order is just lexicographic ordering by
+                // the TLV (tag-length-value) encoding. The comment in 11.6 about treating
+                // a shorter value as if it was right-padded with zeroes doesn't apply to DER,
+                // due to the length encoding. But for indefinite-length CER it would.
+                Debug.Assert(x[0].Length == 1, $"x[0].Length is {x[0].Length} when it should be 1");
+                Debug.Assert(y[0].Length == 1, $"y[0].Length is {y[0].Length} when it should be 1");
+
+                int comparison = x[0][0] - y[0][0];
+
+                if (comparison != 0)
+                    return comparison;
+
+                // The length encoding will always sort lexicographically based on its value, due to the
+                // length-or-length-length first byte. So skip over the [1] values and compare [2].Length.
+                comparison = x[2].Length - y[2].Length;
+
+                if (comparison != 0)
+                    return comparison;
+
+                for (int i = 0; i < x[2].Length; i++)
+                {
+                    comparison = x[2][i] - y[2][i];
+
+                    if (comparison != 0)
+                    {
+                        return comparison;
+                    }
+                }
+
+                return 0;
+            }
+
+            public int Compare(object x, object y)
+            {
+                return Compare(x as byte[][], y as byte[][]);
+            }
         }
     }
 }

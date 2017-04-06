@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using Internal.Cryptography;
 using Internal.Cryptography.Pal;
 
@@ -16,7 +17,6 @@ namespace System.Security.Cryptography.X509Certificates
         /// <summary>
         /// Gets the <see cref="ECDsa" /> public key from the certificate or null if the certificate does not have an ECDsa public key.
         /// </summary>
-        [SecuritySafeCritical]
         public static ECDsa GetECDsaPublicKey(this X509Certificate2 certificate)
         {
             return certificate.GetPublicKey<ECDsa>(cert => HasECDsaKeyUsage(cert));
@@ -25,10 +25,30 @@ namespace System.Security.Cryptography.X509Certificates
         /// <summary>
         /// Gets the <see cref="ECDsa" /> private key from the certificate or null if the certificate does not have an ECDsa private key.
         /// </summary>
-        [SecuritySafeCritical]
         public static ECDsa GetECDsaPrivateKey(this X509Certificate2 certificate)
         {
             return certificate.GetPrivateKey<ECDsa>(cert => HasECDsaKeyUsage(cert));
+        }
+
+        public static X509Certificate2 CreateCopyWithPrivateKey(this X509Certificate2 certificate, ECDsa privateKey)
+        {
+            if (privateKey == null)
+                throw new ArgumentNullException(nameof(privateKey));
+
+            ECDsa publicKey = GetECDsaPublicKey(certificate);
+
+            if (publicKey == null)
+            {
+                throw new ArgumentException("Wrong kind of certificate", nameof(certificate));
+            }
+
+            if (!IsSameKey(publicKey, privateKey))
+            {
+                throw new ArgumentException("Key doesn't match", nameof(privateKey));
+            }
+
+            ICertificatePal pal = certificate.Pal.CreateCopyWithPrivateKey(privateKey);
+            return new X509Certificate2(pal);
         }
 
         private static bool HasECDsaKeyUsage(X509Certificate2 certificate)
@@ -63,6 +83,62 @@ namespace System.Security.Cryptography.X509Certificates
             // If the key usage extension is not present in the certificate it is
             // considered valid for all usages, so we can use it for ECDSA.
             return true;
+        }
+
+        private static bool IsSameKey(ECDsa a, ECDsa b)
+        {
+            ECParameters aParameters = a.ExportParameters(false);
+            ECParameters bParameters = b.ExportParameters(false);
+
+            if (aParameters.Curve.CurveType != bParameters.Curve.CurveType)
+                return false;
+            
+            if (!aParameters.Q.X.ContentsEqual(bParameters.Q.X) ||
+                !aParameters.Q.Y.ContentsEqual(bParameters.Q.Y))
+            {
+                Console.WriteLine("Different Q");
+                Console.WriteLine($" Left.X: {BitConverter.ToString(aParameters.Q.X)}");
+                Console.WriteLine($"Right.X: {BitConverter.ToString(bParameters.Q.X)}");
+                Console.WriteLine($" Left.Y: {BitConverter.ToString(aParameters.Q.Y)}");
+                Console.WriteLine($"Right.Y: {BitConverter.ToString(bParameters.Q.Y)}");
+                return false;
+            }
+
+            ECCurve aCurve = aParameters.Curve;
+            ECCurve bCurve = bParameters.Curve;
+
+            if (aCurve.IsNamed)
+            {
+                // On Windows we care about FriendlyName, on Unix we care about Value
+                return (aCurve.Oid.Value == bCurve.Oid.Value && aCurve.Oid.FriendlyName == bCurve.Oid.FriendlyName);
+            }
+
+            if (!aCurve.IsExplicit)
+            {
+                // Implicit curve, always fail.
+                Console.WriteLine("Implicit");
+                return false;
+            }
+
+            if (!aCurve.G.X.ContentsEqual(bCurve.G.X) ||
+                !aCurve.G.Y.ContentsEqual(bCurve.G.Y))
+            {
+                Console.WriteLine("Different G");
+                return false;
+            }
+
+            if (aCurve.IsPrime)
+            {
+                return aCurve.Prime.ContentsEqual(bCurve.Prime);
+            }
+
+            if (aCurve.IsCharacteristic2)
+            {
+                return aCurve.Polynomial.ContentsEqual(bCurve.Polynomial);
+            }
+
+            Debug.Fail($"Missing match criteria for curve type {aCurve.CurveType}");
+            return false;
         }
     }
 }

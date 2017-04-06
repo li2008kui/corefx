@@ -36,5 +36,8 @@ namespace Internal.Cryptography
         ECDsa GetECDsaPrivateKey();
         string GetNameInfo(X509NameType nameType, bool forIssuer);
         void AppendPrivateKeyInfo(StringBuilder sb);
+        ICertificatePal CreateCopyWithPrivateKey(DSA privateKey);
+        ICertificatePal CreateCopyWithPrivateKey(ECDsa privateKey);
+        ICertificatePal CreateCopyWithPrivateKey(RSA privateKey);
     }
 }

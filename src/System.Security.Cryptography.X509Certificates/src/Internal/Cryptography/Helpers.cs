@@ -6,11 +6,14 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Internal.Cryptography
 {
     internal static class Helpers
     {
+        private static readonly byte[] s_derNull = { 0x05, 0x00 };
+
         public static byte[] CloneByteArray(this byte[] src)
         {
             if (src == null)
@@ -123,6 +126,47 @@ namespace Internal.Cryptography
                     return false;
             }
             return true;
+        }
+
+        internal static bool PublicKeyEquals(this PublicKey a, PublicKey b)
+        {
+            if (a == null)
+                throw new ArgumentNullException(nameof(a));
+            if (b == null)
+                return false;
+
+            if (!StringComparer.Ordinal.Equals(a.Oid.Value, b.Oid.Value))
+                return false;
+
+            if (!a.EncodedKeyValue.RawData.ContentsEqual(b.EncodedKeyValue.RawData))
+                return false;
+
+            // If either A or B has null parameters, consider that equal to DER-NULL
+            // parameters in the other.
+            if (a.EncodedParameters.RawData == null)
+            {
+                if (b.EncodedParameters.RawData == null)
+                {
+                    return true;
+                }
+
+                return b.EncodedParameters.RawData.ContentsEqual(s_derNull);
+            }
+            else if (b.EncodedParameters.RawData == null)
+            {
+                return a.EncodedParameters.RawData.ContentsEqual(s_derNull);
+            }
+
+            // Otherwise, compare their parameters.
+            return a.EncodedParameters.RawData.ContentsEqual(b.EncodedParameters.RawData);
+        }
+
+        internal static void AddRange<T>(this ICollection<T> coll, IEnumerable<T> newData)
+        {
+            foreach (T datum in newData)
+            {
+                coll.Add(datum);
+            }
         }
 
         //
