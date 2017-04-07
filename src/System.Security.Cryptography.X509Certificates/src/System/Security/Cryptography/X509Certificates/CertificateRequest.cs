@@ -40,36 +40,6 @@ namespace System.Security.Cryptography.X509Certificates
 
         public HashAlgorithmName HashAlgorithm { get; }
 
-        public CertificateRequest(string subjectDistinguishedName, DSA key, HashAlgorithmName hashAlgorithm)
-        {
-            if (subjectDistinguishedName == null)
-                throw new ArgumentNullException(nameof(subjectDistinguishedName));
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
-
-            Subject = new X500DistinguishedName(subjectDistinguishedName);
-
-            _key = key;
-            _generator = X509SignatureGenerator.CreateForDSA(key);
-            PublicKey = _generator.PublicKey;
-            HashAlgorithm = hashAlgorithm;
-        }
-
-        public CertificateRequest(X500DistinguishedName subjectName, DSA key, HashAlgorithmName hashAlgorithm)
-        {
-            if (subjectName == null)
-                throw new ArgumentNullException(nameof(subjectName));
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
-
-            Subject = subjectName;
-
-            _key = key;
-            _generator = X509SignatureGenerator.CreateForDSA(key);
-            PublicKey = _generator.PublicKey;
-            HashAlgorithm = hashAlgorithm;
-        }
-
         public CertificateRequest(string subjectDistinguishedName, ECDsa key, HashAlgorithmName hashAlgorithm)
         {
             if (subjectDistinguishedName == null)
@@ -288,40 +258,27 @@ namespace System.Security.Cryptography.X509Certificates
             tbsCertificate.NotAfter = notAfter;
 
             byte[] certBytes = tbsCertificate.Sign(_generator, HashAlgorithm);
+            X509Certificate2 certificate = new X509Certificate2(certBytes);
 
-            try
+            RSA rsa = _key as RSA;
+
+            if (rsa != null)
             {
-                X509Certificate2 certificate = new X509Certificate2(certBytes);
-
-                RSA rsa = _key as RSA;
-
-                if (rsa != null)
-                {
-                    return certificate.CreateCopyWithPrivateKey(rsa);
-                }
-
-                ECDsa ecdsa = _key as ECDsa;
-
-                if (ecdsa != null)
-                {
-                    return certificate.CreateCopyWithPrivateKey(ecdsa);
-                }
-
-                DSA dsa = _key as DSA;
-
-                if (dsa != null)
-                {
-                    return certificate.CreateCopyWithPrivateKey(dsa);
-                }
+                return certificate.CreateCopyWithPrivateKey(rsa);
             }
-            catch
-            {
-                Console.WriteLine(
-                    "-----BEGIN CERTIFICATE-----" + Environment.NewLine +
-                    Convert.ToBase64String(certBytes) + Environment.NewLine +
-                    "-----END CERTIFICATE-----");
 
-                throw;
+            ECDsa ecdsa = _key as ECDsa;
+
+            if (ecdsa != null)
+            {
+                return certificate.CreateCopyWithPrivateKey(ecdsa);
+            }
+
+            DSA dsa = _key as DSA;
+
+            if (dsa != null)
+            {
+                return certificate.CreateCopyWithPrivateKey(dsa);
             }
 
             Debug.Fail($"Key was of no known type: {_key?.GetType().FullName ?? "null"}");
@@ -365,11 +322,6 @@ namespace System.Security.Cryptography.X509Certificates
                     ECDsa ecdsa = issuerCertificate.GetECDsaPrivateKey();
                     key = ecdsa;
                     generator = X509SignatureGenerator.CreateForECDsa(ecdsa);
-                    break;
-                case Oids.DsaDsa:
-                    DSA dsa = issuerCertificate.GetDSAPrivateKey();
-                    key = dsa;
-                    generator = X509SignatureGenerator.CreateForDSA(dsa);
                     break;
                 default:
                     throw new ArgumentException(

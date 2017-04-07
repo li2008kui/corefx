@@ -137,31 +137,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             }
         }
 
-        [Fact]
-        public static void SimpleSelfSign_DSA()
-        {
-            using (var dsa1024 = new X509Certificate2(Tests.TestData.Dsa1024Pfx, Tests.TestData.Dsa1024PfxPassword))
-            using (DSA dsa = dsa1024.GetDSAPrivateKey())
-            {
-                PublicKey existing = dsa1024.PublicKey;
-
-                var generator = X509SignatureGenerator.CreateForDSA(dsa);
-
-                PublicKey noveau = generator.PublicKey;
-
-                Assert.Equal(existing.Oid.Value, noveau.Oid.Value);
-                Assert.Equal(existing.Oid.FriendlyName, noveau.Oid.FriendlyName);
-                Console.WriteLine("OID good");
-                Assert.Equal(existing.EncodedParameters.RawData, noveau.EncodedParameters.RawData);
-                Console.WriteLine("Params good");
-                Assert.Equal(existing.EncodedKeyValue.RawData, noveau.EncodedKeyValue.RawData);
-
-                SimpleSelfSign(
-                   new CertificateRequest("CN=localhost", dsa, HashAlgorithmName.SHA1),
-                   "1.2.840.10040.4.1");
-            }
-        }
-
         private static void SimpleSelfSign(CertificateRequest request, string expectedKeyOid)
         {
             request.CertificateExtensions.Add(
@@ -308,18 +283,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             {
                 var generator = X509SignatureGenerator.CreateForECDsa(ecdsa);
 
-                CertificateRequest request = new CertificateRequest(
-                    new X500DistinguishedName("CN=Test Cert"),
-                    generator.PublicKey,
-                    HashAlgorithmName.SHA512);
+                CertificateRequest request = new CertificateRequest(new X500DistinguishedName("CN=Test Cert"), generator.PublicKey, HashAlgorithmName.SHA512);
 
                 byte[] desiredSerial = { 0x80 };
-                X509Certificate2 cert = request.Sign(
-                    request.Subject,
-                    generator,
-                    DateTimeOffset.UtcNow,
-                    DateTimeOffset.UtcNow + TimeSpan.FromDays(1),
-                    desiredSerial);
+                X509Certificate2 cert = request.Sign(request.Subject, generator, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow + TimeSpan.FromDays(1), desiredSerial);
 
                 using (cert)
                 {
@@ -333,7 +300,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         {
             using (ECDsa ecdsa = ECDsa.Create(EccTestData.Secp384r1Data.KeyParameters))
             {
-                var request = new CertificateRequest("CN=Test Cert", ecdsa, HashAlgorithmName.SHA384);
+                CertificateRequest request = new CertificateRequest("CN=Test Cert", ecdsa, HashAlgorithmName.SHA384);
 
                 using (X509Certificate2 cert = request.SelfSign(TimeSpan.FromHours(1)))
                 {

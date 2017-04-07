@@ -10,41 +10,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
     public static class CertificateRequestChainTests
     {
         [Fact]
-        public static void CreateChain_DSA()
-        {
-            using (DSA rootKey = DSA.Create())
-            using (DSA intermed1Key = DSA.Create())
-            using (DSA intermed2Key = DSA.Create())
-            using (DSA intermed3Key = DSA.Create())
-            using (DSA leafKey = DSA.Create())
-            using (DSA leafPubKey = DSA.Create())
-            {
-                rootKey.KeySize = 1024;
-                intermed1Key.KeySize = 1024;
-                intermed2Key.KeySize = 1024;
-                intermed3Key.KeySize = 1024;
-                leafKey.KeySize = 1024;
-
-                leafPubKey.ImportParameters(leafKey.ExportParameters(false));
-
-                CreateAndTestChain(
-                    rootKey,
-                    intermed1Key,
-                    intermed2Key,
-                    intermed3Key,
-                    leafPubKey);
-            }
-
-            Assert.False(true, "Test passed");
-        }
-
-        [Fact]
         public static void CreateChain_ECC()
         {
             using (ECDsa rootKey = ECDsa.Create(ECCurve.NamedCurves.nistP521))
             using (ECDsa intermed1Key = ECDsa.Create(ECCurve.NamedCurves.nistP384))
             using (ECDsa intermed2Key = ECDsa.Create(ECCurve.NamedCurves.nistP384))
-            using (ECDsa intermed3Key = ECDsa.Create(ECCurve.NamedCurves.nistP384))
             using (ECDsa leafKey = ECDsa.Create(ECCurve.NamedCurves.nistP256))
             using (ECDsa leafPubKey = ECDsa.Create(leafKey.ExportParameters(false)))
             {
@@ -52,7 +22,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     rootKey,
                     intermed1Key,
                     intermed2Key,
-                    intermed3Key,
                     leafPubKey);
             }
         }
@@ -63,14 +32,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             using (RSA rootKey = RSA.Create())
             using (RSA intermed1Key = RSA.Create())
             using (RSA intermed2Key = RSA.Create())
-            using (RSA intermed3Key = RSA.Create())
             using (RSA leafKey = RSA.Create())
             using (RSA leafPubKey = RSA.Create())
             {
                 rootKey.KeySize = 3072;
                 intermed1Key.KeySize = 2048;
                 intermed2Key.KeySize = 2048;
-                intermed3Key.KeySize = 2048 - 64;
                 leafKey.KeySize = 1536;
 
                 leafPubKey.ImportParameters(leafKey.ExportParameters(false));
@@ -79,18 +46,16 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     rootKey,
                     intermed1Key,
                     intermed2Key,
-                    intermed3Key,
                     leafPubKey);
             }
         }
 
-        //[Fact]
+        [Fact]
         public static void CreateChain_Hybrid()
         {
             using (ECDsa rootKey = ECDsa.Create(ECCurve.NamedCurves.nistP521))
             using (RSA intermed1Key = RSA.Create())
             using (RSA intermed2Key = RSA.Create())
-            using (DSA intermed3Key = DSA.Create())
             using (ECDsa leafKey = ECDsa.Create(ECCurve.NamedCurves.nistP256))
             using (ECDsa leafPubKey = ECDsa.Create(leafKey.ExportParameters(false)))
             {
@@ -101,7 +66,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     rootKey,
                     intermed1Key,
                     intermed2Key,
-                    intermed3Key,
                     leafPubKey);
             }
         }
@@ -120,11 +84,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
             if (ecdsa != null)
                 return new CertificateRequest(dn, ecdsa, hashAlgorithm);
-
-            DSA dsa = key as DSA;
-
-            if (dsa != null)
-                return new CertificateRequest(dn, dsa, hashAlgorithm);
 
             throw new InvalidOperationException(
                 $"Had no handler for key of type {key?.GetType().FullName ?? "null"}");
@@ -192,11 +151,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                         break;
                     }
                 }
-
-                if (errMsg == null)
-                {
-                    errMsg = $"No errors found in {chain.ChainElements.Count} elements, but failure returned";
-                }
             }
             else if (!expectSuccess && success)
             {
@@ -210,7 +164,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
             if (expectSuccess)
             {
-                Assert.True(success, errMsg?.ToString() ?? "(no message)");
+                Assert.True(success, errMsg?.ToString());
             }
             else
             {
@@ -251,31 +205,21 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             AsymmetricAlgorithm rootPrivKey,
             AsymmetricAlgorithm intermed1PrivKey,
             AsymmetricAlgorithm intermed2PrivKey,
-            AsymmetricAlgorithm intermed3PrivKey,
             AsymmetricAlgorithm leafPubKey)
         {
             const string RootDN = "CN=Experimental Root Certificate";
             const string Intermed1DN = "CN=First Intermediate Certificate, O=Experimental";
             const string Intermed2DN = "CN=Second Intermediate Certificate, O=Experimental";
-            const string Intermed3DN = "CN=Third Intermediate Certificate, O=Experimental";
             const string LeafDN = "CN=End-Entity Certificate, O=Experimental";
 
-            HashAlgorithmName rootAlg = rootPrivKey is DSA ? HashAlgorithmName.SHA256 : HashAlgorithmName.SHA512;
-            HashAlgorithmName intermed1Alg = intermed1PrivKey is DSA ? HashAlgorithmName.SHA256 : HashAlgorithmName.SHA384;
-            HashAlgorithmName intermed2Alg = intermed2PrivKey is DSA ? HashAlgorithmName.SHA256 : HashAlgorithmName.SHA384;
-            HashAlgorithmName intermed3Alg = intermed2PrivKey is DSA ? HashAlgorithmName.SHA256 : HashAlgorithmName.SHA384;
-
             CertificateRequest rootRequest =
-                CreateChainRequest(RootDN, rootPrivKey, rootAlg, true, null);
+                CreateChainRequest(RootDN, rootPrivKey, HashAlgorithmName.SHA512, true, null);
 
             CertificateRequest intermed1Request =
-                CreateChainRequest(Intermed1DN, intermed1PrivKey, intermed1Alg, true, null);
+                CreateChainRequest(Intermed1DN, intermed1PrivKey, HashAlgorithmName.SHA384, true, null);
 
             CertificateRequest intermed2Request =
-                CreateChainRequest(Intermed2DN, intermed2PrivKey, intermed2Alg, true, 1);
-
-            CertificateRequest intermed3Request =
-                CreateChainRequest(Intermed3DN, intermed3PrivKey, intermed3Alg, true, 0);
+                CreateChainRequest(Intermed2DN, intermed2PrivKey, HashAlgorithmName.SHA384, true, 0);
 
             CertificateRequest leafRequest =
                 CreateChainRequest(LeafDN, leafPubKey, HashAlgorithmName.SHA256, false, null);
@@ -286,7 +230,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             X509Certificate2 rootCertWithKey = null;
             X509Certificate2 intermed1CertWithKey = null;
             X509Certificate2 intermed2CertWithKey = null;
-            X509Certificate2 intermed3CertWithKey = null;
             X509Certificate2 leafCert = null;
 
             try
@@ -300,12 +243,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
                 byte[] intermed1Serial = new byte[10];
                 byte[] intermed2Serial = new byte[10];
-                byte[] intermed3Serial = new byte[10];
                 byte[] leafSerial = new byte[10];
 
                 intermed1Serial[1] = 1;
                 intermed2Serial[1] = 2;
-                intermed3Serial[1] = 8;
                 leafSerial[1] = 1;
 
                 using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
@@ -316,7 +257,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 }
 
                 X509Certificate2 intermed1Tmp = intermed1Request.Sign(rootCertWithKey, now, intermedEnd, intermed1Serial);
-                X509Certificate2 intermed2Tmp = intermed2Request.Sign(rootCertWithKey, now, intermedEnd, intermed2Serial);
+                X509Certificate2 intermed2Tmp = intermed2Request.Sign(rootCertWithKey, now, intermedEnd, intermed1Serial);
 
                 intermed1CertWithKey = CloneWithPrivateKey(intermed1Tmp, intermed1PrivKey);
                 intermed2CertWithKey = CloneWithPrivateKey(intermed2Tmp, intermed2PrivKey);
@@ -324,12 +265,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 intermed1Tmp.Dispose();
                 intermed2Tmp.Dispose();
 
-                X509Certificate2 intermed3Tmp = intermed3Request.Sign(intermed2CertWithKey, now, intermedEnd, intermed3Serial);
-
-                intermed3CertWithKey = CloneWithPrivateKey(intermed3Tmp, intermed3PrivKey);
-                intermed3Tmp.Dispose();
-
-                leafCert = leafRequest.Sign(intermed3CertWithKey, now, leafEnd, leafSerial);
+                leafCert = leafRequest.Sign(intermed2CertWithKey, now, leafEnd, leafSerial);
 
                 using (X509Chain chain = new X509Chain())
                 {
@@ -337,7 +273,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
                     chain.ChainPolicy.ExtraStore.Add(intermed1CertWithKey);
                     chain.ChainPolicy.ExtraStore.Add(intermed2CertWithKey);
-                    chain.ChainPolicy.ExtraStore.Add(intermed3CertWithKey);
                     chain.ChainPolicy.ExtraStore.Add(rootCertWithKey);
 
                     RunChain(chain, leafCert, true, "Initial chain build");
@@ -345,11 +280,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     try
                     {
                         // Intermediate 1 plays no part.
-                        Assert.Equal(4, chain.ChainElements.Count);
+                        Assert.Equal(3, chain.ChainElements.Count);
                         Assert.Equal(LeafDN, chain.ChainElements[0].Certificate.Subject);
-                        Assert.Equal(Intermed3DN, chain.ChainElements[1].Certificate.Subject);
-                        Assert.Equal(Intermed2DN, chain.ChainElements[2].Certificate.Subject);
-                        Assert.Equal(RootDN, chain.ChainElements[3].Certificate.Subject);
+                        Assert.Equal(Intermed2DN, chain.ChainElements[1].Certificate.Subject);
+                        Assert.Equal(RootDN, chain.ChainElements[2].Certificate.Subject);
                     }
                     finally
                     {
@@ -370,7 +304,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             finally
             {
                 leafCert?.Dispose();
-                intermed3CertWithKey?.Dispose();
                 intermed2CertWithKey?.Dispose();
                 intermed1CertWithKey?.Dispose();
                 rootCertWithKey?.Dispose();

@@ -25,11 +25,6 @@ namespace System.Security.Cryptography.X509Certificates
         public abstract byte[] SignData(byte[] data, HashAlgorithmName hashAlgorithm);
         protected abstract PublicKey BuildPublicKey();
 
-        public static X509SignatureGenerator CreateForDSA(DSA key)
-        {
-            return new DSAX509SignatureGenerator(key);
-        }
-
         public static X509SignatureGenerator CreateForECDsa(ECDsa key)
         {
             return new ECDsaX509SignatureGenerator(key);
