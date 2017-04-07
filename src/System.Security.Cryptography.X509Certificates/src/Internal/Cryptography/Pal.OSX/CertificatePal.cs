@@ -394,6 +394,21 @@ namespace Internal.Cryptography.Pal
             return new ECDsaImplementation.ECDsaSecurityTransforms(publicKey, privateKey);
         }
 
+        public ICertificatePal CreateCopyWithPrivateKey(DSA privateKey)
+        {
+            throw new NotImplementedException();
+        }
+
+        public ICertificatePal CreateCopyWithPrivateKey(ECDsa privateKey)
+        {
+            throw new NotImplementedException();
+        }
+
+        public ICertificatePal CreateCopyWithPrivateKey(RSA privateKey)
+        {
+            throw new NotImplementedException();
+        }
+
         public string GetNameInfo(X509NameType nameType, bool forIssuer)
         {
             // Algorithm behaviors (pseudocode).  When forIssuer is true, replace "Subject" with "Issuer" and
