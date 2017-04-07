@@ -288,27 +288,40 @@ namespace System.Security.Cryptography.X509Certificates
             tbsCertificate.NotAfter = notAfter;
 
             byte[] certBytes = tbsCertificate.Sign(_generator, HashAlgorithm);
-            X509Certificate2 certificate = new X509Certificate2(certBytes);
 
-            RSA rsa = _key as RSA;
-
-            if (rsa != null)
+            try
             {
-                return certificate.CreateCopyWithPrivateKey(rsa);
+                X509Certificate2 certificate = new X509Certificate2(certBytes);
+
+                RSA rsa = _key as RSA;
+
+                if (rsa != null)
+                {
+                    return certificate.CreateCopyWithPrivateKey(rsa);
+                }
+
+                ECDsa ecdsa = _key as ECDsa;
+
+                if (ecdsa != null)
+                {
+                    return certificate.CreateCopyWithPrivateKey(ecdsa);
+                }
+
+                DSA dsa = _key as DSA;
+
+                if (dsa != null)
+                {
+                    return certificate.CreateCopyWithPrivateKey(dsa);
+                }
             }
-
-            ECDsa ecdsa = _key as ECDsa;
-
-            if (ecdsa != null)
+            catch
             {
-                return certificate.CreateCopyWithPrivateKey(ecdsa);
-            }
+                Console.WriteLine(
+                    "-----BEGIN CERTIFICATE-----" + Environment.NewLine +
+                    Convert.ToBase64String(certBytes) + Environment.NewLine +
+                    "-----END CERTIFICATE-----");
 
-            DSA dsa = _key as DSA;
-
-            if (dsa != null)
-            {
-                return certificate.CreateCopyWithPrivateKey(dsa);
+                throw;
             }
 
             Debug.Fail($"Key was of no known type: {_key?.GetType().FullName ?? "null"}");
