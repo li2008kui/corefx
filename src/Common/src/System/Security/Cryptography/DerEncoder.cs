@@ -182,6 +182,16 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
+        /// Encode an unsigned integer into a DER value.
+        /// </summary>
+        /// <param name="bigEndianBytes">The value to encode, in big integer representation.</param>
+        /// <returns>The DER encoded integer</returns>
+        internal static byte[] EncodeUnsignedInteger(byte[] bigEndianBytes)
+        {
+            return ConcatenateArrays(SegmentedEncodeUnsignedInteger(bigEndianBytes));
+        }
+
+        /// <summary>
         /// Encode the segments { tag, length, value } of an unsigned integer.
         /// </summary>
         /// <param name="bigEndianBytes">The value to encode, in big integer representation.</param>

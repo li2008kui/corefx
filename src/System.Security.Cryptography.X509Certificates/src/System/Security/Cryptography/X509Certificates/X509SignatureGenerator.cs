@@ -27,7 +27,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public static X509SignatureGenerator CreateForDSA(DSA key)
         {
-            throw new NotImplementedException();
+            return new DSAX509SignatureGenerator(key);
         }
 
         public static X509SignatureGenerator CreateForECDsa(ECDsa key)
