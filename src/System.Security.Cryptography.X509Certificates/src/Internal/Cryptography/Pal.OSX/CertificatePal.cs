@@ -358,21 +358,6 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        public AsymmetricAlgorithm GetPrivateKey()
-        {
-            switch (KeyAlgorithm)
-            {
-                case Oids.RsaRsa:
-                    return GetRSAPrivateKey();
-                case Oids.DsaDsa:
-                    return GetDSAPrivateKey();
-                case Oids.Ecc:
-                    return GetECDsaPrivateKey();
-            }
-
-            throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
-        }
-
         public RSA GetRSAPrivateKey()
         {
             if (_identityHandle == null)
