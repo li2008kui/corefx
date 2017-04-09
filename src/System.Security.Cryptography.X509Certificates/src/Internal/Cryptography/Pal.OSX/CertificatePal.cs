@@ -406,7 +406,42 @@ namespace Internal.Cryptography.Pal
 
         public ICertificatePal CreateCopyWithPrivateKey(RSA privateKey)
         {
-            throw new NotImplementedException();
+            var rsaSecurityTransforms = privateKey as RSAImplementation.RSASecurityTransforms;
+
+            if (rsaSecurityTransforms == null)
+            {
+                rsaSecurityTransforms = new RSAImplementation.RSASecurityTransforms();
+                rsaSecurityTransforms.ImportParameters(privateKey.ExportParameters(true));
+            }
+
+            return CreateCopyWithPrivateKey(rsaSecurityTransforms.GetKeys());
+        }
+
+        private ICertificatePal CreateCopyWithPrivateKey(SecKeyPair keyPair)
+        {
+            if (keyPair.PrivateKey == null)
+            {
+                // Both Windows and Linux/OpenSSL are unaware if they bound a public or private key.
+                // Here, we do know.  So throw if we can't do what they asked.
+                throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
+            }
+
+            SafeKeychainHandle keychain = Interop.AppleCrypto.SecKeychainItemCopyKeychain(keyPair.PrivateKey);
+
+            if (keychain.IsInvalid)
+            {
+                keychain = Interop.AppleCrypto.CreateTemporaryKeychain();
+            }
+
+            using (keychain)
+            {
+                SafeSecIdentityHandle identityHandle = Interop.AppleCrypto.X509CopyWithPrivateKey(
+                    _certHandle,
+                    keyPair.PrivateKey,
+                    keychain);
+
+                return new AppleCertificatePal(identityHandle);
+            }
         }
 
         public string GetNameInfo(X509NameType nameType, bool forIssuer)
