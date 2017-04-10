@@ -407,12 +407,28 @@ namespace Internal.Cryptography.Pal
 
         public ICertificatePal CreateCopyWithPrivateKey(DSA privateKey)
         {
-            throw new NotImplementedException();
+            var dsaSecurityTransforms = privateKey as DSAImplementation.DSASecurityTransforms;
+
+            if (dsaSecurityTransforms == null)
+            {
+                dsaSecurityTransforms = new DSAImplementation.DSASecurityTransforms();
+                dsaSecurityTransforms.ImportParameters(privateKey.ExportParameters(true));
+            }
+
+            return CreateCopyWithPrivateKey(dsaSecurityTransforms.GetKeys());
         }
 
         public ICertificatePal CreateCopyWithPrivateKey(ECDsa privateKey)
         {
-            throw new NotImplementedException();
+            var ecdsaSecurityTransforms = privateKey as ECDsaImplementation.ECDsaSecurityTransforms;
+
+            if (ecdsaSecurityTransforms == null)
+            {
+                ecdsaSecurityTransforms = new ECDsaImplementation.ECDsaSecurityTransforms();
+                ecdsaSecurityTransforms.ImportParameters(privateKey.ExportParameters(true));
+            }
+
+            return CreateCopyWithPrivateKey(ecdsaSecurityTransforms.GetKeys());
         }
 
         public ICertificatePal CreateCopyWithPrivateKey(RSA privateKey)
