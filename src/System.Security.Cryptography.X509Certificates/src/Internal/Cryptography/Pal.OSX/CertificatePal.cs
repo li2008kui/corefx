@@ -153,6 +153,9 @@ namespace Internal.Cryptography.Pal
     internal sealed class AppleCertificatePal : ICertificatePal
     {
         private SafeSecIdentityHandle _identityHandle;
+        // Do not give out this reference, it's only needed in certain cases to prevent temporary keychains
+        // from being deleted.
+        private SafeSecKeyRefHandle _privateKeyHolder;
         private SafeSecCertificateHandle _certHandle;
         private CertificateData _certData;
         private bool _readCertData;
@@ -176,9 +179,11 @@ namespace Internal.Cryptography.Pal
         {
             _certHandle?.Dispose();
             _identityHandle?.Dispose();
+            _privateKeyHolder?.Dispose();
 
             _certHandle = null;
             _identityHandle = null;
+            _privateKeyHolder = null;
         }
 
         internal SafeSecCertificateHandle CertificateHandle => _certHandle;
@@ -394,6 +399,12 @@ namespace Internal.Cryptography.Pal
             return new ECDsaImplementation.ECDsaSecurityTransforms(publicKey, privateKey);
         }
 
+        private void HoldPrivateKey()
+        {
+            _privateKeyHolder = Interop.AppleCrypto.X509GetPrivateKeyFromIdentity(_identityHandle);
+            Debug.Assert(!_privateKeyHolder.IsInvalid);
+        }
+
         public ICertificatePal CreateCopyWithPrivateKey(DSA privateKey)
         {
             throw new NotImplementedException();
@@ -440,7 +451,9 @@ namespace Internal.Cryptography.Pal
                     keyPair.PrivateKey,
                     keychain);
 
-                return new AppleCertificatePal(identityHandle);
+                AppleCertificatePal newPal = new AppleCertificatePal(identityHandle);
+                newPal.HoldPrivateKey();
+                return newPal;
             }
         }
 
