@@ -4,8 +4,10 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
 
 using Internal.Cryptography.Pal.Native;
@@ -347,16 +349,26 @@ namespace Internal.Cryptography.Pal
             }
 
             // Make a new pal from bytes.
-            CertificatePal pal = (CertificatePal)FromBlob(RawData, SafePasswordHandle.InvalidHandle, 0);
+            CertificatePal pal = (CertificatePal)FromBlob(RawData, SafePasswordHandle.InvalidHandle, X509KeyStorageFlags.PersistKeySet);
+
+            // CAPI RSA_SIGN keys won't open correctly under CNG without the key number being specified, so
+            // check to see if we can figure out what key number it needs to re-open.
+            CngProvider provider = cngKey.Provider;
+            string keyName = cngKey.KeyName;
+            bool machineKey = cngKey.IsMachineKey;
+
+            int keySpec = GuessKeySpec(provider, keyName, machineKey, cngKey.AlgorithmGroup);
 
             CRYPT_KEY_PROV_INFO keyProvInfo = new CRYPT_KEY_PROV_INFO();
 
-            fixed (char* keyName = cngKey.KeyName)
-            fixed (char* provName = cngKey.Provider.Provider)
+            // TODO: This doesn't work when the key is in CAPI, and it loses the provtype / keynum.
+            fixed (char* keyNamePtr = cngKey.KeyName)
+            fixed (char* provNamePtr = cngKey.Provider.Provider)
             {
-                keyProvInfo.pwszContainerName = keyName;
-                keyProvInfo.pwszProvName = provName;
-                keyProvInfo.dwFlags = cngKey.IsMachineKey ? CryptAcquireContextFlags.CRYPT_MACHINE_KEYSET : 0;
+                keyProvInfo.pwszContainerName = keyNamePtr;
+                keyProvInfo.pwszProvName = provNamePtr;
+                keyProvInfo.dwFlags = machineKey ? CryptAcquireContextFlags.CRYPT_MACHINE_KEYSET : 0;
+                keyProvInfo.dwKeySpec = keySpec;
 
                 if (!Interop.crypt32.CertSetCertificateContextProperty(
                     pal._certContext,
@@ -373,6 +385,91 @@ namespace Internal.Cryptography.Pal
             return pal;
         }
 
+        private static unsafe int GuessKeySpec(CngProvider provider, string keyName, bool machineKey,
+            CngAlgorithmGroup algorithmGroup)
+        {
+            if (provider == CngProvider.MicrosoftSoftwareKeyStorageProvider ||
+                provider == CngProvider.MicrosoftSmartCardKeyStorageProvider)
+            {
+                // Well-known CNG providers, keySpec is 0.
+                return 0;
+            }
+
+            // CAPI DSA is only legal in AT_SIGNATURE
+            // CAPI Diffie-Hellman is only legal in AT_EXCHANGE.
+            // CAPI RSA is the only one that allows both.
+            if (algorithmGroup != CngAlgorithmGroup.Rsa)
+            {
+                return 0;
+            }
+
+            const int NTE_BAD_KEYSET = unchecked((int)0x80090016);
+
+            try
+            {
+                CngKeyOpenOptions options = machineKey ? CngKeyOpenOptions.MachineKey : CngKeyOpenOptions.None;
+
+                using (CngKey.Open(keyName, provider, options))
+                {
+                    // It opened with keySpec 0, so use keySpec 0.
+                    return 0;
+                }
+            }
+            catch (CryptographicException e)
+            {
+                Debug.Assert(
+                    e.HResult == NTE_BAD_KEYSET,
+                    $"CngKey.Open had unexpected error: 0x{e.HResult:X8}: {e.Message}");
+
+                CspParameters cspParameters = new CspParameters
+                {
+                    ProviderName = provider.Provider,
+                    KeyContainerName = keyName,
+                    Flags = CspProviderFlags.UseExistingKey,
+                    KeyNumber = (int)KeyNumber.Signature,
+                };
+
+                if (machineKey)
+                {
+                    cspParameters.Flags |= CspProviderFlags.UseMachineKeyStore;
+                }
+
+                // Try the AT_SIGNATURE spot in each of the 4 RSA provider type values,
+                // ideally one of them will work.
+                const int PROV_RSA_FULL = 1;
+                const int PROV_RSA_AES = 24;
+                const int PROV_RSA_SIG = 2;
+                const int PROV_RSA_SCHANNEL = 12;
+
+                int[] provTypes =
+                {
+                    PROV_RSA_FULL,
+                    PROV_RSA_AES,
+                    PROV_RSA_SIG,
+                    PROV_RSA_SCHANNEL,
+                };
+
+                foreach (int provType in provTypes)
+                {
+                    cspParameters.ProviderType = provType;
+
+                    try
+                    {
+                        using (new RSACryptoServiceProvider(cspParameters))
+                        {
+                            return cspParameters.KeyNumber;
+                        }
+                    }
+                    catch (CryptographicException)
+                    {
+                    }
+                }
+
+                Debug.Fail("RSA key did not open with KeyNumber 0 or AT_SIGNATURE");
+                throw;
+            }
+        }
+
         private unsafe ICertificatePal CloneWithPersistedCapiKey(CspKeyContainerInfo keyContainerInfo)
         {
             if (string.IsNullOrEmpty(keyContainerInfo.KeyContainerName))
@@ -381,7 +478,7 @@ namespace Internal.Cryptography.Pal
             }
 
             // Make a new pal from bytes.
-            CertificatePal pal = (CertificatePal)FromBlob(RawData, SafePasswordHandle.InvalidHandle, 0);
+            CertificatePal pal = (CertificatePal)FromBlob(RawData, SafePasswordHandle.InvalidHandle, X509KeyStorageFlags.PersistKeySet);
             CRYPT_KEY_PROV_INFO keyProvInfo = new CRYPT_KEY_PROV_INFO();
 
             fixed (char* keyName = keyContainerInfo.KeyContainerName)
@@ -415,7 +512,7 @@ namespace Internal.Cryptography.Pal
             SafeNCryptKeyHandle handle = cngKey.Handle;
 
             // Make a new pal from bytes.
-            CertificatePal pal = (CertificatePal)FromBlob(RawData, SafePasswordHandle.InvalidHandle, 0);
+            CertificatePal pal = (CertificatePal)FromBlob(RawData, SafePasswordHandle.InvalidHandle, X509KeyStorageFlags.PersistKeySet);
 
             if (!Interop.crypt32.CertSetCertificateContextProperty(
                 pal._certContext,

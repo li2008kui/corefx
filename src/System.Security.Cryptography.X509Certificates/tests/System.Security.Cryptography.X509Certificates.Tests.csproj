@@ -25,6 +25,7 @@
     <Compile Include="CertificateCreation\CertificateRequestUsageTests.cs" />
     <Compile Include="CertificateCreation\EccTestData.cs" />
     <Compile Include="CertificateCreation\ECDsaX509SignatureGeneratorTests.cs" />
+    <Compile Include="CertificateCreation\PrivateKeyAssociationTests.cs" />
     <Compile Include="CertificateCreation\RSAPkcs1X509SignatureGeneratorTests.cs" />
     <Compile Include="CertificateCreation\SubjectAltNameBuilderTests.cs" />
     <Compile Include="CertificateCreation\TestData.cs" />
@@ -34,6 +35,7 @@
     <Compile Include="CollectionImportTests.cs" />
     <Compile Include="CollectionTests.cs" />
     <Compile Include="ContentTypeTests.cs" />
+    <Compile Include="CreateCopyWithPrivateKeyTests.cs" />
     <Compile Include="CtorTests.cs" />
     <Compile Include="ExportTests.cs" />
     <Compile Include="ExtensionsTests.cs" />
