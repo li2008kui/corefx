@@ -361,7 +361,6 @@ namespace Internal.Cryptography.Pal
 
             CRYPT_KEY_PROV_INFO keyProvInfo = new CRYPT_KEY_PROV_INFO();
 
-            // TODO: This doesn't work when the key is in CAPI, and it loses the provtype / keynum.
             fixed (char* keyNamePtr = cngKey.KeyName)
             fixed (char* provNamePtr = cngKey.Provider.Provider)
             {
@@ -437,16 +436,21 @@ namespace Internal.Cryptography.Pal
                 // Try the AT_SIGNATURE spot in each of the 4 RSA provider type values,
                 // ideally one of them will work.
                 const int PROV_RSA_FULL = 1;
-                const int PROV_RSA_AES = 24;
                 const int PROV_RSA_SIG = 2;
                 const int PROV_RSA_SCHANNEL = 12;
+                const int PROV_RSA_AES = 24;
 
+                // These are ordered in terms of perceived likeliness, given that the key
+                // is AT_SIGNATURE.
                 int[] provTypes =
                 {
                     PROV_RSA_FULL,
                     PROV_RSA_AES,
-                    PROV_RSA_SIG,
                     PROV_RSA_SCHANNEL,
+
+                    // Nothing should be PROV_RSA_SIG, but if everything else has failed,
+                    // just try this last thing.
+                    PROV_RSA_SIG,
                 };
 
                 foreach (int provType in provTypes)

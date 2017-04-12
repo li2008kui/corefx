@@ -9,7 +9,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
     public static class PrivateKeyAssociationTests
     {
         public const int PROV_RSA_FULL = 1;
-        public const int PROV_RSA_SIG = 2;
         public const int PROV_RSA_SCHANNEL = 12;
         public const int PROV_RSA_AES = 24;
 
