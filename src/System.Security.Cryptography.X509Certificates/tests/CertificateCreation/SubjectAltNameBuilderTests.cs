@@ -8,14 +8,14 @@ using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreation
 {
-    public static class SubjectAltNameBuilderTests
+    public static class SubjectAlternativeNameBuilderTests
     {
         private const string SubjectAltNameOid = "2.5.29.17";
 
         [Fact]
         public static void ArgumentValidation()
         {
-            SubjectAltNameBuilder builder = new SubjectAltNameBuilder();
+            SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
 
             Assert.Throws<ArgumentOutOfRangeException>("dnsName", () => builder.AddDnsName(null));
             Assert.Throws<ArgumentOutOfRangeException>("dnsName", () => builder.AddDnsName(string.Empty));
@@ -30,10 +30,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [Fact]
         public static void SingleValue_DnsName_Ascii()
         {
-            SubjectAltNameBuilder builder = new SubjectAltNameBuilder();
+            SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
             builder.AddDnsName("www.example.org");
 
-            X509Extension extension = builder.BuildExtension();
+            X509Extension extension = builder.Build();
             Assert.Equal(SubjectAltNameOid, extension.Oid.Value);
 
             Assert.Equal("3011820F7777772E6578616D706C652E6F7267", extension.RawData.ByteArrayToHex());
@@ -42,12 +42,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [Fact]
         public static void SingleValue_DnsName_Unicode()
         {
-            SubjectAltNameBuilder builder = new SubjectAltNameBuilder();
+            SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
 
             // [nihongo].example.org
             builder.AddDnsName("\u65E5\u672C\u8A8E.example.org");
 
-            X509Extension extension = builder.BuildExtension();
+            X509Extension extension = builder.Build();
             Assert.Equal(SubjectAltNameOid, extension.Oid.Value);
 
             Assert.Equal(
@@ -58,10 +58,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [Fact]
         public static void SingleValue_EmailAddress_Ascii()
         {
-            SubjectAltNameBuilder builder = new SubjectAltNameBuilder();
+            SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
             builder.AddEmailAddress("user@example.org");
 
-            X509Extension extension = builder.BuildExtension();
+            X509Extension extension = builder.Build();
             Assert.Equal(SubjectAltNameOid, extension.Oid.Value);
 
             Assert.Equal("3012811075736572406578616D706C652E6F7267", extension.RawData.ByteArrayToHex());
@@ -72,7 +72,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         {
             // There's not a good example of what an IDNA-converted email address
             // looks like, so this isn't easy to verify.  For now let it be restricted to IA5.
-            SubjectAltNameBuilder builder = new SubjectAltNameBuilder();
+            SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
 
             // [nihongo]@[nihongo].example.org
             Assert.Throws<CryptographicException>(
@@ -82,11 +82,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [Fact]
         public static void SingleValue_IPAddress_v4()
         {
-            SubjectAltNameBuilder builder = new SubjectAltNameBuilder();
+            SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
 
             builder.AddIpAddress(IPAddress.Loopback);
 
-            X509Extension extension = builder.BuildExtension();
+            X509Extension extension = builder.Build();
             Assert.Equal(SubjectAltNameOid, extension.Oid.Value);
 
             Assert.Equal("300687047F000001", extension.RawData.ByteArrayToHex());
@@ -95,11 +95,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [Fact]
         public static void SingleValue_IPAddress_v6()
         {
-            SubjectAltNameBuilder builder = new SubjectAltNameBuilder();
+            SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
 
             builder.AddIpAddress(IPAddress.IPv6Loopback);
 
-            X509Extension extension = builder.BuildExtension();
+            X509Extension extension = builder.Build();
             Assert.Equal(SubjectAltNameOid, extension.Oid.Value);
 
             Assert.Equal("3012871000000000000000000000000000000001", extension.RawData.ByteArrayToHex());
@@ -108,11 +108,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [Fact]
         public static void SingleValue_Uri_Ascii()
         {
-            SubjectAltNameBuilder builder = new SubjectAltNameBuilder();
+            SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
 
             builder.AddUri(new Uri("http://www.example.org/"));
 
-            X509Extension extension = builder.BuildExtension();
+            X509Extension extension = builder.Build();
             Assert.Equal(SubjectAltNameOid, extension.Oid.Value);
 
             Assert.Equal(
@@ -123,7 +123,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [Fact]
         public static void SingleValue_Uri_UnicodeHost()
         {
-            SubjectAltNameBuilder builder = new SubjectAltNameBuilder();
+            SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
 
             Assert.Throws<CryptographicException>(
                 () => builder.AddUri(new Uri("http://\u65E5\u672C\u8A8E.example.org/")));
@@ -132,11 +132,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [Fact]
         public static void SingleValue_Uri_UnicodePath()
         {
-            SubjectAltNameBuilder builder = new SubjectAltNameBuilder();
+            SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
 
             builder.AddUri(new Uri("http://www.example.org/\u65E5\u672C\u8A8E"));
 
-            X509Extension extension = builder.BuildExtension();
+            X509Extension extension = builder.Build();
             Assert.Equal(SubjectAltNameOid, extension.Oid.Value);
 
             const string expectedHex =
@@ -151,11 +151,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [Fact]
         public static void SingleValue_Upn()
         {
-            SubjectAltNameBuilder builder = new SubjectAltNameBuilder();
+            SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
 
             builder.AddUserPrincipalName("user@example.org");
 
-            X509Extension extension = builder.BuildExtension();
+            X509Extension extension = builder.Build();
             Assert.Equal(SubjectAltNameOid, extension.Oid.Value);
 
             Assert.Equal(
@@ -190,7 +190,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 "757269312E7375626A6563742E6578616D706C652E6F72672F8620687474703A" +
                 "2F2F757269322E7375626A6563742E6578616D706C652E6F72672F";
 
-            SubjectAltNameBuilder builder = new SubjectAltNameBuilder();
+            SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
             builder.AddDnsName("dns1.subject.example.org");
             builder.AddDnsName("dns2.subject.example.org");
             builder.AddEmailAddress("sanemail1@example.org");
@@ -200,7 +200,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             builder.AddUri(new Uri("http://uri1.subject.example.org/"));
             builder.AddUri(new Uri("http://uri2.subject.example.org/"));
 
-            X509Extension extension = builder.BuildExtension();
+            X509Extension extension = builder.Build();
             Assert.Equal(SubjectAltNameOid, extension.Oid.Value);
 
             Assert.Equal(
@@ -211,14 +211,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [Fact]
         public static void MultipleBuilds()
         {
-            SubjectAltNameBuilder builder = new SubjectAltNameBuilder();
+            SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
 
             builder.AddIpAddress(IPAddress.Loopback);
 
-            X509Extension extension = builder.BuildExtension();
+            X509Extension extension = builder.Build();
             Assert.Equal(SubjectAltNameOid, extension.Oid.Value);
 
-            X509Extension secondExtension = builder.BuildExtension();
+            X509Extension secondExtension = builder.Build();
 
             Assert.NotSame(extension, secondExtension);
             Assert.Equal(extension.Oid.Value, secondExtension.Oid.Value);
@@ -229,15 +229,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [Fact]
         public static void MultipleBuilds_WithModification()
         {
-            SubjectAltNameBuilder builder = new SubjectAltNameBuilder();
+            SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
 
             builder.AddIpAddress(IPAddress.Loopback);
 
-            X509Extension extension = builder.BuildExtension();
+            X509Extension extension = builder.Build();
             Assert.Equal(SubjectAltNameOid, extension.Oid.Value);
 
             builder.AddIpAddress(IPAddress.IPv6Loopback);
-            X509Extension secondExtension = builder.BuildExtension();
+            X509Extension secondExtension = builder.Build();
 
             Assert.NotSame(extension, secondExtension);
             Assert.Equal(extension.Oid.Value, secondExtension.Oid.Value);
@@ -251,13 +251,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [Fact]
         public static void CheckCritical()
         {
-            SubjectAltNameBuilder builder = new SubjectAltNameBuilder();
+            SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
 
             builder.AddIpAddress(IPAddress.Loopback);
 
-            X509Extension extension = builder.BuildExtension();
-            X509Extension secondExtension = builder.BuildExtension(false);
-            X509Extension thirdExtension = builder.BuildExtension(true);
+            X509Extension extension = builder.Build();
+            X509Extension secondExtension = builder.Build(false);
+            X509Extension thirdExtension = builder.Build(true);
 
             Assert.False(extension.Critical, "extension.Critical");
             Assert.False(secondExtension.Critical, "secondExtension.Critical");

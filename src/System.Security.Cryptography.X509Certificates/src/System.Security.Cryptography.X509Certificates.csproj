@@ -54,7 +54,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\RSAPkcs1X509SignatureGenerator.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StoreLocation.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StoreName.cs" />
-    <Compile Include="System\Security\Cryptography\X509Certificates\SubjectAltNameBuilder.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\SubjectAlternativeNameBuilder.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\TbsCertificate.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500DistinguishedName.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500DistinguishedNameFlags.cs" />

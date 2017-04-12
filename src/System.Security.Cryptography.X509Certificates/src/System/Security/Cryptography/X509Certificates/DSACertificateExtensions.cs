@@ -29,10 +29,15 @@ namespace System.Security.Cryptography.X509Certificates
             return certificate.GetPrivateKey<DSA>();
         }
 
-        public static X509Certificate2 CreateCopyWithPrivateKey(this X509Certificate2 certificate, DSA privateKey)
+        public static X509Certificate2 CopyWithPrivateKey(this X509Certificate2 certificate, DSA privateKey)
         {
+            if (certificate == null)
+                throw new ArgumentNullException(nameof(certificate));
             if (privateKey == null)
                 throw new ArgumentNullException(nameof(privateKey));
+
+            if (certificate.HasPrivateKey)
+                throw new InvalidOperationException("Something about already having a private key");
 
             DSA publicKey = GetDSAPublicKey(certificate);
 

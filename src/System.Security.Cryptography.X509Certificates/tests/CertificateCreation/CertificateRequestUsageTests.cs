@@ -31,10 +31,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
                 request.CertificateExtensions.Add(sanExtension);
 
-                autoCsr = request.EncodePkcs10SigningRequest();
+                autoCsr = request.CreateSigningRequest();
 
                 X509SignatureGenerator generator = X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1);
-                csr = request.EncodePkcs10SigningRequest(generator);
+                csr = request.CreateSigningRequest(generator);
             }
 
             Assert.Equal(TestData.BigExponentPkcs10Bytes.ByteArrayToHex(), autoCsr.ByteArrayToHex());
@@ -75,7 +75,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
                 var signatureGenerator = X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1);
 
-                cert = request.Sign(subject, signatureGenerator, notBefore, notAfter, serialNumber);
+                cert = request.Create(subject, signatureGenerator, notBefore, notAfter, serialNumber);
             }
 
             const string expectedHex =
@@ -142,7 +142,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             request.CertificateExtensions.Add(
                 new X509EnhancedKeyUsageExtension(new OidCollection { new Oid("1.3.6.1.5.5.7.3.1") }, false));
 
-            using (X509Certificate2 newCert = request.SelfSign(TimeSpan.FromDays(366)))
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+
+            using (X509Certificate2 newCert = request.CreateSelfSigned(now, now.AddDays(90)))
             {
                 Assert.True(newCert.HasPrivateKey);
 
@@ -184,7 +186,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     rsa,
                     HashAlgorithmName.SHA256);
 
-                cert = request.SelfSign(TimeSpan.FromDays(90));
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+                cert = request.CreateSelfSigned(now, now.AddDays(90));
             }
 
             using (cert)
@@ -221,7 +224,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     ecdsa,
                     HashAlgorithmName.SHA256);
 
-                cert = request.SelfSign(TimeSpan.FromDays(90));
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+                cert = request.CreateSelfSigned(now, now.AddDays(90));
             }
 
             using (cert)
@@ -256,7 +260,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     ecdsa,
                     HashAlgorithmName.SHA512);
 
-                cert = request.SelfSign(TimeSpan.FromDays(90));
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+                cert = request.CreateSelfSigned(now, now.AddDays(90));
 
                 priv2 = cert.GetECDsaPrivateKey();
             }
@@ -283,10 +288,21 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             {
                 var generator = X509SignatureGenerator.CreateForECDsa(ecdsa);
 
-                CertificateRequest request = new CertificateRequest(new X500DistinguishedName("CN=Test Cert"), generator.PublicKey, HashAlgorithmName.SHA512);
+                CertificateRequest request = new CertificateRequest(
+                    new X500DistinguishedName("CN=Test Cert"),
+                    generator.PublicKey,
+                    HashAlgorithmName.SHA512);
 
                 byte[] desiredSerial = { 0x80 };
-                X509Certificate2 cert = request.Sign(request.Subject, generator, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow + TimeSpan.FromDays(1), desiredSerial);
+
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+
+                X509Certificate2 cert = request.Create(
+                    request.Subject,
+                    generator,
+                    now,
+                    now.AddDays(1),
+                    desiredSerial);
 
                 using (cert)
                 {
@@ -301,15 +317,16 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             using (ECDsa ecdsa = ECDsa.Create(EccTestData.Secp384r1Data.KeyParameters))
             {
                 CertificateRequest request = new CertificateRequest("CN=Test Cert", ecdsa, HashAlgorithmName.SHA384);
+                DateTimeOffset now = DateTimeOffset.UtcNow;
 
-                using (X509Certificate2 cert = request.SelfSign(TimeSpan.FromHours(1)))
+                using (X509Certificate2 cert = request.CreateSelfSigned(now, now.AddHours(1)))
                 {
                     Assert.Equal(1, cert.Version);
                 }
 
                 request.CertificateExtensions.Add(null);
 
-                using (X509Certificate2 cert = request.SelfSign(TimeSpan.FromHours(1)))
+                using (X509Certificate2 cert = request.CreateSelfSigned(now, now.AddHours(1)))
                 {
                     Assert.Equal(3, cert.Version);
                     Assert.Equal(0, cert.Extensions.Count);
@@ -322,7 +339,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                         X509SubjectKeyIdentifierHashAlgorithm.Sha1,
                         false));
 
-                using (X509Certificate2 cert = request.SelfSign(TimeSpan.FromHours(1)))
+                using (X509Certificate2 cert = request.CreateSelfSigned(now, now.AddHours(1)))
                 {
                     Assert.Equal(3, cert.Version);
                     Assert.Equal(1, cert.Extensions.Count);

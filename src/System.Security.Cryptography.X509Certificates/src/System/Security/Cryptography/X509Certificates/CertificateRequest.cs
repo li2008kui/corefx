@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Text;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -27,7 +26,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <summary>
         /// The X.509 Certificate Extensions to include in the certificate or certificate request.
         /// </summary>
-        public ICollection<X509Extension> CertificateExtensions { get; } = new List<X509Extension>();
+        public Collection<X509Extension> CertificateExtensions { get; } = new Collection<X509Extension>();
 
         /// <summary>
         /// A <see cref="PublicKey" /> representation of the public key for the certificate or certificate request.
@@ -40,14 +39,14 @@ namespace System.Security.Cryptography.X509Certificates
 
         public HashAlgorithmName HashAlgorithm { get; }
 
-        public CertificateRequest(string subjectDistinguishedName, ECDsa key, HashAlgorithmName hashAlgorithm)
+        public CertificateRequest(string subjectName, ECDsa key, HashAlgorithmName hashAlgorithm)
         {
-            if (subjectDistinguishedName == null)
-                throw new ArgumentNullException(nameof(subjectDistinguishedName));
+            if (subjectName == null)
+                throw new ArgumentNullException(nameof(subjectName));
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
 
-            Subject = new X500DistinguishedName(subjectDistinguishedName);
+            Subject = new X500DistinguishedName(subjectName);
 
             _key = key;
             _generator = X509SignatureGenerator.CreateForECDsa(key);
@@ -70,14 +69,14 @@ namespace System.Security.Cryptography.X509Certificates
             HashAlgorithm = hashAlgorithm;
         }
 
-        public CertificateRequest(string subjectDistinguishedName, RSA key, HashAlgorithmName hashAlgorithm)
+        public CertificateRequest(string subjectName, RSA key, HashAlgorithmName hashAlgorithm)
         {
-            if (subjectDistinguishedName == null)
-                throw new ArgumentNullException(nameof(subjectDistinguishedName));
+            if (subjectName == null)
+                throw new ArgumentNullException(nameof(subjectName));
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
 
-            Subject = new X500DistinguishedName(subjectDistinguishedName);
+            Subject = new X500DistinguishedName(subjectName);
 
             _key = key;
             _generator = X509SignatureGenerator.CreateForRSA(key, RSASignaturePadding.Pkcs1);
@@ -150,69 +149,37 @@ namespace System.Security.Cryptography.X509Certificates
         ///     }
         ///   ]]></code>
         /// </remarks>
-        public byte[] EncodePkcs10SigningRequest()
+        public byte[] CreateSigningRequest()
         {
             if (_generator == null)
                 throw new InvalidOperationException("wrong ctor");
 
-            return EncodePkcs10SigningRequest(_generator);
+            return CreateSigningRequest(_generator);
         }
 
         /// <summary>
         /// Create an ASN.1 DER-encoded PKCS#10 CertificationRequest object representating the current state
-        /// of this object.
+        /// of this object using the provided signature generator.
         /// </summary>
         /// <param name="signatureGenerator">
         ///   A <see cref="X509SignatureGenerator"/> with which to sign the request.
         /// </param>
-        public byte[] EncodePkcs10SigningRequest(X509SignatureGenerator signatureGenerator)
+        public byte[] CreateSigningRequest(X509SignatureGenerator signatureGenerator)
         {
             if (signatureGenerator == null)
                 throw new ArgumentNullException(nameof(signatureGenerator));
 
-            List<X501Attribute> attributes = new List<X501Attribute>(2);
+            X501Attribute[] attributes = Array.Empty<X501Attribute>();
 
             if (CertificateExtensions.Count > 0)
             {
-                attributes.Add(new Pkcs9ExtensionRequest(CertificateExtensions));
+                attributes = new X501Attribute[] { new Pkcs9ExtensionRequest(CertificateExtensions) };
             }
 
             // Allow the public key to mismatch, for Diffie-Hellman, or other types of non-signing keys.
             PublicKey publicKey = PublicKey ?? signatureGenerator.PublicKey;
             var requestInfo = new Pkcs10CertificationRequestInfo(Subject, publicKey, attributes);
             return requestInfo.ToPkcs10Request(signatureGenerator, HashAlgorithm);
-        }
-
-        /// <summary>
-        /// Create a self-signed certificate using the established subject, optional attributes, and
-        /// optional public key value which has a <see cref="X509Certificate2.NotBefore" /> value of
-        /// the current time and a <see cref="X509Certificate2.NotAfter" /> value computed via the
-        /// specified <paramref name="validityPeriod"/>.
-        /// </summary>
-        /// <param name="validityPeriod">
-        ///   The interval for which the certificate should be considerd valid.
-        ///   While values smaller than a second will be used in the computation of the NotAfter value,
-        ///   validity dates within certificates are truncated to the second.
-        /// </param>
-        /// <returns>
-        ///   An <see cref="X509Certificate2"/> with the specified values. The returned object will
-        ///   assert <see cref="X509Certificate2.HasPrivateKey" />.
-        /// </returns>
-        /// <exception cref="ArgumentOutOfRangeException">
-        ///   <paramref name="validityPeriod"/> represents negative amount of time.
-        /// </exception>
-        /// <exception cref="CryptographicException">
-        ///   Other errors during the certificate creation process.
-        /// </exception>
-        public X509Certificate2 SelfSign(TimeSpan validityPeriod)
-        {
-            if (validityPeriod < TimeSpan.Zero)
-                throw new ArgumentOutOfRangeException(nameof(validityPeriod));
-
-            DateTimeOffset notBefore = DateTimeOffset.UtcNow;
-            DateTimeOffset notAfter = notBefore + validityPeriod;
-
-            return SelfSign(notBefore, notAfter);
         }
 
         /// <summary>
@@ -239,7 +206,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         ///   Other errors during the certificate creation process.
         /// </exception>
-        public X509Certificate2 SelfSign(DateTimeOffset notBefore, DateTimeOffset notAfter)
+        public X509Certificate2 CreateSelfSigned(DateTimeOffset notBefore, DateTimeOffset notAfter)
         {
             if (notAfter < notBefore)
                 throw new ArgumentException("SR.Cryptography_X509_DatesReversed");
@@ -264,39 +231,28 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (rsa != null)
             {
-                return certificate.CreateCopyWithPrivateKey(rsa);
+                return certificate.CopyWithPrivateKey(rsa);
             }
 
             ECDsa ecdsa = _key as ECDsa;
 
             if (ecdsa != null)
             {
-                return certificate.CreateCopyWithPrivateKey(ecdsa);
+                return certificate.CopyWithPrivateKey(ecdsa);
             }
 
             DSA dsa = _key as DSA;
 
             if (dsa != null)
             {
-                return certificate.CreateCopyWithPrivateKey(dsa);
+                return certificate.CopyWithPrivateKey(dsa);
             }
 
             Debug.Fail($"Key was of no known type: {_key?.GetType().FullName ?? "null"}");
             throw new CryptographicException();
         }
 
-        public X509Certificate2 Sign(X509Certificate2 issuerCertificate, TimeSpan validityPeriod, byte[] serialNumber)
-        {
-            if (validityPeriod < TimeSpan.Zero)
-                throw new ArgumentOutOfRangeException(nameof(validityPeriod));
-
-            DateTimeOffset notBefore = DateTimeOffset.UtcNow;
-            DateTimeOffset notAfter = notBefore + validityPeriod;
-
-            return Sign(issuerCertificate, notBefore, notAfter, serialNumber);
-        }
-
-        public X509Certificate2 Sign(
+        public X509Certificate2 Create(
             X509Certificate2 issuerCertificate,
             DateTimeOffset notBefore,
             DateTimeOffset notAfter,
@@ -331,7 +287,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             using (key)
             {
-                return Sign(issuerCertificate.SubjectName, generator, notBefore, notAfter, serialNumber);
+                return Create(issuerCertificate.SubjectName, generator, notBefore, notAfter, serialNumber);
             }
         }
 
@@ -365,7 +321,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="InvalidOperationException"><see cref="Subject"/> is null.</exception>
         /// <exception cref="InvalidOperationException"><see cref="PublicKey"/> is null.</exception>
         /// <exception cref="CryptographicException">Any error occurs during the signing operation.</exception>
-        public X509Certificate2 Sign(
+        public X509Certificate2 Create(
             X500DistinguishedName issuerName,
             X509SignatureGenerator generator,
             DateTimeOffset notBefore,

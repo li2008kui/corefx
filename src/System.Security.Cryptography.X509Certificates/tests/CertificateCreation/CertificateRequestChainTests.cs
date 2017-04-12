@@ -185,17 +185,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             RSA rsa = key as RSA;
 
             if (rsa != null)
-                return cert.CreateCopyWithPrivateKey(rsa);
+                return cert.CopyWithPrivateKey(rsa);
 
             ECDsa ecdsa = key as ECDsa;
 
             if (ecdsa != null)
-                return cert.CreateCopyWithPrivateKey(ecdsa);
+                return cert.CopyWithPrivateKey(ecdsa);
 
             DSA dsa = key as DSA;
 
             if (dsa != null)
-                return cert.CreateCopyWithPrivateKey(dsa);
+                return cert.CopyWithPrivateKey(dsa);
 
             throw new InvalidOperationException(
                 $"Had no handler for key of type {key?.GetType().FullName ?? "null"}");
@@ -239,7 +239,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 DateTimeOffset intermedEnd = now + TimeSpan.FromDays(366 * 4);
                 DateTimeOffset leafEnd = now + TimeSpan.FromDays(366 * 1.3);
 
-                rootCertWithKey = rootRequest.SelfSign(now, rootEnd);
+                rootCertWithKey = rootRequest.CreateSelfSigned(now, rootEnd);
 
                 byte[] intermed1Serial = new byte[10];
                 byte[] intermed2Serial = new byte[10];
@@ -256,8 +256,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     rng.GetBytes(leafSerial, 2, leafSerial.Length - 2);
                 }
 
-                X509Certificate2 intermed1Tmp = intermed1Request.Sign(rootCertWithKey, now, intermedEnd, intermed1Serial);
-                X509Certificate2 intermed2Tmp = intermed2Request.Sign(rootCertWithKey, now, intermedEnd, intermed1Serial);
+                X509Certificate2 intermed1Tmp = intermed1Request.Create(rootCertWithKey, now, intermedEnd, intermed1Serial);
+                X509Certificate2 intermed2Tmp = intermed2Request.Create(rootCertWithKey, now, intermedEnd, intermed1Serial);
 
                 intermed1CertWithKey = CloneWithPrivateKey(intermed1Tmp, intermed1PrivKey);
                 intermed2CertWithKey = CloneWithPrivateKey(intermed2Tmp, intermed2PrivKey);
@@ -265,7 +265,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 intermed1Tmp.Dispose();
                 intermed2Tmp.Dispose();
 
-                leafCert = leafRequest.Sign(intermed2CertWithKey, now, leafEnd, leafSerial);
+                leafCert = leafRequest.Create(intermed2CertWithKey, now, leafEnd, leafSerial);
 
                 using (X509Chain chain = new X509Chain())
                 {

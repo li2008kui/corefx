@@ -31,7 +31,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             {
                 CertificateRequest request = new CertificateRequest("", ecdsa, HashAlgorithmName.SHA256);
 
-                Assert.Throws<ArgumentNullException>("signatureGenerator", () => request.EncodePkcs10SigningRequest(null));
+                Assert.Throws<ArgumentNullException>("signatureGenerator", () => request.CreateSigningRequest(null));
             }
         }
 
@@ -44,13 +44,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
                 CertificateRequest request = new CertificateRequest("CN=Test", rsa, HashAlgorithmName.SHA256);
 
-                Assert.Throws<ArgumentOutOfRangeException>(
-                    "validityPeriod",
-                    () => request.SelfSign(TimeSpan.MinValue));
-
                 Assert.Throws<ArgumentException>(
                     null,
-                    () => request.SelfSign(DateTimeOffset.MaxValue, DateTimeOffset.MinValue));
+                    () => request.CreateSelfSigned(DateTimeOffset.MaxValue, DateTimeOffset.MinValue));
             }
         }
 
@@ -61,59 +57,22 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             {
                 CertificateRequest request = new CertificateRequest("CN=Test", testRoot.GetRSAPublicKey(), HashAlgorithmName.SHA256);
 
-                Assert.Throws<ArgumentOutOfRangeException>(
-                    "validityPeriod",
-                    () => request.Sign(testRoot, TimeSpan.MinValue, null));
-
                 Assert.Throws<ArgumentNullException>(
                     "generator",
-                    () => request.Sign(testRoot.SubjectName, null, DateTimeOffset.MinValue, DateTimeOffset.MinValue, null));
+                    () => request.Create(testRoot.SubjectName, null, DateTimeOffset.MinValue, DateTimeOffset.MinValue, null));
 
                 Assert.Throws<ArgumentException>(
                     null,
-                    () => request.Sign(testRoot, DateTimeOffset.MaxValue, DateTimeOffset.MinValue, null));
+                    () => request.Create(testRoot, DateTimeOffset.MaxValue, DateTimeOffset.MinValue, null));
 
                 Assert.Throws<ArgumentException>(
                     "serialNumber",
-                    () => request.Sign(testRoot, DateTimeOffset.MinValue, DateTimeOffset.MaxValue, null));
+                    () => request.Create(testRoot, DateTimeOffset.MinValue, DateTimeOffset.MaxValue, null));
 
                 Assert.Throws<ArgumentException>(
                     "serialNumber",
-                    () => request.Sign(testRoot, DateTimeOffset.MinValue, DateTimeOffset.MaxValue, Array.Empty<byte>()));
+                    () => request.Create(testRoot, DateTimeOffset.MinValue, DateTimeOffset.MaxValue, Array.Empty<byte>()));
             }
         }
-
-        //[Fact]
-        //public static void AssociatePrivateKey_ArgumentValidation()
-        //{
-        //    const X509KeyStorageFlags keyStorageFlags = X509KeyStorageFlags.DefaultKeySet;
-
-        //    using (X509Certificate2 cert = new X509Certificate2(TestData.TestRootPfx))
-        //    using (RSA unmatchedRsa = RSA.Create())
-        //    {
-        //        unmatchedRsa.ImportParameters(TestData.RsaBigExponentParams);
-
-        //        Assert.Throws<ArgumentNullException>(
-        //            "certBytes",
-        //            () => CertificateRequest.AssociatePrivateKey(null, null, keyStorageFlags));
-
-        //        byte[] certBytes = cert.RawData;
-
-        //        Assert.Throws<ArgumentNullException>(
-        //            "privateKey",
-        //            () => CertificateRequest.AssociatePrivateKey(certBytes, null, keyStorageFlags));
-
-        //        var generator = X509SignatureGenerator.CreateForRSAPkcs1(unmatchedRsa, HashAlgorithmName.SHA256);
-
-        //        Assert.Throws<ArgumentException>(
-        //            null,
-        //            () => CertificateRequest.AssociatePrivateKey(certBytes, generator, keyStorageFlags));
-
-        //        // PFX is not a cert.
-        //        Assert.Throws<ArgumentException>(
-        //            "certBytes",
-        //            () => CertificateRequest.AssociatePrivateKey(TestData.TestRootPfx, generator, keyStorageFlags));
-        //    }
-        //}
     }
 }

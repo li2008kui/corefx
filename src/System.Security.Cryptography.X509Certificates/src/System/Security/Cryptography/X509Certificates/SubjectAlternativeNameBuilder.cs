@@ -8,7 +8,7 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography.X509Certificates
 {
-    public sealed class SubjectAltNameBuilder
+    public sealed class SubjectAlternativeNameBuilder
     {
         // Because GeneralNames is a SEQUENCE, just make a rolling list, it doesn't need to be re-sorted.
         private readonly List<byte[][]> _encodedTlvs = new List<byte[][]>();
@@ -54,12 +54,7 @@ namespace System.Security.Cryptography.X509Certificates
             _encodedTlvs.Add(_generalNameEncoder.EncodeUserPrincipalName(upn));
         }
 
-        public X509Extension BuildExtension()
-        {
-            return BuildExtension(false);
-        }
-
-        public X509Extension BuildExtension(bool critical)
+        public X509Extension Build(bool critical=false)
         {
             return new X509Extension(
                 Oids.SubjectAltName,

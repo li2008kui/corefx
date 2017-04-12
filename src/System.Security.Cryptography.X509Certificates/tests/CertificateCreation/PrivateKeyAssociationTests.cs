@@ -42,7 +42,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     rsaCsp,
                     hashAlgorithm);
 
-                using (X509Certificate2 cert = request.SelfSign(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays(1)))
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+
+                using (X509Certificate2 cert = request.CreateSelfSigned(now, now.AddDays(1)))
                 using (RSA rsa = cert.GetRSAPrivateKey())
                 {
                     signature = rsa.SignData(Array.Empty<byte>(), hashAlgorithm, RSASignaturePadding.Pkcs1);
@@ -96,7 +98,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     rsaCsp,
                     hashAlgorithm);
 
-                using (X509Certificate2 cert = request.SelfSign(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays(1)))
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+
+                using (X509Certificate2 cert = request.CreateSelfSigned(now, now.AddDays(1)))
                 using (RSA rsa = cert.GetRSAPrivateKey())
                 {
                     // `rsa` will be an RSACng wrapping the CAPI key, which means it does not expose the
@@ -108,7 +112,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                         rsa,
                         hashAlgorithm);
 
-                    using (X509Certificate2 cert2 = request.SelfSign(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays(1)))
+                    using (X509Certificate2 cert2 = request.CreateSelfSigned(now, now.AddDays(1)))
                     using (RSA rsa2 = cert2.GetRSAPrivateKey())
                     {
                         signature = rsa2.SignData(
@@ -168,7 +172,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                         rsaCng,
                         HashAlgorithmName.SHA256);
 
-                    using (X509Certificate2 cert = request.SelfSign(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays(1)))
+                    DateTimeOffset now = DateTimeOffset.UtcNow;
+
+                    using (X509Certificate2 cert = request.CreateSelfSigned(now, now.AddDays(1)))
                     using (RSA rsa = cert.GetRSAPrivateKey())
                     {
                         signature = rsa.SignData(Array.Empty<byte>(), hashAlgorithm, RSASignaturePadding.Pkcs1);
@@ -206,7 +212,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 byte[] signature;
                 byte[] data = request.Subject.RawData;
 
-                using (X509Certificate2 cert = request.SelfSign(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays(1)))
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+
+                using (X509Certificate2 cert = request.CreateSelfSigned(now, now.AddDays(1)))
                 using (RSA rsa = cert.GetRSAPrivateKey())
                 {
                     signature = rsa.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
