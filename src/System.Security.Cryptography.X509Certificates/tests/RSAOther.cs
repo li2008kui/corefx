@@ -39,7 +39,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
         {
-            using (HashAlgorithm alg = HashAlgorithm.Create(hashAlgorithm.Name))
+            using (HashAlgorithm alg = GetHashAlgorithm(hashAlgorithm))
             {
                 return alg.ComputeHash(data, offset, count);
             }
@@ -47,7 +47,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm)
         {
-            using (HashAlgorithm alg = HashAlgorithm.Create(hashAlgorithm.Name))
+            using (HashAlgorithm alg = GetHashAlgorithm(hashAlgorithm))
             {
                 return alg.ComputeHash(data);
             }
@@ -61,6 +61,38 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
 
             base.Dispose(disposing);
+        }
+
+        internal static HashAlgorithm GetHashAlgorithm(HashAlgorithmName hashAlgorithmName)
+        {
+            HashAlgorithm hasher;
+
+            if (hashAlgorithmName == HashAlgorithmName.MD5)
+            {
+                hasher = MD5.Create();
+            }
+            else if (hashAlgorithmName == HashAlgorithmName.SHA1)
+            {
+                hasher = SHA1.Create();
+            }
+            else if (hashAlgorithmName == HashAlgorithmName.SHA256)
+            {
+                hasher = SHA256.Create();
+            }
+            else if (hashAlgorithmName == HashAlgorithmName.SHA384)
+            {
+                hasher = SHA384.Create();
+            }
+            else if (hashAlgorithmName == HashAlgorithmName.SHA512)
+            {
+                hasher = SHA512.Create();
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+
+            return hasher;
         }
     }
 }

@@ -36,7 +36,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
         {
-            using (HashAlgorithm alg = HashAlgorithm.Create(hashAlgorithm.Name))
+            using (HashAlgorithm alg = RSAOther.GetHashAlgorithm(hashAlgorithm))
             {
                 return alg.ComputeHash(data, offset, count);
             }
@@ -44,7 +44,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm)
         {
-            using (HashAlgorithm alg = HashAlgorithm.Create(hashAlgorithm.Name))
+            using (HashAlgorithm alg = RSAOther.GetHashAlgorithm(hashAlgorithm))
             {
                 return alg.ComputeHash(data);
             }

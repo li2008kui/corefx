@@ -238,7 +238,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [InlineData(PROV_DSS_DH)]
         public static void AssociatePersistedKey_CAPI_DSA(int provType)
         {
-            const string KeyName = nameof(AssociatePersistedKey_CAPI_RSA);
+            const string KeyName = nameof(AssociatePersistedKey_CAPI_DSA);
 
             CspParameters cspParameters = new CspParameters(provType)
             {
@@ -431,6 +431,85 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 }
 
                 Assert.True(dsaOther.VerifyData(data, signature, hashAlgorithm));
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void AssociatePersistedKey_CNG_ECDsa()
+        {
+            const string KeyName = nameof(AssociatePersistedKey_CNG_ECDsa);
+
+            CngKey cngKey = null;
+            HashAlgorithmName hashAlgorithm = HashAlgorithmName.SHA256;
+            byte[] signature;
+
+            try
+            {
+                CngKeyCreationParameters creationParameters = new CngKeyCreationParameters()
+                {
+                    ExportPolicy = CngExportPolicies.None,
+                    Provider = CngProvider.MicrosoftSoftwareKeyStorageProvider,
+                    KeyCreationOptions = CngKeyCreationOptions.OverwriteExistingKey,
+                };
+
+                cngKey = CngKey.Create(CngAlgorithm.ECDsaP384, KeyName, creationParameters);
+
+                using (ECDsaCng ecdsaCng = new ECDsaCng(cngKey))
+                {
+                    CertificateRequest request = new CertificateRequest(
+                        new X500DistinguishedName($"CN={KeyName}"),
+                        ecdsaCng,
+                        HashAlgorithmName.SHA256);
+
+                    DateTimeOffset now = DateTimeOffset.UtcNow;
+
+                    using (X509Certificate2 cert = request.CreateSelfSigned(now, now.AddDays(1)))
+                    using (ECDsa ecdsa = cert.GetECDsaPrivateKey())
+                    {
+                        signature = ecdsa.SignData(Array.Empty<byte>(), hashAlgorithm);
+
+                        Assert.True(ecdsaCng.VerifyData(Array.Empty<byte>(), signature, hashAlgorithm));
+                    }
+                }
+
+                // Some certs have disposed, did they delete the key?
+                using (CngKey stillPersistedKey = CngKey.Open(KeyName, CngProvider.MicrosoftSoftwareKeyStorageProvider))
+                using (ECDsaCng ecdsaCng = new ECDsaCng(stillPersistedKey))
+                {
+                    ecdsaCng.SignData(Array.Empty<byte>(), hashAlgorithm);
+                }
+            }
+            finally
+            {
+                cngKey?.Delete();
+            }
+        }
+
+        [Fact]
+        public static void ThirdPartyProvider_ECDsa()
+        {
+            using (ECDsaOther ecdsaOther = new ECDsaOther())
+            {
+                HashAlgorithmName hashAlgorithm = HashAlgorithmName.SHA256;
+
+                CertificateRequest request = new CertificateRequest(
+                    new X500DistinguishedName($"CN={nameof(ThirdPartyProvider_ECDsa)}"),
+                    ecdsaOther,
+                    hashAlgorithm);
+
+                byte[] signature;
+                byte[] data = request.Subject.RawData;
+
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+
+                using (X509Certificate2 cert = request.CreateSelfSigned(now, now.AddDays(1)))
+                using (ECDsa ecdsa = cert.GetECDsaPrivateKey())
+                {
+                    signature = ecdsa.SignData(data, hashAlgorithm);
+                }
+
+                Assert.True(ecdsaOther.VerifyData(data, signature, hashAlgorithm));
             }
         }
     }
