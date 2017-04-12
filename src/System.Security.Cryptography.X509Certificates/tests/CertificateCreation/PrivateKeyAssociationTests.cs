@@ -218,7 +218,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     hashAlgorithm);
 
                 byte[] signature;
-                byte[] data = request.Subject.RawData;
+                byte[] data = request.SubjectName.RawData;
 
                 DateTimeOffset now = DateTimeOffset.UtcNow;
 
@@ -262,7 +262,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
                 DateTimeOffset now = DateTimeOffset.UtcNow;
 
-                using (X509Certificate2 cert = request.Create(request.Subject, dsaGen, now, now.AddDays(1), new byte[1]))
+                using (X509Certificate2 cert = request.Create(request.SubjectName, dsaGen, now, now.AddDays(1), new byte[1]))
                 using (X509Certificate2 certWithPrivateKey = cert.CopyWithPrivateKey(dsaCsp))
                 using (DSA dsa = certWithPrivateKey.GetDSAPrivateKey())
                 {
@@ -312,7 +312,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
                 DateTimeOffset now = DateTimeOffset.UtcNow;
 
-                using (X509Certificate2 cert = request.Create(request.Subject, dsaGen, now, now.AddDays(1), new byte[1]))
+                using (X509Certificate2 cert = request.Create(request.SubjectName, dsaGen, now, now.AddDays(1), new byte[1]))
                 using (X509Certificate2 certWithPrivateKey = cert.CopyWithPrivateKey(dsaCsp))
                 using (DSA dsa = certWithPrivateKey.GetDSAPrivateKey())
                 {
@@ -324,7 +324,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                         dsaGen.PublicKey,
                         hashAlgorithm);
 
-                    using (X509Certificate2 cert2 = request.Create(request.Subject, dsaGen, now, now.AddDays(1), new byte[1]))
+                    using (X509Certificate2 cert2 = request.Create(request.SubjectName, dsaGen, now, now.AddDays(1), new byte[1]))
                     using (X509Certificate2 cert2WithPrivateKey = cert2.CopyWithPrivateKey(dsa))
                     using (DSA dsa2 = cert2WithPrivateKey.GetDSAPrivateKey())
                     {
@@ -380,7 +380,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
                     DateTimeOffset now = DateTimeOffset.UtcNow;
 
-                    using (X509Certificate2 cert = request.Create(request.Subject, dsaGen, now, now.AddDays(1), new byte[1]))
+                    using (X509Certificate2 cert = request.Create(request.SubjectName, dsaGen, now, now.AddDays(1), new byte[1]))
                     using (X509Certificate2 certWithPrivateKey = cert.CopyWithPrivateKey(dsaCng))
                     using (DSA dsa = certWithPrivateKey.GetDSAPrivateKey())
                     {
@@ -419,11 +419,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     hashAlgorithm);
 
                 byte[] signature;
-                byte[] data = request.Subject.RawData;
+                byte[] data = request.SubjectName.RawData;
 
                 DateTimeOffset now = DateTimeOffset.UtcNow;
 
-                using (X509Certificate2 cert = request.Create(request.Subject, dsaGen, now, now.AddDays(1), new byte[1]))
+                using (X509Certificate2 cert = request.Create(request.SubjectName, dsaGen, now, now.AddDays(1), new byte[1]))
                 using (X509Certificate2 certWithPrivateKey = cert.CopyWithPrivateKey(dsaOther))
                 using (DSA dsa = certWithPrivateKey.GetDSAPrivateKey())
                 {
@@ -499,7 +499,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     hashAlgorithm);
 
                 byte[] signature;
-                byte[] data = request.Subject.RawData;
+                byte[] data = request.SubjectName.RawData;
 
                 DateTimeOffset now = DateTimeOffset.UtcNow;
 

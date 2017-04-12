@@ -21,7 +21,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <summary>
         /// The X.500 Distinguished Name to use as the Subject in a created certificate or certificate request.
         /// </summary>
-        public X500DistinguishedName Subject { get; }
+        public X500DistinguishedName SubjectName { get; }
 
         /// <summary>
         /// The X.509 Certificate Extensions to include in the certificate or certificate request.
@@ -45,8 +45,10 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new ArgumentNullException(nameof(subjectName));
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
+            if (string.IsNullOrEmpty(hashAlgorithm.Name))
+                throw new ArgumentException("Cryptography_HashAlgorithmNameNullOrEmpty", nameof(hashAlgorithm));
 
-            Subject = new X500DistinguishedName(subjectName);
+            SubjectName = new X500DistinguishedName(subjectName);
 
             _key = key;
             _generator = X509SignatureGenerator.CreateForECDsa(key);
@@ -60,8 +62,10 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new ArgumentNullException(nameof(subjectName));
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
+            if (string.IsNullOrEmpty(hashAlgorithm.Name))
+                throw new ArgumentException("Cryptography_HashAlgorithmNameNullOrEmpty", nameof(hashAlgorithm));
 
-            Subject = subjectName;
+            SubjectName = subjectName;
 
             _key = key;
             _generator = X509SignatureGenerator.CreateForECDsa(key);
@@ -75,8 +79,10 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new ArgumentNullException(nameof(subjectName));
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
+            if (string.IsNullOrEmpty(hashAlgorithm.Name))
+                throw new ArgumentException("Cryptography_HashAlgorithmNameNullOrEmpty", nameof(hashAlgorithm));
 
-            Subject = new X500DistinguishedName(subjectName);
+            SubjectName = new X500DistinguishedName(subjectName);
 
             _key = key;
             _generator = X509SignatureGenerator.CreateForRSA(key, RSASignaturePadding.Pkcs1);
@@ -90,8 +96,10 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new ArgumentNullException(nameof(subjectName));
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
+            if (string.IsNullOrEmpty(hashAlgorithm.Name))
+                throw new ArgumentException("Cryptography_HashAlgorithmNameNullOrEmpty", nameof(hashAlgorithm));
 
-            Subject = subjectName;
+            SubjectName = subjectName;
 
             _key = key;
             _generator = X509SignatureGenerator.CreateForRSA(key, RSASignaturePadding.Pkcs1);
@@ -105,8 +113,10 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new ArgumentNullException(nameof(subjectName));
             if (publicKey == null)
                 throw new ArgumentNullException(nameof(publicKey));
+            if (string.IsNullOrEmpty(hashAlgorithm.Name))
+                throw new ArgumentException("Cryptography_HashAlgorithmNameNullOrEmpty", nameof(hashAlgorithm));
 
-            Subject = subjectName;
+            SubjectName = subjectName;
             PublicKey = publicKey;
             HashAlgorithm = hashAlgorithm;
         }
@@ -178,7 +188,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             // Allow the public key to mismatch, for Diffie-Hellman, or other types of non-signing keys.
             PublicKey publicKey = PublicKey ?? signatureGenerator.PublicKey;
-            var requestInfo = new Pkcs10CertificationRequestInfo(Subject, publicKey, attributes);
+            var requestInfo = new Pkcs10CertificationRequestInfo(SubjectName, publicKey, attributes);
             return requestInfo.ToPkcs10Request(signatureGenerator, HashAlgorithm);
         }
 
@@ -202,7 +212,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="ArgumentException">
         ///   <paramref name="notAfter"/> represents a date and time before <paramref name="notAfter"/>.
         /// </exception>
-        /// <exception cref="InvalidOperationException"><see cref="Subject"/> is null.</exception>
+        /// <exception cref="InvalidOperationException"><see cref="SubjectName"/> is null.</exception>
         /// <exception cref="CryptographicException">
         ///   Other errors during the certificate creation process.
         /// </exception>
@@ -216,7 +226,7 @@ namespace System.Security.Cryptography.X509Certificates
             Debug.Assert(_generator != null);
 
             TbsCertificate tbsCertificate = new TbsCertificate();
-            tbsCertificate.Subject = Subject;
+            tbsCertificate.Subject = SubjectName;
 
             // Respect the PublicKey property, if set. It should only differ on an optional DER-NULL.
             tbsCertificate.PublicKey = PublicKey;
@@ -318,7 +328,7 @@ namespace System.Security.Cryptography.X509Certificates
         ///   <paramref name="notAfter"/> represents a date and time before <paramref name="notAfter"/>.
         /// </exception>
         /// <exception cref="ArgumentException"><paramref name="serialNumber"/> is null or has length 0.</exception>
-        /// <exception cref="InvalidOperationException"><see cref="Subject"/> is null.</exception>
+        /// <exception cref="InvalidOperationException"><see cref="SubjectName"/> is null.</exception>
         /// <exception cref="InvalidOperationException"><see cref="PublicKey"/> is null.</exception>
         /// <exception cref="CryptographicException">Any error occurs during the signing operation.</exception>
         public X509Certificate2 Create(
@@ -339,7 +349,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             TbsCertificate tbsCertificate = new TbsCertificate
             {
-                Subject = Subject,
+                Subject = SubjectName,
                 SerialNumber = serialNumber,
                 Issuer = issuerName,
                 PublicKey = PublicKey,

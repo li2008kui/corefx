@@ -298,7 +298,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 DateTimeOffset now = DateTimeOffset.UtcNow;
 
                 X509Certificate2 cert = request.Create(
-                    request.Subject,
+                    request.SubjectName,
                     generator,
                     now,
                     now.AddDays(1),

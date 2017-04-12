@@ -20,7 +20,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 Assert.NotNull(request.PublicKey);
                 Assert.NotNull(request.CertificateExtensions);
                 Assert.Empty(request.CertificateExtensions);
-                Assert.Equal(TestCN, request.Subject.Name);
+                Assert.Equal(TestCN, request.SubjectName.Name);
             }
         }
 
