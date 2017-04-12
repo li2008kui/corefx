@@ -101,11 +101,6 @@ namespace System.Security.Cryptography.X509Certificates
             if (!aParameters.Q.X.ContentsEqual(bParameters.Q.X) ||
                 !aParameters.Q.Y.ContentsEqual(bParameters.Q.Y))
             {
-                Console.WriteLine("Different Q");
-                Console.WriteLine($" Left.X: {BitConverter.ToString(aParameters.Q.X)}");
-                Console.WriteLine($"Right.X: {BitConverter.ToString(bParameters.Q.X)}");
-                Console.WriteLine($" Left.Y: {BitConverter.ToString(aParameters.Q.Y)}");
-                Console.WriteLine($"Right.Y: {BitConverter.ToString(bParameters.Q.Y)}");
                 return false;
             }
 
@@ -121,14 +116,12 @@ namespace System.Security.Cryptography.X509Certificates
             if (!aCurve.IsExplicit)
             {
                 // Implicit curve, always fail.
-                Console.WriteLine("Implicit");
                 return false;
             }
 
             if (!aCurve.G.X.ContentsEqual(bCurve.G.X) ||
                 !aCurve.G.Y.ContentsEqual(bCurve.G.Y))
             {
-                Console.WriteLine("Different G");
                 return false;
             }
 

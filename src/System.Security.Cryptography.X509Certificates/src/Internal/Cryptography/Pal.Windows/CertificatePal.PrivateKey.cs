@@ -380,11 +380,13 @@ namespace Internal.Cryptography.Pal
                 }
             }
 
-            Console.WriteLine("CWCngK: Success");
             return pal;
         }
 
-        private static unsafe int GuessKeySpec(CngProvider provider, string keyName, bool machineKey,
+        private static int GuessKeySpec(
+            CngProvider provider,
+            string keyName,
+            bool machineKey,
             CngAlgorithmGroup algorithmGroup)
         {
             if (provider == CngProvider.MicrosoftSoftwareKeyStorageProvider ||
@@ -394,13 +396,6 @@ namespace Internal.Cryptography.Pal
                 return 0;
             }
 
-            // CAPI DSA is only legal in AT_SIGNATURE
-            // CAPI Diffie-Hellman is only legal in AT_EXCHANGE.
-            // CAPI RSA is the only one that allows both.
-            if (algorithmGroup != CngAlgorithmGroup.Rsa)
-            {
-                return 0;
-            }
 
             const int NTE_BAD_KEYSET = unchecked((int)0x80090016);
 
@@ -433,43 +428,76 @@ namespace Internal.Cryptography.Pal
                     cspParameters.Flags |= CspProviderFlags.UseMachineKeyStore;
                 }
 
-                // Try the AT_SIGNATURE spot in each of the 4 RSA provider type values,
-                // ideally one of them will work.
-                const int PROV_RSA_FULL = 1;
-                const int PROV_RSA_SIG = 2;
-                const int PROV_RSA_SCHANNEL = 12;
-                const int PROV_RSA_AES = 24;
-
-                // These are ordered in terms of perceived likeliness, given that the key
-                // is AT_SIGNATURE.
-                int[] provTypes =
+                if (algorithmGroup == CngAlgorithmGroup.Rsa)
                 {
-                    PROV_RSA_FULL,
-                    PROV_RSA_AES,
-                    PROV_RSA_SCHANNEL,
+                    // Try the AT_SIGNATURE spot in each of the 4 RSA provider type values,
+                    // ideally one of them will work.
+                    const int PROV_RSA_FULL = 1;
+                    const int PROV_RSA_SIG = 2;
+                    const int PROV_RSA_SCHANNEL = 12;
+                    const int PROV_RSA_AES = 24;
 
-                    // Nothing should be PROV_RSA_SIG, but if everything else has failed,
-                    // just try this last thing.
-                    PROV_RSA_SIG,
-                };
-
-                foreach (int provType in provTypes)
-                {
-                    cspParameters.ProviderType = provType;
-
-                    try
+                    // These are ordered in terms of perceived likeliness, given that the key
+                    // is AT_SIGNATURE.
+                    int[] provTypes =
                     {
-                        using (new RSACryptoServiceProvider(cspParameters))
+                        PROV_RSA_FULL,
+                        PROV_RSA_AES,
+                        PROV_RSA_SCHANNEL,
+
+                        // Nothing should be PROV_RSA_SIG, but if everything else has failed,
+                        // just try this last thing.
+                        PROV_RSA_SIG,
+                    };
+
+                    foreach (int provType in provTypes)
+                    {
+                        cspParameters.ProviderType = provType;
+
+                        try
                         {
-                            return cspParameters.KeyNumber;
+                            using (new RSACryptoServiceProvider(cspParameters))
+                            {
+                                return cspParameters.KeyNumber;
+                            }
+                        }
+                        catch (CryptographicException)
+                        {
                         }
                     }
-                    catch (CryptographicException)
+
+                    Debug.Fail("RSA key did not open with KeyNumber 0 or AT_SIGNATURE");
+                }
+                else if (algorithmGroup == CngAlgorithmGroup.Dsa)
+                {
+                    const int PROV_DSS = 3;
+                    const int PROV_DSS_DH = 13;
+
+                    int[] provTypes =
                     {
+                        PROV_DSS_DH,
+                        PROV_DSS,
+                    };
+
+                    foreach (int provType in provTypes)
+                    {
+                        cspParameters.ProviderType = provType;
+
+                        try
+                        {
+                            using (new DSACryptoServiceProvider(cspParameters))
+                            {
+                                return cspParameters.KeyNumber;
+                            }
+                        }
+                        catch (CryptographicException)
+                        {
+                        }
                     }
+
+                    Debug.Fail("DSA key did not open with KeyNumber 0 or AT_SIGNATURE");
                 }
 
-                Debug.Fail("RSA key did not open with KeyNumber 0 or AT_SIGNATURE");
                 throw;
             }
         }
@@ -505,7 +533,6 @@ namespace Internal.Cryptography.Pal
                 }
             }
 
-            Console.WriteLine("CWCapiK: Success");
             return pal;
         }
 

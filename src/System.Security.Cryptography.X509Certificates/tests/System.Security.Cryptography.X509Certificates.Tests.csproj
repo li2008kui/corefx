@@ -23,6 +23,7 @@
     <Compile Include="CertificateCreation\CertificateRequestApiTests.cs" />
     <Compile Include="CertificateCreation\CertificateRequestChainTests.cs" />
     <Compile Include="CertificateCreation\CertificateRequestUsageTests.cs" />
+    <Compile Include="CertificateCreation\DSAX509SignatureGenerator.cs" />
     <Compile Include="CertificateCreation\EccTestData.cs" />
     <Compile Include="CertificateCreation\ECDsaX509SignatureGeneratorTests.cs" />
     <Compile Include="CertificateCreation\PrivateKeyAssociationTests.cs" />
@@ -35,8 +36,9 @@
     <Compile Include="CollectionImportTests.cs" />
     <Compile Include="CollectionTests.cs" />
     <Compile Include="ContentTypeTests.cs" />
-    <Compile Include="CreateCopyWithPrivateKeyTests.cs" />
     <Compile Include="CtorTests.cs" />
+    <Compile Include="DSAOther.cs" />
+    <Compile Include="ECDsaOther.cs" />
     <Compile Include="ExportTests.cs" />
     <Compile Include="ExtensionsTests.cs" />
     <Compile Include="FindTests.cs" />
@@ -46,6 +48,7 @@
     <Compile Include="PfxTests.cs" />
     <Compile Include="PropsTests.cs" />
     <Compile Include="PublicKeyTests.cs" />
+    <Compile Include="RSAOther.cs" />
     <Compile Include="TestData.cs" />
     <Compile Include="X500DistinguishedNameEncodingTests.cs" />
     <Compile Include="X500DistinguishedNameTests.cs" />

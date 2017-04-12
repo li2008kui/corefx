@@ -8,9 +8,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 {
     public static class PrivateKeyAssociationTests
     {
-        public const int PROV_RSA_FULL = 1;
-        public const int PROV_RSA_SCHANNEL = 12;
-        public const int PROV_RSA_AES = 24;
+        private const int PROV_RSA_FULL = 1;
+        private const int PROV_DSS = 3;
+        private const int PROV_DSS_DH = 13;
+        private const int PROV_RSA_SCHANNEL = 12;
+        private const int PROV_RSA_AES = 24;
 
         [Theory]
         [PlatformSpecific(TestPlatforms.Windows)]
@@ -22,10 +24,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [InlineData(PROV_RSA_AES, KeyNumber.Exchange)]
         public static void AssociatePersistedKey_CAPI_RSA(int provType, KeyNumber keyNumber)
         {
+            const string KeyName = nameof(AssociatePersistedKey_CAPI_RSA);
+
             CspParameters cspParameters = new CspParameters(provType)
             {
                 KeyNumber = (int)keyNumber,
-                KeyContainerName = nameof(AssociatePersistedKey_CAPI_RSA),
+                KeyContainerName = KeyName,
                 Flags = CspProviderFlags.UseNonExportableKey,
             };
 
@@ -38,7 +42,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 byte[] signature;
 
                 CertificateRequest request = new CertificateRequest(
-                    $"CN={nameof(AssociatePersistedKey_CAPI_RSA)}-{provType}-{keyNumber}",
+                    $"CN={KeyName}-{provType}-{keyNumber}",
                     rsaCsp,
                     hashAlgorithm);
 
@@ -78,10 +82,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [InlineData(PROV_RSA_AES, KeyNumber.Exchange)]
         public static void AssociatePersistedKey_CAPIviaCNG_RSA(int provType, KeyNumber keyNumber)
         {
+            const string KeyName = nameof(AssociatePersistedKey_CAPIviaCNG_RSA);
+
             CspParameters cspParameters = new CspParameters(provType)
             {
                 KeyNumber = (int)keyNumber,
-                KeyContainerName = nameof(AssociatePersistedKey_CAPIviaCNG_RSA),
+                KeyContainerName = KeyName,
                 Flags = CspProviderFlags.UseNonExportableKey,
             };
 
@@ -94,7 +100,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 byte[] signature;
 
                 CertificateRequest request = new CertificateRequest(
-                    $"CN={nameof(AssociatePersistedKey_CAPIviaCNG_RSA)}-{provType}-{keyNumber}",
+                    $"CN={KeyName}-{provType}-{keyNumber}",
                     rsaCsp,
                     hashAlgorithm);
 
@@ -108,7 +114,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     Assert.IsAssignableFrom<RSACng>(rsa);
 
                     request = new CertificateRequest(
-                        $"CN={nameof(AssociatePersistedKey_CAPI_RSA)}-{provType}-{keyNumber}-again",
+                        $"CN={KeyName}-{provType}-{keyNumber}-again",
                         rsa,
                         hashAlgorithm);
 
@@ -204,10 +210,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         {
             using (RSA rsaOther = new RSAOther())
             {
+                HashAlgorithmName hashAlgorithm = HashAlgorithmName.SHA256;
+
                 CertificateRequest request = new CertificateRequest(
                     $"CN={nameof(ThirdPartyProvider_RSA)}",
                     rsaOther,
-                    HashAlgorithmName.SHA256);
+                    hashAlgorithm);
 
                 byte[] signature;
                 byte[] data = request.Subject.RawData;
@@ -217,10 +225,212 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 using (X509Certificate2 cert = request.CreateSelfSigned(now, now.AddDays(1)))
                 using (RSA rsa = cert.GetRSAPrivateKey())
                 {
-                    signature = rsa.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                    signature = rsa.SignData(data, hashAlgorithm, RSASignaturePadding.Pkcs1);
                 }
 
-                Assert.True(rsaOther.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1));
+                Assert.True(rsaOther.VerifyData(data, signature, hashAlgorithm, RSASignaturePadding.Pkcs1));
+            }
+        }
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [InlineData(PROV_DSS)]
+        [InlineData(PROV_DSS_DH)]
+        public static void AssociatePersistedKey_CAPI_DSA(int provType)
+        {
+            const string KeyName = nameof(AssociatePersistedKey_CAPI_RSA);
+
+            CspParameters cspParameters = new CspParameters(provType)
+            {
+                KeyContainerName = KeyName,
+                Flags = CspProviderFlags.UseNonExportableKey,
+            };
+
+            using (DSACryptoServiceProvider dsaCsp = new DSACryptoServiceProvider(cspParameters))
+            {
+                dsaCsp.PersistKeyInCsp = false;
+
+                X509SignatureGenerator dsaGen = new DSAX509SignatureGenerator(dsaCsp);
+
+                // Use SHA-1 because that's all DSACryptoServiceProvider understands.
+                HashAlgorithmName hashAlgorithm = HashAlgorithmName.SHA1;
+
+                CertificateRequest request = new CertificateRequest(
+                    new X500DistinguishedName($"CN={KeyName}-{provType}"),
+                    dsaGen.PublicKey,
+                    hashAlgorithm);
+
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+
+                using (X509Certificate2 cert = request.Create(request.Subject, dsaGen, now, now.AddDays(1), new byte[1]))
+                using (X509Certificate2 certWithPrivateKey = cert.CopyWithPrivateKey(dsaCsp))
+                using (DSA dsa = certWithPrivateKey.GetDSAPrivateKey())
+                {
+                    byte[] signature = dsa.SignData(Array.Empty<byte>(), hashAlgorithm);
+
+                    Assert.True(dsaCsp.VerifyData(Array.Empty<byte>(), signature, hashAlgorithm));
+                }
+
+                // Some certs have disposed, did they delete the key?
+                cspParameters.Flags = CspProviderFlags.UseExistingKey;
+
+                using (var stillPersistedKey = new DSACryptoServiceProvider(cspParameters))
+                {
+                    stillPersistedKey.SignData(Array.Empty<byte>(), hashAlgorithm);
+                }
+            }
+        }
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [InlineData(PROV_DSS)]
+        [InlineData(PROV_DSS_DH)]
+        public static void AssociatePersistedKey_CAPIviaCNG_DSA(int provType)
+        {
+            const string KeyName = nameof(AssociatePersistedKey_CAPIviaCNG_DSA);
+
+            CspParameters cspParameters = new CspParameters(provType)
+            {
+                KeyContainerName = KeyName,
+                Flags = CspProviderFlags.UseNonExportableKey,
+            };
+
+            using (DSACryptoServiceProvider dsaCsp = new DSACryptoServiceProvider(cspParameters))
+            {
+                dsaCsp.PersistKeyInCsp = false;
+
+                X509SignatureGenerator dsaGen = new DSAX509SignatureGenerator(dsaCsp);
+
+                // Use SHA-1 because that's all DSACryptoServiceProvider understands.
+                HashAlgorithmName hashAlgorithm = HashAlgorithmName.SHA1;
+                byte[] signature;
+
+                CertificateRequest request = new CertificateRequest(
+                    new X500DistinguishedName($"CN={KeyName}-{provType}"),
+                    dsaGen.PublicKey,
+                    hashAlgorithm);
+
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+
+                using (X509Certificate2 cert = request.Create(request.Subject, dsaGen, now, now.AddDays(1), new byte[1]))
+                using (X509Certificate2 certWithPrivateKey = cert.CopyWithPrivateKey(dsaCsp))
+                using (DSA dsa = certWithPrivateKey.GetDSAPrivateKey())
+                {
+                    // `dsa` will be an DSACng wrapping the CAPI key
+                    Assert.IsAssignableFrom<DSACng>(dsa);
+
+                    request = new CertificateRequest(
+                        new X500DistinguishedName($"CN={KeyName}-{provType}-again"),
+                        dsaGen.PublicKey,
+                        hashAlgorithm);
+
+                    using (X509Certificate2 cert2 = request.Create(request.Subject, dsaGen, now, now.AddDays(1), new byte[1]))
+                    using (X509Certificate2 cert2WithPrivateKey = cert2.CopyWithPrivateKey(dsa))
+                    using (DSA dsa2 = cert2WithPrivateKey.GetDSAPrivateKey())
+                    {
+                        signature = dsa2.SignData(Array.Empty<byte>(), hashAlgorithm);
+
+                        Assert.True(dsaCsp.VerifyData(Array.Empty<byte>(), signature, hashAlgorithm));
+                    }
+                }
+
+                // Some certs have disposed, did they delete the key?
+                cspParameters.Flags = CspProviderFlags.UseExistingKey;
+
+                using (var stillPersistedKey = new DSACryptoServiceProvider(cspParameters))
+                {
+                    stillPersistedKey.SignData(Array.Empty<byte>(), hashAlgorithm);
+                }
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void AssociatePersistedKey_CNG_DSA()
+        {
+            const string KeyName = nameof(AssociatePersistedKey_CNG_DSA);
+
+            CngKey cngKey = null;
+            HashAlgorithmName hashAlgorithm = HashAlgorithmName.SHA256;
+            byte[] signature;
+
+            try
+            {
+                CngKeyCreationParameters creationParameters = new CngKeyCreationParameters()
+                {
+                    ExportPolicy = CngExportPolicies.None,
+                    Provider = CngProvider.MicrosoftSoftwareKeyStorageProvider,
+                    KeyCreationOptions = CngKeyCreationOptions.OverwriteExistingKey,
+                    Parameters =
+                    {
+                        new CngProperty("Length", BitConverter.GetBytes(1024), CngPropertyOptions.None),
+                    }
+                };
+
+                cngKey = CngKey.Create(new CngAlgorithm("DSA"), KeyName, creationParameters);
+
+                using (DSACng dsaCng = new DSACng(cngKey))
+                {
+                    X509SignatureGenerator dsaGen = new DSAX509SignatureGenerator(dsaCng);
+
+                    CertificateRequest request = new CertificateRequest(
+                        new X500DistinguishedName($"CN={KeyName}"),
+                        dsaGen.PublicKey,
+                        HashAlgorithmName.SHA256);
+
+                    DateTimeOffset now = DateTimeOffset.UtcNow;
+
+                    using (X509Certificate2 cert = request.Create(request.Subject, dsaGen, now, now.AddDays(1), new byte[1]))
+                    using (X509Certificate2 certWithPrivateKey = cert.CopyWithPrivateKey(dsaCng))
+                    using (DSA dsa = certWithPrivateKey.GetDSAPrivateKey())
+                    {
+                        signature = dsa.SignData(Array.Empty<byte>(), hashAlgorithm);
+
+                        Assert.True(dsaCng.VerifyData(Array.Empty<byte>(), signature, hashAlgorithm));
+                    }
+                }
+
+                // Some certs have disposed, did they delete the key?
+                using (CngKey stillPersistedKey = CngKey.Open(KeyName, CngProvider.MicrosoftSoftwareKeyStorageProvider))
+                using (DSACng dsaCng = new DSACng(stillPersistedKey))
+                {
+                    dsaCng.SignData(Array.Empty<byte>(), hashAlgorithm);
+                }
+            }
+            finally
+            {
+                cngKey?.Delete();
+            }
+        }
+
+        [Fact]
+        public static void ThirdPartyProvider_DSA()
+        {
+            using (DSA dsaOther = new DSAOther())
+            {
+                X509SignatureGenerator dsaGen = new DSAX509SignatureGenerator(dsaOther);
+
+                // macOS DSA is limited to FIPS 186-3.
+                HashAlgorithmName hashAlgorithm = HashAlgorithmName.SHA1;
+
+                CertificateRequest request = new CertificateRequest(
+                    new X500DistinguishedName($"CN={nameof(ThirdPartyProvider_DSA)}"),
+                    dsaGen.PublicKey,
+                    hashAlgorithm);
+
+                byte[] signature;
+                byte[] data = request.Subject.RawData;
+
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+
+                using (X509Certificate2 cert = request.Create(request.Subject, dsaGen, now, now.AddDays(1), new byte[1]))
+                using (X509Certificate2 certWithPrivateKey = cert.CopyWithPrivateKey(dsaOther))
+                using (DSA dsa = certWithPrivateKey.GetDSAPrivateKey())
+                {
+                    signature = dsa.SignData(data, hashAlgorithm);
+                }
+
+                Assert.True(dsaOther.VerifyData(data, signature, hashAlgorithm));
             }
         }
     }
