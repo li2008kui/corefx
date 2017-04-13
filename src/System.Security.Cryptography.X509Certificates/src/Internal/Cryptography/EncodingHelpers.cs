@@ -27,7 +27,7 @@ namespace Internal.Cryptography
                 string.IsNullOrEmpty(publicKey.Oid.Value) ||
                 publicKey.EncodedKeyValue == null)
             {
-                throw new CryptographicException("SR.Invalid_Public_Key");
+                throw new CryptographicException(SR.Cryptography_InvalidPublicKey_Object);
             }
 
             // SubjectPublicKeyInfo::= SEQUENCE  {

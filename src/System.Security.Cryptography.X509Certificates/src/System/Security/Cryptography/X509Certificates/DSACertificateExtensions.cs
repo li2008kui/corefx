@@ -37,14 +37,12 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new ArgumentNullException(nameof(privateKey));
 
             if (certificate.HasPrivateKey)
-                throw new InvalidOperationException("Something about already having a private key");
+                throw new InvalidOperationException(SR.Cryptography_Cert_AlreadyHasPrivateKey);
 
             DSA publicKey = GetDSAPublicKey(certificate);
 
             if (publicKey == null)
-            {
-                throw new ArgumentException("Wrong kind of certificate", nameof(certificate));
-            }
+                throw new ArgumentException(SR.Cryptography_PrivateKey_WrongAlgorithm);
 
             DSAParameters currentParameters = publicKey.ExportParameters(false);
             DSAParameters newParameters = privateKey.ExportParameters(false);
@@ -54,7 +52,7 @@ namespace System.Security.Cryptography.X509Certificates
                 !currentParameters.Q.ContentsEqual(newParameters.Q) ||
                 !currentParameters.Y.ContentsEqual(newParameters.Y))
             {
-                throw new ArgumentException("Wrong key", nameof(privateKey));
+                throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
             }
 
             ICertificatePal pal = certificate.Pal.CopyWithPrivateKey(privateKey);

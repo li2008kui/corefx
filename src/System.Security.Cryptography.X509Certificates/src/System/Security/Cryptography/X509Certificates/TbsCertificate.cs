@@ -129,7 +129,8 @@ namespace System.Security.Cryptography.X509Certificates
 
                     if (!usedOids.Add(extension.Oid.Value))
                     {
-                        throw new InvalidOperationException("Duplicate extension");
+                        throw new InvalidOperationException(
+                            SR.Format(SR.Cryptography_CertReq_DuplicateExtension, extension.Oid.Value));
                     }
 
                     encodedExtensions.Add(extension.SegmentedEncodedX509Extension());
@@ -172,7 +173,7 @@ namespace System.Security.Cryptography.X509Certificates
             // but on the other, dates before computers are just a bit beyond the pale.
             if (utcValue.Year < 1950)
             {
-                throw new ArgumentOutOfRangeException(propertyName, utcValue, "SR.Cryptography_X509_DateTooOld");
+                throw new ArgumentOutOfRangeException(propertyName, utcValue, SR.Cryptography_CertReq_DateTooOld);
             }
 
             // Since the date encoding is effectively a DER rule (ensuring that two encoders

@@ -59,7 +59,7 @@ namespace System.Security.Cryptography.X509Certificates
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw new ArgumentException("Cryptography_HashAlgorithmNameNullOrEmpty", nameof(hashAlgorithm));
+                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
 
             SubjectName = new X500DistinguishedName(subjectName);
 
@@ -89,7 +89,7 @@ namespace System.Security.Cryptography.X509Certificates
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw new ArgumentException("Cryptography_HashAlgorithmNameNullOrEmpty", nameof(hashAlgorithm));
+                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
 
             SubjectName = subjectName;
 
@@ -120,7 +120,7 @@ namespace System.Security.Cryptography.X509Certificates
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw new ArgumentException("Cryptography_HashAlgorithmNameNullOrEmpty", nameof(hashAlgorithm));
+                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
 
             SubjectName = new X500DistinguishedName(subjectName);
 
@@ -150,7 +150,7 @@ namespace System.Security.Cryptography.X509Certificates
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw new ArgumentException("Cryptography_HashAlgorithmNameNullOrEmpty", nameof(hashAlgorithm));
+                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
 
             SubjectName = subjectName;
 
@@ -179,7 +179,7 @@ namespace System.Security.Cryptography.X509Certificates
             if (publicKey == null)
                 throw new ArgumentNullException(nameof(publicKey));
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw new ArgumentException("Cryptography_HashAlgorithmNameNullOrEmpty", nameof(hashAlgorithm));
+                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
 
             SubjectName = subjectName;
             PublicKey = publicKey;
@@ -227,7 +227,7 @@ namespace System.Security.Cryptography.X509Certificates
         public byte[] CreateSigningRequest()
         {
             if (_generator == null)
-                throw new InvalidOperationException("wrong ctor");
+                throw new InvalidOperationException(SR.Cryptography_CertReq_NoKeyProvided);
 
             return CreateSigningRequest(_generator);
         }
@@ -282,9 +282,9 @@ namespace System.Security.Cryptography.X509Certificates
         public X509Certificate2 CreateSelfSigned(DateTimeOffset notBefore, DateTimeOffset notAfter)
         {
             if (notAfter < notBefore)
-                throw new ArgumentException("SR.Cryptography_X509_DatesReversed");
+                throw new ArgumentException(SR.Cryptography_CertReq_DatesReversed);
             if (_key == null)
-                throw new InvalidOperationException("No key defined");
+                throw new InvalidOperationException(SR.Cryptography_CertReq_NoKeyProvided);
 
             Debug.Assert(_generator != null);
 
@@ -371,7 +371,7 @@ namespace System.Security.Cryptography.X509Certificates
             if (issuerCertificate == null)
                 throw new ArgumentNullException(nameof(issuerCertificate));
             if (!issuerCertificate.HasPrivateKey)
-                throw new ArgumentException("SR.Cryptography_X509_IssuerRequiresPrivateKey", nameof(issuerCertificate));
+                throw new ArgumentException(SR.Cryptography_CertReq_IssuerRequiresPrivateKey, nameof(issuerCertificate));
 
             AsymmetricAlgorithm key = null;
             string keyAlgorithm = issuerCertificate.GetKeyAlgorithm();
@@ -391,7 +391,7 @@ namespace System.Security.Cryptography.X509Certificates
                     break;
                 default:
                     throw new ArgumentException(
-                        "SR.Format(SR.Cryptography_UnknownKeyAlgorithm, keyAlgorithm)",
+                        SR.Format(SR.Cryptography_UnknownKeyAlgorithm, keyAlgorithm),
                         nameof(issuerCertificate));
             }
 
@@ -441,7 +441,7 @@ namespace System.Security.Cryptography.X509Certificates
             if (generator == null)
                 throw new ArgumentNullException(nameof(generator));
             if (notAfter < notBefore)
-                throw new ArgumentException("SR.Cryptography_X509_DatesReversed");
+                throw new ArgumentException(SR.Cryptography_CertReq_DatesReversed);
             if (serialNumber == null || serialNumber.Length < 1)
                 throw new ArgumentException(SR.Arg_EmptyOrNullArray, nameof(serialNumber));
 
