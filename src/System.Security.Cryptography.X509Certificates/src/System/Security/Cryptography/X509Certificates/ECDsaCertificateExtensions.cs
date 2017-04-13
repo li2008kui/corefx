@@ -52,7 +52,7 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new ArgumentException("Key doesn't match", nameof(privateKey));
             }
 
-            ICertificatePal pal = certificate.Pal.CreateCopyWithPrivateKey(privateKey);
+            ICertificatePal pal = certificate.Pal.CopyWithPrivateKey(privateKey);
             return new X509Certificate2(pal);
         }
 
@@ -119,8 +119,13 @@ namespace System.Security.Cryptography.X509Certificates
                 return false;
             }
 
+            // Ignore Cofactor (which is derivable from the prime or polynomial and Order)
+            // Ignore Seed and Hash (which are entirely optional, and about how A and B were built)
             if (!aCurve.G.X.ContentsEqual(bCurve.G.X) ||
-                !aCurve.G.Y.ContentsEqual(bCurve.G.Y))
+                !aCurve.G.Y.ContentsEqual(bCurve.G.Y) ||
+                !aCurve.Order.ContentsEqual(bCurve.Order) ||
+                !aCurve.A.ContentsEqual(bCurve.A) ||
+                !aCurve.B.ContentsEqual(bCurve.B))
             {
                 return false;
             }

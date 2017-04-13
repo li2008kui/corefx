@@ -82,14 +82,14 @@ namespace Internal.Cryptography.Pal
             );
         }
 
-        public ICertificatePal CreateCopyWithPrivateKey(DSA dsa)
+        public ICertificatePal CopyWithPrivateKey(DSA dsa)
         {
             DSACng dsaCng = dsa as DSACng;
             ICertificatePal clone = null;
 
             if (dsaCng != null)
             {
-                clone = CloneWithPersistedCngKey(dsaCng.Key);
+                clone = CopyWithPersistedCngKey(dsaCng.Key);
 
                 if (clone != null)
                 {
@@ -101,7 +101,7 @@ namespace Internal.Cryptography.Pal
 
             if (dsaCsp != null)
             {
-                clone = CloneWithPersistedCapiKey(dsaCsp.CspKeyContainerInfo);
+                clone = CopyWithPersistedCapiKey(dsaCsp.CspKeyContainerInfo);
 
                 if (clone != null)
                 {
@@ -115,17 +115,17 @@ namespace Internal.Cryptography.Pal
             {
                 clonedKey.ImportParameters(privateParameters);
 
-                return CloneWithEphemeralKey(clonedKey.Key);
+                return CopyWithEphemeralKey(clonedKey.Key);
             }
         }
 
-        public ICertificatePal CreateCopyWithPrivateKey(ECDsa ecdsa)
+        public ICertificatePal CopyWithPrivateKey(ECDsa ecdsa)
         {
             ECDsaCng ecdsaCng = ecdsa as ECDsaCng;
 
             if (ecdsaCng != null)
             {
-                ICertificatePal clone = CloneWithPersistedCngKey(ecdsaCng.Key);
+                ICertificatePal clone = CopyWithPersistedCngKey(ecdsaCng.Key);
 
                 if (clone != null)
                 {
@@ -139,18 +139,18 @@ namespace Internal.Cryptography.Pal
             {
                 clonedKey.ImportParameters(privateParameters);
 
-                return CloneWithEphemeralKey(clonedKey.Key);
+                return CopyWithEphemeralKey(clonedKey.Key);
             }
         }
 
-        public ICertificatePal CreateCopyWithPrivateKey(RSA rsa)
+        public ICertificatePal CopyWithPrivateKey(RSA rsa)
         {
             RSACng rsaCng = rsa as RSACng;
             ICertificatePal clone = null;
 
             if (rsaCng != null)
             {
-                clone = CloneWithPersistedCngKey(rsaCng.Key);
+                clone = CopyWithPersistedCngKey(rsaCng.Key);
 
                 if (clone != null)
                 {
@@ -162,7 +162,7 @@ namespace Internal.Cryptography.Pal
 
             if (rsaCsp != null)
             {
-                clone = CloneWithPersistedCapiKey(rsaCsp.CspKeyContainerInfo);
+                clone = CopyWithPersistedCapiKey(rsaCsp.CspKeyContainerInfo);
 
                 if (clone != null)
                 {
@@ -176,7 +176,7 @@ namespace Internal.Cryptography.Pal
             {
                 clonedKey.ImportParameters(privateParameters);
 
-                return CloneWithEphemeralKey(clonedKey.Key);
+                return CopyWithEphemeralKey(clonedKey.Key);
             }
         }
 
@@ -340,8 +340,7 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-
-        private unsafe ICertificatePal CloneWithPersistedCngKey(CngKey cngKey)
+        private unsafe ICertificatePal CopyWithPersistedCngKey(CngKey cngKey)
         {
             if (string.IsNullOrEmpty(cngKey.KeyName))
             {
@@ -351,12 +350,12 @@ namespace Internal.Cryptography.Pal
             // Make a new pal from bytes.
             CertificatePal pal = (CertificatePal)FromBlob(RawData, SafePasswordHandle.InvalidHandle, X509KeyStorageFlags.PersistKeySet);
 
-            // CAPI RSA_SIGN keys won't open correctly under CNG without the key number being specified, so
-            // check to see if we can figure out what key number it needs to re-open.
             CngProvider provider = cngKey.Provider;
             string keyName = cngKey.KeyName;
             bool machineKey = cngKey.IsMachineKey;
 
+            // CAPI RSA_SIGN keys won't open correctly under CNG without the key number being specified, so
+            // check to see if we can figure out what key number it needs to re-open.
             int keySpec = GuessKeySpec(provider, keyName, machineKey, cngKey.AlgorithmGroup);
 
             CRYPT_KEY_PROV_INFO keyProvInfo = new CRYPT_KEY_PROV_INFO();
@@ -395,7 +394,6 @@ namespace Internal.Cryptography.Pal
                 // Well-known CNG providers, keySpec is 0.
                 return 0;
             }
-
 
             const int NTE_BAD_KEYSET = unchecked((int)0x80090016);
 
@@ -502,7 +500,7 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        private unsafe ICertificatePal CloneWithPersistedCapiKey(CspKeyContainerInfo keyContainerInfo)
+        private unsafe ICertificatePal CopyWithPersistedCapiKey(CspKeyContainerInfo keyContainerInfo)
         {
             if (string.IsNullOrEmpty(keyContainerInfo.KeyContainerName))
             {
@@ -536,7 +534,7 @@ namespace Internal.Cryptography.Pal
             return pal;
         }
 
-        private unsafe ICertificatePal CloneWithEphemeralKey(CngKey cngKey)
+        private ICertificatePal CopyWithEphemeralKey(CngKey cngKey)
         {
             Debug.Assert(string.IsNullOrEmpty(cngKey.KeyName));
 

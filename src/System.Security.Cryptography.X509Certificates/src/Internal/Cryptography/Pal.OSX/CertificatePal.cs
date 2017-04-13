@@ -405,46 +405,55 @@ namespace Internal.Cryptography.Pal
             Debug.Assert(!_privateKeyHolder.IsInvalid);
         }
 
-        public ICertificatePal CreateCopyWithPrivateKey(DSA privateKey)
+        public ICertificatePal CopyWithPrivateKey(DSA privateKey)
         {
-            var dsaSecurityTransforms = privateKey as DSAImplementation.DSASecurityTransforms;
+            var typedKey = privateKey as DSAImplementation.DSASecurityTransforms;
 
-            if (dsaSecurityTransforms == null)
+            if (typedKey != null)
             {
-                dsaSecurityTransforms = new DSAImplementation.DSASecurityTransforms();
-                dsaSecurityTransforms.ImportParameters(privateKey.ExportParameters(true));
+                return CopyWithPrivateKey(typedKey.GetKeys());
             }
 
-            return CreateCopyWithPrivateKey(dsaSecurityTransforms.GetKeys());
+            using (typedKey = new DSAImplementation.DSASecurityTransforms())
+            {
+                typedKey.ImportParameters(privateKey.ExportParameters(true));
+                return CopyWithPrivateKey(typedKey.GetKeys());
+            }
         }
 
-        public ICertificatePal CreateCopyWithPrivateKey(ECDsa privateKey)
+        public ICertificatePal CopyWithPrivateKey(ECDsa privateKey)
         {
-            var ecdsaSecurityTransforms = privateKey as ECDsaImplementation.ECDsaSecurityTransforms;
+            var typedKey = privateKey as ECDsaImplementation.ECDsaSecurityTransforms;
 
-            if (ecdsaSecurityTransforms == null)
+            if (typedKey != null)
             {
-                ecdsaSecurityTransforms = new ECDsaImplementation.ECDsaSecurityTransforms();
-                ecdsaSecurityTransforms.ImportParameters(privateKey.ExportParameters(true));
+                return CopyWithPrivateKey(typedKey.GetKeys());
             }
 
-            return CreateCopyWithPrivateKey(ecdsaSecurityTransforms.GetKeys());
+            using (typedKey = new ECDsaImplementation.ECDsaSecurityTransforms())
+            {
+                typedKey.ImportParameters(privateKey.ExportParameters(true));
+                return CopyWithPrivateKey(typedKey.GetKeys());
+            }
         }
 
-        public ICertificatePal CreateCopyWithPrivateKey(RSA privateKey)
+        public ICertificatePal CopyWithPrivateKey(RSA privateKey)
         {
-            var rsaSecurityTransforms = privateKey as RSAImplementation.RSASecurityTransforms;
+            var typedKey = privateKey as RSAImplementation.RSASecurityTransforms;
 
-            if (rsaSecurityTransforms == null)
+            if (typedKey != null)
             {
-                rsaSecurityTransforms = new RSAImplementation.RSASecurityTransforms();
-                rsaSecurityTransforms.ImportParameters(privateKey.ExportParameters(true));
+                return CopyWithPrivateKey(typedKey.GetKeys());
             }
 
-            return CreateCopyWithPrivateKey(rsaSecurityTransforms.GetKeys());
+            using (typedKey = new RSAImplementation.RSASecurityTransforms())
+            {
+                typedKey.ImportParameters(privateKey.ExportParameters(true));
+                return CopyWithPrivateKey(typedKey.GetKeys());
+            }
         }
 
-        private ICertificatePal CreateCopyWithPrivateKey(SecKeyPair keyPair)
+        private ICertificatePal CopyWithPrivateKey(SecKeyPair keyPair)
         {
             if (keyPair.PrivateKey == null)
             {

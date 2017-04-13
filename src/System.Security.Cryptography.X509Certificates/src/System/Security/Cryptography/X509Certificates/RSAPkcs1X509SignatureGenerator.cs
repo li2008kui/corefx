@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -10,10 +11,9 @@ namespace System.Security.Cryptography.X509Certificates
     {
         private readonly RSA _key;
 
-        public RSAPkcs1X509SignatureGenerator(RSA key)
+        internal RSAPkcs1X509SignatureGenerator(RSA key)
         {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
+            Debug.Assert(key != null);
 
             _key = key;
         }

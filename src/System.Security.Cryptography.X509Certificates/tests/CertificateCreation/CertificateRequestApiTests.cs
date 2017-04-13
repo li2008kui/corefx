@@ -53,7 +53,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [Fact]
         public static void Sign_ArgumentValidation()
         {
-            using (X509Certificate2 testRoot = new X509Certificate2(TestData.TestRootPfx))
+            using (X509Certificate2 testRoot = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
             {
                 CertificateRequest request = new CertificateRequest("CN=Test", testRoot.GetRSAPublicKey(), HashAlgorithmName.SHA256);
 

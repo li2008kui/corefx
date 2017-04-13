@@ -295,7 +295,7 @@ namespace Internal.Cryptography.Pal
             return new ECDsaOpenSsl(_privateKey);
         }
 
-        private ICertificatePal CreateCopyWithPrivateKey(SafeEvpPKeyHandle privateKey)
+        private ICertificatePal CopyWithPrivateKey(SafeEvpPKeyHandle privateKey)
         {
             // This could be X509Duplicate for a full clone, but since OpenSSL certificates
             // are functionally immutable (unlike Windows ones) an UpRef is sufficient.
@@ -306,50 +306,50 @@ namespace Internal.Cryptography.Pal
             return duplicate;
         }
 
-        public ICertificatePal CreateCopyWithPrivateKey(DSA privateKey)
+        public ICertificatePal CopyWithPrivateKey(DSA privateKey)
         {
             DSAOpenSsl typedKey = privateKey as DSAOpenSsl;
 
             if (typedKey != null)
             {
-                return CreateCopyWithPrivateKey(typedKey.DuplicateKeyHandle());
+                return CopyWithPrivateKey((SafeEvpPKeyHandle)typedKey.DuplicateKeyHandle());
             }
 
             using (typedKey = new DSAOpenSsl(privateKey.ExportParameters(true)))
             {
-                return CreateCopyWithPrivateKey(typedKey.DuplicateKeyHandle());
+                return CopyWithPrivateKey((SafeEvpPKeyHandle)typedKey.DuplicateKeyHandle());
             }
         }
 
-        public ICertificatePal CreateCopyWithPrivateKey(ECDsa privateKey)
+        public ICertificatePal CopyWithPrivateKey(ECDsa privateKey)
         {
             ECDsaOpenSsl typedKey = privateKey as ECDsaOpenSsl;
 
             if (typedKey != null)
             {
-                return CreateCopyWithPrivateKey(typedKey.DuplicateKeyHandle());
+                return CopyWithPrivateKey((SafeEvpPKeyHandle)typedKey.DuplicateKeyHandle());
             }
 
             using (typedKey = new ECDsaOpenSsl())
             {
                 typedKey.ImportParameters(privateKey.ExportParameters(true));
 
-                return CreateCopyWithPrivateKey(typedKey.DuplicateKeyHandle());
+                return CopyWithPrivateKey((SafeEvpPKeyHandle)typedKey.DuplicateKeyHandle());
             }
         }
 
-        public ICertificatePal CreateCopyWithPrivateKey(RSA privateKey)
+        public ICertificatePal CopyWithPrivateKey(RSA privateKey)
         {
             RSAOpenSsl typedKey = privateKey as RSAOpenSsl;
 
             if (typedKey != null)
             {
-                return CreateCopyWithPrivateKey(typedKey.DuplicateKeyHandle());
+                return CopyWithPrivateKey((SafeEvpPKeyHandle)typedKey.DuplicateKeyHandle());
             }
 
             using (typedKey = new RSAOpenSsl(privateKey.ExportParameters(true)))
             {
-                return CreateCopyWithPrivateKey(typedKey.DuplicateKeyHandle());
+                return CopyWithPrivateKey((SafeEvpPKeyHandle)typedKey.DuplicateKeyHandle());
             }
         }
 

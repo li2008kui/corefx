@@ -166,8 +166,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [Fact]
         public static void MultiValue()
         {
-            // This produces the same value as the "ComplexGetNameInfo" test suite in
-            // X509Certificates.
+            // This produces the same value as the "ComplexGetNameInfo" certificate/test suite.
             //   Subject Alternative Names:
             //     DNS Name=dns1.subject.example.org
             //     DNS Name=dns2.subject.example.org

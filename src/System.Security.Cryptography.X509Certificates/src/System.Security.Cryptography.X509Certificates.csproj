@@ -402,7 +402,6 @@
     <Compile Include="Internal\Cryptography\Pal.Unix\X500NameEncoder.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Console" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Diagnostics.Debug" />

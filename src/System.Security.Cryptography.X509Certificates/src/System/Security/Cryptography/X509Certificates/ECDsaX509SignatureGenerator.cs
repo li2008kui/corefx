@@ -13,8 +13,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         internal ECDsaX509SignatureGenerator(ECDsa key)
         {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
+            Debug.Assert(key != null);
 
             _key = key;
         }
@@ -77,6 +76,8 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 string friendlyName = ecParameters.Curve.Oid.FriendlyName;
 
+                // Translate the three curves that were supported Windows 7-8.1, but emit no Oid.Value;
+                // otherwise just wash the friendly name back through Oid to see if we can get a value.
                 switch (friendlyName)
                 {
                     case "nistP256":

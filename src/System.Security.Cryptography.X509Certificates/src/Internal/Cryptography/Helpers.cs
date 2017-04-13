@@ -11,8 +11,6 @@ namespace Internal.Cryptography
 {
     internal static class Helpers
     {
-        private static readonly byte[] s_derNull = { 0x05, 0x00 };
-
         public static byte[] CloneByteArray(this byte[] src)
         {
             if (src == null)

@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new ArgumentException("Key doesn't match", nameof(privateKey));
             }
 
-            ICertificatePal pal = certificate.Pal.CreateCopyWithPrivateKey(privateKey);
+            ICertificatePal pal = certificate.Pal.CopyWithPrivateKey(privateKey);
             return new X509Certificate2(pal);
         }
     }
