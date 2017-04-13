@@ -30,15 +30,28 @@ namespace System.Security.Cryptography.X509Certificates
 
         /// <summary>
         /// A <see cref="PublicKey" /> representation of the public key for the certificate or certificate request.
-        /// 
-        /// For self-signed certificates and certificate requests this value may be <c>null</c> to signal that the
-        /// value from the <see cref="X509SignatureGenerator" /> should be used. For chain-signed certificates this
-        /// value must not be <c>null</c>.
         /// </summary>
         public PublicKey PublicKey { get; }
 
+        /// <summary>
+        /// The hash algorithm to use when signing the certificate or certificate request.
+        /// </summary>
         public HashAlgorithmName HashAlgorithm { get; }
 
+        /// <summary>
+        /// Create a CertificateRequest for the specified subject name, ECDSA key, and hash algorithm.
+        /// </summary>
+        /// <param name="subjectName">
+        ///   The string representation of the subject name for the certificate or certificate request.
+        /// </param>
+        /// <param name="key">
+        ///   An ECDSA key whose public key material will be included in the certificate or certificate request.
+        ///   This key will be used as a private key if <see cref="CreateSelfSigned" /> is called.
+        /// </param>
+        /// <param name="hashAlgorithm">
+        ///   The hash algorithm to use when signing the certificate or certificate request.
+        /// </param>
+        /// <seealso cref="X500DistinguishedName(string)"/>
         public CertificateRequest(string subjectName, ECDsa key, HashAlgorithmName hashAlgorithm)
         {
             if (subjectName == null)
@@ -56,6 +69,19 @@ namespace System.Security.Cryptography.X509Certificates
             HashAlgorithm = hashAlgorithm;
         }
 
+        /// <summary>
+        /// Create a CertificateRequest for the specified subject name, ECDSA key, and hash algorithm.
+        /// </summary>
+        /// <param name="subjectName">
+        ///   The parsed representation of the subject name for the certificate or certificate request.
+        /// </param>
+        /// <param name="key">
+        ///   An ECDSA key whose public key material will be included in the certificate or certificate request.
+        ///   This key will be used as a private key if <see cref="CreateSelfSigned" /> is called.
+        /// </param>
+        /// <param name="hashAlgorithm">
+        ///   The hash algorithm to use when signing the certificate or certificate request.
+        /// </param>
         public CertificateRequest(X500DistinguishedName subjectName, ECDsa key, HashAlgorithmName hashAlgorithm)
         {
             if (subjectName == null)
@@ -73,6 +99,20 @@ namespace System.Security.Cryptography.X509Certificates
             HashAlgorithm = hashAlgorithm;
         }
 
+        /// <summary>
+        /// Create a CertificateRequest for the specified subject name, RSA key, and hash algorithm.
+        /// </summary>
+        /// <param name="subjectName">
+        ///   The string representation of the subject name for the certificate or certificate request.
+        /// </param>
+        /// <param name="key">
+        ///   An RSA key whose public key material will be included in the certificate or certificate request.
+        ///   This key will be used as a private key if <see cref="CreateSelfSigned" /> is called.
+        /// </param>
+        /// <param name="hashAlgorithm">
+        ///   The hash algorithm to use when signing the certificate or certificate request.
+        /// </param>
+        /// <seealso cref="X500DistinguishedName(string)"/>
         public CertificateRequest(string subjectName, RSA key, HashAlgorithmName hashAlgorithm)
         {
             if (subjectName == null)
@@ -90,6 +130,19 @@ namespace System.Security.Cryptography.X509Certificates
             HashAlgorithm = hashAlgorithm;
         }
 
+        /// <summary>
+        /// Create a CertificateRequest for the specified subject name, RSA key, and hash algorithm.
+        /// </summary>
+        /// <param name="subjectName">
+        ///   The parsed representation of the subject name for the certificate or certificate request.
+        /// </param>
+        /// <param name="key">
+        ///   An RSA key whose public key material will be included in the certificate or certificate request.
+        ///   This key will be used as a private key if <see cref="CreateSelfSigned" /> is called.
+        /// </param>
+        /// <param name="hashAlgorithm">
+        ///   The hash algorithm to use when signing the certificate or certificate request.
+        /// </param>
         public CertificateRequest(X500DistinguishedName subjectName, RSA key, HashAlgorithmName hashAlgorithm)
         {
             if (subjectName == null)
@@ -107,6 +160,18 @@ namespace System.Security.Cryptography.X509Certificates
             HashAlgorithm = hashAlgorithm;
         }
 
+        /// <summary>
+        /// Create a CertificateRequest for the specified subject name, encoded public key, and hash algorithm.
+        /// </summary>
+        /// <param name="subjectName">
+        ///   The parsed representation of the subject name for the certificate or certificate request.
+        /// </param>
+        /// <param name="publicKey">
+        ///   The encoded representation of the public key to include in the certificate or certificate request.
+        /// </param>
+        /// <param name="hashAlgorithm">
+        ///   The hash algorithm to use when signing the certificate or certificate request.
+        /// </param>
         public CertificateRequest(X500DistinguishedName subjectName, PublicKey publicKey, HashAlgorithmName hashAlgorithm)
         {
             if (subjectName == null)
@@ -137,7 +202,7 @@ namespace System.Security.Cryptography.X509Certificates
         ///   <code><![CDATA[
         ///     public static string PemEncodeSigningRequest(CertificateRequest request, PkcsSignatureGenerator generator)
         ///     {
-        ///         byte[] pkcs10 = request.EncodeSigningRequest(generator);
+        ///         byte[] pkcs10 = request.CreateSigningRequest(generator);
         ///         StringBuilder builder = new StringBuilder();
         ///     
         ///         builder.AppendLine("-----BEGIN CERTIFICATE REQUEST-----");
@@ -168,7 +233,7 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         /// <summary>
-        /// Create an ASN.1 DER-encoded PKCS#10 CertificationRequest object representating the current state
+        /// Create an ASN.1 DER-encoded PKCS#10 CertificationRequest representating the current state
         /// of this object using the provided signature generator.
         /// </summary>
         /// <param name="signatureGenerator">
@@ -186,17 +251,13 @@ namespace System.Security.Cryptography.X509Certificates
                 attributes = new X501Attribute[] { new Pkcs9ExtensionRequest(CertificateExtensions) };
             }
 
-            // Allow the public key to mismatch, for Diffie-Hellman, or other types of non-signing keys.
-            PublicKey publicKey = PublicKey ?? signatureGenerator.PublicKey;
-            var requestInfo = new Pkcs10CertificationRequestInfo(SubjectName, publicKey, attributes);
+            var requestInfo = new Pkcs10CertificationRequestInfo(SubjectName, PublicKey, attributes);
             return requestInfo.ToPkcs10Request(signatureGenerator, HashAlgorithm);
         }
 
         /// <summary>
-        /// Create a self-signed certificate using the established subject, optional attributes, and
-        /// optional public key value which has a <see cref="X509Certificate2.NotBefore" /> value of
-        /// the current time and a <see cref="X509Certificate2.NotAfter" /> value computed via the
-        /// specified validity fields (<paramref name="notBefore" /> and <paramref name="notAfter"/>).
+        /// Create a self-signed certificate using the established subject, key, and optional
+        /// extensions.
         /// </summary>
         /// <param name="notBefore">
         ///   The oldest date and time where this certificate is considered valid.
@@ -212,7 +273,9 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="ArgumentException">
         ///   <paramref name="notAfter"/> represents a date and time before <paramref name="notAfter"/>.
         /// </exception>
-        /// <exception cref="InvalidOperationException"><see cref="SubjectName"/> is null.</exception>
+        /// <exception cref="InvalidOperationException">
+        ///   A constructor was used which did not accept a signing key.
+        /// </exception>>
         /// <exception cref="CryptographicException">
         ///   Other errors during the certificate creation process.
         /// </exception>
@@ -225,43 +288,71 @@ namespace System.Security.Cryptography.X509Certificates
 
             Debug.Assert(_generator != null);
 
-            TbsCertificate tbsCertificate = new TbsCertificate();
-            tbsCertificate.Subject = SubjectName;
+            TbsCertificate tbsCertificate = new TbsCertificate
+            {
+                Subject = SubjectName,
+                PublicKey = PublicKey,
+                NotBefore = notBefore,
+                NotAfter = notAfter
+            };
 
-            // Respect the PublicKey property, if set. It should only differ on an optional DER-NULL.
-            tbsCertificate.PublicKey = PublicKey;
             tbsCertificate.Extensions.AddRange(CertificateExtensions);
-            tbsCertificate.NotBefore = notBefore;
-            tbsCertificate.NotAfter = notAfter;
 
             byte[] certBytes = tbsCertificate.Sign(_generator, HashAlgorithm);
-            X509Certificate2 certificate = new X509Certificate2(certBytes);
-
-            RSA rsa = _key as RSA;
-
-            if (rsa != null)
+            using (X509Certificate2 certificate = new X509Certificate2(certBytes))
             {
-                return certificate.CopyWithPrivateKey(rsa);
-            }
+                RSA rsa = _key as RSA;
 
-            ECDsa ecdsa = _key as ECDsa;
+                if (rsa != null)
+                {
+                    return certificate.CopyWithPrivateKey(rsa);
+                }
 
-            if (ecdsa != null)
-            {
-                return certificate.CopyWithPrivateKey(ecdsa);
-            }
+                ECDsa ecdsa = _key as ECDsa;
 
-            DSA dsa = _key as DSA;
-
-            if (dsa != null)
-            {
-                return certificate.CopyWithPrivateKey(dsa);
+                if (ecdsa != null)
+                {
+                    return certificate.CopyWithPrivateKey(ecdsa);
+                }
             }
 
             Debug.Fail($"Key was of no known type: {_key?.GetType().FullName ?? "null"}");
             throw new CryptographicException();
         }
 
+        /// <summary>
+        /// Create a certificate using the established subject, key, and optional extensions using
+        /// the provided certificate as the issuer.
+        /// </summary>
+        /// <param name="issuerCertificate">
+        ///   An X509Certificate2 instance representing the issuing Certificate Authority (CA).
+        /// </param>
+        /// <param name="notBefore">
+        ///   The oldest date and time where this certificate is considered valid.
+        ///   Typically <see cref="DateTimeOffset.UtcNow"/>, plus or minus a few seconds.
+        /// </param>
+        /// <param name="notAfter">
+        ///   The date and time where this certificate is no longer considered valid.
+        /// </param>
+        /// <param name="serialNumber">
+        ///   The serial number to use for the new certificate. This value should be unique per issuer.
+        ///   The value is interpreted as an unsigned (big) integer in big endian byte ordering.
+        /// </param>
+        /// <returns>
+        ///   An <see cref="X509Certificate2"/> with the specified values. The returned object will
+        ///   not assert <see cref="X509Certificate2.HasPrivateKey" />.
+        /// </returns>
+        /// <exception cref="ArgumentNullException"><paramref name="issuerCertificate"/> is null.</exception>
+        /// <exception cref="ArgumentException">
+        ///   The <see cref="X509Certificate2.HasPrivateKey"/> value for <paramref name="issuerCertificate"/> is false.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   The type of signing key represented by <paramref name="issuerCertificate"/> could not be determined.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="notAfter"/> represents a date and time before <paramref name="notBefore"/>.
+        /// </exception>
+        /// <exception cref="ArgumentException"><paramref name="serialNumber"/> is null or has length 0.</exception>
         public X509Certificate2 Create(
             X509Certificate2 issuerCertificate,
             DateTimeOffset notBefore,
@@ -325,11 +416,9 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="ArgumentNullException"><paramref name="issuerName"/> is null.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="generator"/> is null.</exception>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="notAfter"/> represents a date and time before <paramref name="notAfter"/>.
+        ///   <paramref name="notAfter"/> represents a date and time before <paramref name="notBefore"/>.
         /// </exception>
         /// <exception cref="ArgumentException"><paramref name="serialNumber"/> is null or has length 0.</exception>
-        /// <exception cref="InvalidOperationException"><see cref="SubjectName"/> is null.</exception>
-        /// <exception cref="InvalidOperationException"><see cref="PublicKey"/> is null.</exception>
         /// <exception cref="CryptographicException">Any error occurs during the signing operation.</exception>
         public X509Certificate2 Create(
             X500DistinguishedName issuerName,
