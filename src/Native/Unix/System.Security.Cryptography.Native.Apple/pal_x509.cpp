@@ -511,7 +511,8 @@ static OSStatus AddKeyToKeychain(SecKeyRef privateKey, SecKeychainRef targetKeyc
 
     if (status == noErr)
     {
-        status = SecItemImport(exportData, nullptr, &actualFormat, &actualType, 0, &keyParams, targetKeychain, &outItems);
+        status =
+            SecItemImport(exportData, nullptr, &actualFormat, &actualType, 0, &keyParams, targetKeychain, &outItems);
     }
 
     if (exportData != nullptr)
@@ -526,16 +527,20 @@ static OSStatus AddKeyToKeychain(SecKeyRef privateKey, SecKeychainRef targetKeyc
     return status;
 }
 
-extern "C" int32_t AppleCryptoNative_X509CopyWithPrivateKey(SecCertificateRef cert, SecKeyRef privateKey, SecKeychainRef targetKeychain, SecIdentityRef* pIdentityOut, int32_t* pOSStatus)
+extern "C" int32_t AppleCryptoNative_X509CopyWithPrivateKey(SecCertificateRef cert,
+                                                            SecKeyRef privateKey,
+                                                            SecKeychainRef targetKeychain,
+                                                            SecIdentityRef* pIdentityOut,
+                                                            int32_t* pOSStatus)
 {
     if (pIdentityOut != nullptr)
         *pIdentityOut = nullptr;
     if (pOSStatus != nullptr)
         *pOSStatus = noErr;
 
-    if (cert == nullptr || privateKey == nullptr || targetKeychain == nullptr || pIdentityOut == nullptr || pOSStatus == nullptr)
+    if (cert == nullptr || privateKey == nullptr || targetKeychain == nullptr || pIdentityOut == nullptr ||
+        pOSStatus == nullptr)
     {
-        printf("Bad params\n");
         return -1;
     }
 
@@ -547,7 +552,6 @@ extern "C" int32_t AppleCryptoNative_X509CopyWithPrivateKey(SecCertificateRef ce
     // This only happens with an ephemeral key, so the keychain we're adding it to is temporary.
     if (status == errSecNoSuchKeychain)
     {
-        printf("Priv key not in keychain, adding\n");
         status = AddKeyToKeychain(privateKey, targetKeychain);
     }
 
@@ -586,7 +590,8 @@ extern "C" int32_t AppleCryptoNative_X509CopyWithPrivateKey(SecCertificateRef ce
 
     if (status == noErr)
     {
-        itemMatch = CFArrayCreate(nullptr, const_cast<const void**>(reinterpret_cast<void**>(&cert)), 1, &kCFTypeArrayCallBacks);
+        itemMatch = CFArrayCreate(
+            nullptr, const_cast<const void**>(reinterpret_cast<void**>(&cert)), 1, &kCFTypeArrayCallBacks);
 
         if (itemMatch == nullptr)
         {
@@ -622,17 +627,14 @@ extern "C" int32_t AppleCryptoNative_X509CopyWithPrivateKey(SecCertificateRef ce
 
         if (result == nullptr && status == noErr)
         {
-            printf("Trying again...\n");
             status = SecItemCopyMatching(query, &result);
         }
 
         if (result != nullptr && status == noErr)
         {
-            printf("Have a result!\n");
 
             if (CFGetTypeID(result) != SecIdentityGetTypeID())
             {
-                printf("Wrong kind of result!\n");
                 status = errSecItemNotFound;
             }
             else
@@ -645,8 +647,6 @@ extern "C" int32_t AppleCryptoNative_X509CopyWithPrivateKey(SecCertificateRef ce
 
         if (added)
         {
-            printf("Removing copy from the keychain?\n");
-
             // The same query that was used to find the identity can be used
             // to find/delete the certificate, as long as we fix the class to just the cert.
             CFDictionarySetValue(query, kSecClass, kSecClassCertificate);
