@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using Internal.Cryptography;
 
@@ -14,7 +15,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         internal X500DistinguishedName Subject { get; set; }
         internal PublicKey PublicKey { get; set; }
-        internal ICollection<X501Attribute> Attributes { get; } = new List<X501Attribute>();
+        internal Collection<X501Attribute> Attributes { get; } = new Collection<X501Attribute>();
 
         internal Pkcs10CertificationRequestInfo(
             X500DistinguishedName subject,

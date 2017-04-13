@@ -5,7 +5,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Numerics;
 using System.Text;
 
@@ -106,81 +105,7 @@ namespace System.Security.Cryptography
                 data, 
             };
         }
-
-        internal static byte[][] SegmentedEncodeInteger(long value)
-        {
-            byte[] valueBytes = BitConverter.GetBytes(value);
-
-            int neededBytes = valueBytes.Length;
-
-            // Trim off the unnecessary leading 0x00 bytes.
-            // (One byte is still necessary for the number 0.)
-            // Since we're Little Endian right now, the padding bytes are at high indexes.
-            while (neededBytes > 1 && valueBytes[neededBytes - 1] == 0)
-            {
-                neededBytes--;
-            }
-
-            // Trim down the array (if needed)
-            Array.Resize(ref valueBytes, neededBytes);
-
-            // Little Endian -> Big Endian
-            Array.Reverse(valueBytes);
-
-            return new[]
-            {
-                new[] { (byte)DerSequenceReader.DerTag.Integer },
-                EncodeLength(valueBytes.Length),
-                valueBytes,
-            };
-        }
-
-        internal static byte[][] SegmentedEncodeInteger(byte[] bigEndianBytes)
-        {
-            Debug.Assert(bigEndianBytes != null);
-
-            int offset = 0;
-            int end = bigEndianBytes.Length;
-            byte[] valueBytes;
-
-            if (end == 0)
-            {
-                // Array.Empty<byte>() => 0.
-                // It isn't standard, but it's intuitive and unambiguous.
-                valueBytes = new byte[1];
-            }
-            else
-            {
-                // Skip past all leading 0x00s.
-                while (offset < end && bigEndianBytes[offset] == 0)
-                {
-                    offset++;
-                }
-                
-                // If it was all leading 0x00s copy the last byte.
-                if (offset == end)
-                {
-                    offset--;
-                }
-
-                // If the input value had a zero-padding byte to avoid a sign bit, put it back.
-                if (bigEndianBytes[offset] >= 0x80 && offset > 0)
-                {
-                    offset--;
-                }
-
-                valueBytes = new byte[end - offset];
-                Buffer.BlockCopy(bigEndianBytes, offset, valueBytes, 0, valueBytes.Length);
-            }
-
-            return new[]
-            {
-                new[] { (byte)DerSequenceReader.DerTag.Integer },
-                EncodeLength(valueBytes.Length),
-                valueBytes,
-            };
-        }
-
+        
         /// <summary>
         /// Encode the segments { tag, length, value } of an unsigned integer.
         /// </summary>
@@ -248,19 +173,6 @@ namespace System.Security.Cryptography
                 EncodeLength(dataBytes.Length),
                 dataBytes,
             };
-        }
-
-        /// <summary>
-        /// Encode a BIT STRING which is wrapped over other DER-encoded data.
-        /// </summary>
-        /// <param name="childSegments"></param>
-        /// <remarks>
-        /// Despite containing other DER-encoded data this does not get the constructed bit,
-        /// because it doesn't when encoding public keys in SubjectPublicKeyInfo
-        /// </remarks>
-        internal static byte[] EncodeBitString(params byte[][][] childSegments)
-        {
-            return ConcatenateArrays(SegmentedEncodeBitString(childSegments));
         }
 
         /// <summary>
@@ -473,13 +385,6 @@ namespace System.Security.Cryptography
             };
         }
 
-        internal static byte[][] SegmentedEncodeOctetString(byte[][] taggedData)
-        {
-            Debug.Assert(taggedData != null);
-
-            return SegmentedEncodeOctetString(ConcatenateArrays(taggedData));
-        }
-
         internal static byte[][] SegmentedEncodeNull()
         {
             return new byte[][]
@@ -592,18 +497,6 @@ namespace System.Security.Cryptography
         /// </summary>
         /// <param name="chars">The characters to be encoded.</param>
         /// <returns>The encoded segments { tag, length, value }</returns>
-        internal static byte[] EncodeUtf8String(char[] chars)
-        {
-            Debug.Assert(chars != null);
-
-            return ConcatenateArrays(SegmentedEncodeUtf8String(chars, 0, chars.Length));
-        }
-
-        /// <summary>
-        /// Encode a character string as a UTF8String value.
-        /// </summary>
-        /// <param name="chars">The characters to be encoded.</param>
-        /// <returns>The encoded segments { tag, length, value }</returns>
         internal static byte[][] SegmentedEncodeUtf8String(char[] chars)
         {
             Debug.Assert(chars != null);
@@ -696,17 +589,6 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Make a constructed SET of the byte-triplets of the contents.
-        /// </summary>
-        /// <param name="items">Series of Tag-Length-Value triplets to build into one set.</param>
-        /// <returns>The encoded SET.</returns>
-        internal static byte[] ConstructSet(params byte[][][] items)
-        {
-            byte[][] segmented = ConstructSegmentedSet(items);
-            return ConcatenateArrays(new[] { segmented });
-        }
-
-        /// <summary>
         /// Make a constructed SET of the byte-triplets of the contents, but leave
         /// the value in a segmented form (to be included in a larger SEQUENCE).
         /// </summary>
@@ -796,16 +678,6 @@ namespace System.Security.Cryptography
             }
 
             return true;
-        }
-
-        /// <summary>
-        /// Encode a character string as a PrintableString value.
-        /// </summary>
-        /// <param name="chars">The characters to be encoded.</param>
-        /// <returns>The compacted encoding of the string</returns>
-        internal static byte[] EncodePrintableString(char[] chars)
-        {
-            return ConcatenateArrays(SegmentedEncodePrintableString(chars));
         }
 
         /// <summary>

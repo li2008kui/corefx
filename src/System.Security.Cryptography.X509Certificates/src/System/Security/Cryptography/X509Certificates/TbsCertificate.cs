@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using Internal.Cryptography;
 
@@ -26,7 +27,7 @@ namespace System.Security.Cryptography.X509Certificates
     */
     internal sealed class TbsCertificate
     {
-        public int? Version { get; set; }
+        public byte? Version { get; set; }
         public byte[] SerialNumber { get; set; }
         public byte[] SignatureAlgorithm { get; set; }
         public X500DistinguishedName Issuer { get; set; }
@@ -36,7 +37,7 @@ namespace System.Security.Cryptography.X509Certificates
         public PublicKey PublicKey { get; set; }
         public byte[] IssuerUniqueId { get; set; }
         public byte[] SubjectUniqueId { get; set; }
-        public ICollection<X509Extension> Extensions { get; } = new List<X509Extension>();
+        public Collection<X509Extension> Extensions { get; } = new Collection<X509Extension>();
 
         private byte[] Encode(X509SignatureGenerator signatureGenerator, HashAlgorithmName hashAlgorithm)
         {
@@ -44,10 +45,9 @@ namespace System.Security.Cryptography.X509Certificates
             Debug.Assert(Subject != null);
             Debug.Assert(PublicKey != null);
 
-            bool forSelfSign = IsForSelfSign(signatureGenerator);
-
-            Debug.Assert(forSelfSign || SerialNumber != null);
-            Debug.Assert(forSelfSign || Issuer != null);
+            // Under a public API model we could allow these to be null for a self-signed case.
+            Debug.Assert(SerialNumber != null);
+            Debug.Assert(Issuer != null);
 
             if (SignatureAlgorithm != null)
             {
@@ -56,38 +56,26 @@ namespace System.Security.Cryptography.X509Certificates
 
             List<byte[][]> encodedFields = new List<byte[][]>();
 
-            int version = GetEffectiveVersion();
+            byte version = GetEffectiveVersion();
 
             if (version != 0)
             {
                 byte[][] encodedVersion = DerEncoder.ConstructSegmentedSequence(
-                    DerEncoder.SegmentedEncodeInteger(version));
+                    DerEncoder.SegmentedEncodeUnsignedInteger(new[] { version }));
 
                 encodedVersion[0][0] = DerSequenceReader.ContextSpecificConstructedTag0;
 
                 encodedFields.Add(encodedVersion);
             }
 
-            byte[] serialNumber = SerialNumber;
-
-            if (serialNumber == null)
-            {
-                serialNumber = new byte[8];
-
-                using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
-                {
-                    rng.GetBytes(serialNumber);
-                }
-            }
-
-            encodedFields.Add(DerEncoder.SegmentedEncodeUnsignedInteger(serialNumber));
+            encodedFields.Add(DerEncoder.SegmentedEncodeUnsignedInteger(SerialNumber));
 
             // SignatureAlgorithm: Use the specified value, or ask the generator (without mutating the class)
             byte[] signatureAlgorithm = SignatureAlgorithm ?? signatureGenerator.GetSignatureAlgorithmIdentifier(hashAlgorithm);
             encodedFields.Add(signatureAlgorithm.WrapAsSegmentedForSequence());
 
-            // Issuer: Use the provided value, or Subject (if self-signed)
-            encodedFields.Add((Issuer ?? Subject).RawData.WrapAsSegmentedForSequence());
+            // For public API allowing self-sign ease-of-use, this could be (Issuer ?? Subject).
+            encodedFields.Add(Issuer.RawData.WrapAsSegmentedForSequence());
 
             encodedFields.Add(
                 DerEncoder.ConstructSegmentedSequence(
@@ -198,17 +186,9 @@ namespace System.Security.Cryptography.X509Certificates
             return DerEncoder.SegmentedEncodeGeneralizedTime(utcValue);
         }
 
-        private bool IsForSelfSign(X509SignatureGenerator signatureGenerator)
+        private byte GetEffectiveVersion()
         {
-            if (Issuer != null && !Issuer.RawData.ContentsEqual(Subject.RawData))
-                return false;
-
-            return signatureGenerator.PublicKey.PublicKeyEquals(PublicKey);
-        }
-
-        private int GetEffectiveVersion()
-        {
-            int version;
+            byte version;
 
             if (Version.HasValue)
             {

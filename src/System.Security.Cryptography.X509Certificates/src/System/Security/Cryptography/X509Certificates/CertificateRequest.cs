@@ -288,12 +288,21 @@ namespace System.Security.Cryptography.X509Certificates
 
             Debug.Assert(_generator != null);
 
+            byte[] serialNumber = new byte[8];
+
+            using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(serialNumber);
+            }
+
             TbsCertificate tbsCertificate = new TbsCertificate
             {
-                Subject = SubjectName,
+                SerialNumber = serialNumber,
+                Issuer = SubjectName,
                 PublicKey = PublicKey,
                 NotBefore = notBefore,
-                NotAfter = notAfter
+                NotAfter = notAfter,
+                Subject = SubjectName,
             };
 
             tbsCertificate.Extensions.AddRange(CertificateExtensions);
@@ -438,12 +447,12 @@ namespace System.Security.Cryptography.X509Certificates
 
             TbsCertificate tbsCertificate = new TbsCertificate
             {
-                Subject = SubjectName,
                 SerialNumber = serialNumber,
                 Issuer = issuerName,
                 PublicKey = PublicKey,
                 NotBefore = notBefore,
                 NotAfter = notAfter,
+                Subject = SubjectName,
             };
 
             tbsCertificate.Extensions.AddRange(CertificateExtensions);
