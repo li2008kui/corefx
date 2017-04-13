@@ -132,10 +132,17 @@ namespace System.Security.Cryptography.X509Certificates
                 // Extensions.Count == 0 => no extensions
                 // Extensions.ContainsOnly(null) => empty extensions list
 
+                HashSet<string> usedOids = new HashSet<string>(Extensions.Count);
+
                 foreach (X509Extension extension in Extensions)
                 {
                     if (extension == null)
                         continue;
+
+                    if (!usedOids.Add(extension.Oid.Value))
+                    {
+                        throw new InvalidOperationException("Duplicate extension");
+                    }
 
                     encodedExtensions.Add(extension.SegmentedEncodedX509Extension());
                 }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Linq;
 using Test.Cryptography;
 using Xunit;
 
@@ -62,7 +63,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
             X509Extension basicConstraints = new X509BasicConstraintsExtension(true, false, 0, false);
 
-           X509Certificate2 cert;
+            X509Certificate2 cert;
 
             using (RSA rsa = RSA.Create())
             {
@@ -344,6 +345,28 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     Assert.Equal(3, cert.Version);
                     Assert.Equal(1, cert.Extensions.Count);
                 }
+            }
+        }
+
+        [Fact]
+        public static void UniqueExtensions()
+        {
+            using (RSA rsa = RSA.Create())
+            {
+                CertificateRequest request = new CertificateRequest(
+                    "CN=Double Extension Test",
+                    rsa,
+                    HashAlgorithmName.SHA256);
+
+                request.CertificateExtensions.Add(
+                    new X509BasicConstraintsExtension(true, false, 0, true));
+
+                request.CertificateExtensions.Add(
+                    new X509BasicConstraintsExtension(true, false, 0, true));
+
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+
+                Assert.Throws<InvalidOperationException>(() => request.CreateSelfSigned(now, now.AddDays(1)));
             }
         }
     }
