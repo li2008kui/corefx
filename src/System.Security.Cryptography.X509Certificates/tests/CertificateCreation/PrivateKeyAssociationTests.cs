@@ -408,6 +408,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         {
             using (DSA dsaOther = new DSAOther())
             {
+                dsaOther.ImportParameters(TestData.GetDSA1024Params());
+
                 X509SignatureGenerator dsaGen = new DSAX509SignatureGenerator(dsaOther);
 
                 // macOS DSA is limited to FIPS 186-3.
